@@ -217,11 +217,17 @@ staged plan 没有 child sessions；discard 先写 `plan-discarded`，archive wh
 
 OpenHands 官方持久化指南：<https://docs.openhands.dev/sdk/guides/convo-persistence>。该指南说明 conversation 使用稳定 id 与 `persistence_dir` 自动保存并可在另一 session 以同 id 恢复；持久内容覆盖 message/event history、agent config、execution state、tool outputs、stats、workspace context、skills/secrets/custom agent state；目录示意包含 `base_state.json` 与逐事件文件 `events/event-00000-<event-id>.json`。
 
+本轮 Envoy 读取该指南返回标题块并标记响应预算截断，material 为 `mat-63f43f4973fff713dae68f11`、source revision `9cde2c3147fe`、locator `https://docs.openhands.dev/sdk/guides/convo-persistence#blk-title`；先前同一来源保留材料承载了 `What Gets Persisted`、`Persistence Directory Structure`、`Events vs Base State` 等正文定位。当前笔记只保留已交付正文支持的结论，不把标题块当全文覆盖。
+
 OpenHands SDK/Agent Server 固定提交源码可定位到：
 
 - `event_service.py`：<https://raw.githubusercontent.com/OpenHands/software-agent-sdk/c048a1eb82353b0586f3ce600708394a68ebb246/openhands-agent-server/openhands/agent_server/event_service.py>，`EventService.for_persisted_events` 使用 append-only EventLog；读取注释将已写 event 视为 immutable；`save_meta` 使用 atomic text write；goal loop 从最后持久化 goal-status event 恢复。
 - `conversation_service.py`：<https://raw.githubusercontent.com/OpenHands/software-agent-sdk/c048a1eb82353b0586f3ce600708394a68ebb246/openhands-agent-server/openhands/agent_server/conversation_service.py>，启动先加载轻量 metadata，需要运行时才 hydrate history；idle eviction 关闭 live service 但保留 catalog，后续 rehydrate。
 - `conversation_router.py`：<https://raw.githubusercontent.com/OpenHands/software-agent-sdk/c048a1eb82353b0586f3ce600708394a68ebb246/openhands-agent-server/openhands/agent_server/conversation_router.py>，fork deep-copy event history，navigate 保留所有 branch，delete conversation 是永久删除，pause 后可 resume。
+
+本轮 Envoy 版本核验：OpenHands `main` API 返回 commit SHA `c048a1eb82353b0586f3ce600708394a68ebb246`，commit date `2026-10-30T14:47:57Z`，定位器为 <https://api.github.com/repos/OpenHands/software-agent-sdk/commits/main#blk-body-0001>，Envoy `material_id=mat-ad619ec2d5b826cc027c9570`、`source_revision=7cddac1ae386`；该 material 为 partial，返回 2 blocks/9510 chars，剩余内容受响应预算截断，故版本 SHA 可作锚点，完整 API JSON 不作本笔记证据。
+
+固定提交源码的增量边界：`state.py:L267-L430` 将 `leaf_event_id` 作为 active tree HEAD，按 parent chain 重建 active branch；`L456-L477` 保存 `base_state.json`，该文件不含 events；`L631-L683` 负责 autosave；`event_store.py:L128-L158,L241-L396` 提供序号、parent 校验、重复 event ID 校验、文件扫描与缺口记录，事件文件写入和 sidecar length marker 更新不是同一事务；`local_conversation.py:L453-L481` 先持久化事件再通知订阅者，`L840-L1011` 覆盖 fork/navigate，`L1981-L2018` 覆盖 run，`L2807-L2941` 覆盖 pause/interrupt/close；`file_router.py` 的 trajectory ZIP 与 workspace archive 是两类导出，前者面向 conversation 事件目录，后者面向 workspace 文件。以上行号均锚定固定 SHA `c048a1eb82353b0586f3ce600708394a68ebb246`；原始资料覆盖受 Envoy material 预算限制，未将未读取段落写成结论。
 
 可迁移点：snapshot/catalog 与 append-only event history 应分层；fork/branch 需要明确复制哪一代 event cursor；保存成功与 run admission 分开。OpenHands `send_message` 已保存而 run 返回 429 时调用方应 retry run，而非重复发送 message；这展示了“消息持久化”和“执行接纳”分开，但没有给出任意外部副作用 exactly-once ledger。
 
