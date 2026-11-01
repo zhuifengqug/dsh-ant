@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="天枢·群策">
+  <rect width="96" height="96" rx="18" fill="#10171a"/>
+  <circle cx="48" cy="48" r="31" fill="none" stroke="#54b89b" stroke-width="3"/>
+  <circle cx="48" cy="48" r="18" fill="none" stroke="#d9b663" stroke-width="3"/>
+  <path d="M48 10v76M10 48h76" stroke="#df5e4e" stroke-width="2" opacity=".8"/>
+  <circle cx="48" cy="48" r="7" fill="#df5e4e"/>
+</svg>

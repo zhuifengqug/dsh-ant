@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "policy": "dsh-plugin-naming/v1",
+  "plugin": {
+    "namespace": "zhuifengqug",
+    "name": "tianshu-qunce",
+    "coordinate": "zhuifengqug/tianshu-qunce",
+    "packageName": "@zhuifengqug/dsh-tianshu-qunce"
+  },
+  "names": {
+    "pluginNames": ["tianshu-qunce"],
+    "loaderIds": ["zhuifengqug-tianshu-qunce"],
+    "services": ["tianshuQunce"],
+    "tools": ["qunce_team_dispatch"],
+    "commands": ["qunce"],
+    "skills": [],
+    "skillProviders": [],
+    "events": [],
+    "settingsNamespaces": [],
+    "routes": []
+  }
+}
