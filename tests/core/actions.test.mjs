@@ -72,3 +72,37 @@ test('delete intent is durable and a second delete is an explicit in-progress st
   assert.equal(view.lifecycle, 'deleting');
   await assert.rejects(service.dispatch({ requestId: 'other-delete-4', teamId: created.teamId, action: 'team.delete', payload: {} }, user), { code: 'team/invalid-state' });
 });
+
+test('mail admission mutates one queued message through the same WAL and is idempotent', async t => {
+  const { service } = await fixture(t);
+  const created = await service.dispatch({ requestId: 'mail-create-1', action: 'team.create', payload: createPayload }, user);
+  const queued = await service.dispatch({
+    requestId: 'mail-send-1', teamId: created.teamId, action: 'mail.send',
+    payload: { messageId: 'message-1', toMemberId: 'member-1', content: 'queue work', deliveryMode: 'queue' },
+  }, user);
+  assert.equal(queued.firstEventSeq, 2);
+  let view = await service.get({ teamId: created.teamId });
+  assert.deepEqual({ state: view.mailbox[0].state, toSessionId: view.mailbox[0].toSessionId }, { state: 'queued', toSessionId: 'session-1' });
+
+  const admitted = await service.admitMail({ teamId: created.teamId, messageId: 'message-1', sessionId: 'session-1', deliveryMode: 'queue', accepted: true });
+  assert.equal(admitted.outcome, 'committed');
+  assert.equal(admitted.firstEventSeq, 3);
+  view = await service.get({ teamId: created.teamId });
+  assert.equal(view.cursor, 3);
+  assert.equal(view.mailbox.length, 1);
+  assert.equal(view.mailbox[0].state, 'admitted');
+  assert.deepEqual(view.mailbox[0].receipts.map(item => item.stage), ['admitted']);
+
+  const duplicate = await service.admitMail({ teamId: created.teamId, messageId: 'message-1', sessionId: 'session-1', deliveryMode: 'queue', accepted: true });
+  assert.equal(duplicate.outcome, 'duplicate');
+  assert.equal((await service.get({ teamId: created.teamId })).cursor, 3);
+  await assert.rejects(service.admitMail({ teamId: created.teamId, messageId: 'message-1', sessionId: 'other-session', deliveryMode: 'queue', accepted: true }), { code: 'team/duplicate-request-conflict' });
+
+  const pending = await service.dispatch({
+    requestId: 'mail-send-2', teamId: created.teamId, action: 'mail.send',
+    payload: { messageId: 'message-2', toMemberId: 'member-1', content: 'stale recipient', deliveryMode: 'queue' },
+  }, user);
+  assert.equal(pending.outcome, 'committed');
+  await service.dispatch({ requestId: 'member-remove-mail', teamId: created.teamId, action: 'member.remove', payload: { memberId: 'member-1' } }, user);
+  await assert.rejects(service.admitMail({ teamId: created.teamId, messageId: 'message-2', sessionId: 'session-1', deliveryMode: 'queue', accepted: true }), { code: 'team/forbidden' });
+});

@@ -1,8 +1,9 @@
 import path from 'node:path';
 import { readdir, readFile, open, link, unlink } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
-import { digest, canonicalize, requestDigest, stableTeamId } from './canonical.mjs';
+import { digest, canonicalize, requestDigest, stableMailAdmissionRequestId, stableTeamId } from './canonical.mjs';
 import { parseRequest } from './codec.mjs';
+import { foldTeam } from './fold.mjs';
 import { TeamError, invariant } from './errors.mjs';
 import { atomicReplace, syncDirectory, ensureDirectory } from './writer-lease.mjs';
 import { validateTransaction, validateSnapshot, validateChanges } from './wal-schema.mjs';
@@ -83,27 +84,53 @@ export class TeamWal {
       }
       invariant(request.expectedEventSeq === undefined || request.expectedEventSeq === history.cursor, 'team/stale-cursor', 'WAL cursor has changed', { requestId: request.requestId, teamId, eventSeq: history.cursor });
       const changes = validateChanges(await decide(history, request));
-      let cause = history.events.at(-1)?.eventId ?? 'root';
-      const events = changes.map((change, index) => {
-        const event = {
-          schemaVersion: 1, eventId: randomUUID(), teamId, eventSeq: history.cursor + index + 1,
-          causationId: cause, idempotencyKey: request.requestId, payloadDigest,
-          aggregateVersion: history.cursor + index + 1, occurredAt: new Date().toISOString(), actor,
-          type: change.type, payload: change.payload,
-        };
-        if (principal) event.principal = { kind: principal.kind };
-        if (change.attemptId) event.attemptId = change.attemptId;
-        cause = event.eventId;
-        return event;
-      });
-      const receipt = { outcome: 'committed', requestId: request.requestId, teamId, firstEventSeq: history.cursor + 1, lastEventSeq: history.cursor + events.length, eventIds: events.map(event => event.eventId), viewState: 'ready' };
-      const body = { schemaVersion: 1, teamId, requestId: request.requestId, payloadDigest, firstEventSeq: receipt.firstEventSeq, lastEventSeq: receipt.lastEventSeq, events, receipt };
-      const record = { ...body, checksum: digest(body) };
-      try { validateTransaction(record); }
-      catch (cause) { throw new TeamError('team/invalid-state', 'Invalid transaction producer', {}, { cause }); }
-      await this.#append(teamId, record);
-      return receipt;
+      return this.#appendChanges(teamId, history, request.requestId, payloadDigest, actor, principal, changes);
     });
+  }
+  /** Persist the external Session admission as a Team-owned WAL fact. */
+  admitMail({ teamId, messageId, sessionId, deliveryMode, accepted }) {
+    return this.#serial(teamId, async () => {
+      invariant(typeof messageId === 'string' && typeof sessionId === 'string', 'team/invalid-action', 'Mailbox admission identity is required');
+      invariant(['queue', 'steer'].includes(deliveryMode) && accepted === true, 'team/invalid-action', 'Only accepted Session prompts can be admitted');
+      const history = await this.read(teamId);
+      const requestId = stableMailAdmissionRequestId(teamId, messageId);
+      const payload = { messageId, sessionId, deliveryMode, accepted: true };
+      const payloadDigest = digest({ type: 'mail.admitted', payload });
+      const existingEvent = history.events.find(event => event.idempotencyKey === requestId);
+      if (existingEvent) {
+        invariant(existingEvent.payloadDigest === payloadDigest && existingEvent.type === 'mail.admitted' && digest(existingEvent.payload) === digest(payload), 'team/duplicate-request-conflict', 'Admission request identity reused with different fact', { requestId, teamId });
+        return { outcome: 'duplicate', requestId, teamId, firstEventSeq: existingEvent.eventSeq, lastEventSeq: existingEvent.eventSeq, eventIds: [existingEvent.eventId], viewState: 'ready' };
+      }
+      const view = foldTeam(history.events);
+      const mail = view?.mailbox.find(item => item.messageId === messageId);
+      invariant(mail && mail.state === 'queued', 'team/invalid-state', 'Queued mailbox message is required for admission');
+      const member = view.members.find(item => item.memberId === mail.toMemberId);
+      invariant(member?.status === 'active' && member.sessionId === sessionId, 'team/forbidden', 'Admission recipient is no longer an active Session member');
+      invariant(mail.toSessionId === sessionId && mail.deliveryMode === deliveryMode, 'team/forbidden', 'Admission does not match queued mailbox recipient');
+      return this.#appendChanges(teamId, history, requestId, payloadDigest, 'system', undefined, validateChanges([{ type: 'mail.admitted', payload, ...(mail.attemptId ? { attemptId: mail.attemptId } : {}) }]));
+    });
+  }
+  async #appendChanges(teamId, history, requestId, payloadDigest, actor, principal, changes) {
+    let cause = history.events.at(-1)?.eventId ?? 'root';
+    const events = changes.map((change, index) => {
+      const event = {
+        schemaVersion: 1, eventId: randomUUID(), teamId, eventSeq: history.cursor + index + 1,
+        causationId: cause, idempotencyKey: requestId, payloadDigest,
+        aggregateVersion: history.cursor + index + 1, occurredAt: new Date().toISOString(), actor,
+        type: change.type, payload: change.payload,
+      };
+      if (principal) event.principal = { kind: principal.kind };
+      if (change.attemptId) event.attemptId = change.attemptId;
+      cause = event.eventId;
+      return event;
+    });
+    const receipt = { outcome: 'committed', requestId, teamId, firstEventSeq: history.cursor + 1, lastEventSeq: history.cursor + events.length, eventIds: events.map(event => event.eventId), viewState: 'ready' };
+    const body = { schemaVersion: 1, teamId, requestId, payloadDigest, firstEventSeq: receipt.firstEventSeq, lastEventSeq: receipt.lastEventSeq, events, receipt };
+    const record = { ...body, checksum: digest(body) };
+    try { validateTransaction(record); }
+    catch (cause) { throw new TeamError('team/invalid-state', 'Invalid transaction producer', {}, { cause }); }
+    await this.#append(teamId, record);
+    return receipt;
   }
   async #append(teamId, record) {
     const directory = path.join(this.directory(teamId), 'events');

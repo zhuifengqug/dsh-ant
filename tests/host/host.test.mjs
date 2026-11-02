@@ -26,7 +26,7 @@ const createPayload = {
     tasks: [{ taskId: 'host-task', title: 'Exercise Host', objective: 'Exercise the Host facade', inScope: ['.'], outOfScope: [], acceptance: ['action commits'], verify: ['node --test'] }],
     dependencies: [], qualityGates: [],
   },
-  members: [],
+  members: [{ memberId: 'member-1', role: 'engineer', sessionMode: 'persistent', sessionId: 'session-1', provider: 'fixture', model: 'fixture-model', inScope: ['.'], outOfScope: [] }],
 };
 
 async function temporaryRoot(t) {
@@ -90,8 +90,16 @@ test('SessionAdapter resolves agents and forwards prompt admission and model sel
       calls.push(['resolveAgent', sessionId]);
       return { agent: { id: 'agent-1', sessionId } };
     },
+    async create(request) {
+      calls.push(['create', request]);
+      return { sessionId: 'session-created', agentPreset: request.agentPreset };
+    },
     async prompt(request, signal) {
       calls.push(['prompt', request, signal]);
+      return { accepted: true };
+    },
+    async cancel(request) {
+      calls.push(['cancel', request]);
       return { accepted: true };
     },
     async selectModel(request, signal) {
@@ -101,18 +109,86 @@ test('SessionAdapter resolves agents and forwards prompt admission and model sel
   };
   const adapter = new SessionAdapter(controller);
   const signal = new AbortController().signal;
-  const promptRequest = { sessionId: 'session-1', prompt: 'work' };
+  const createRequest = { cwd: '.', agentPreset: 'fixture' };
+  const promptRequest = { sessionId: 'session-1', requestId: 'prompt-1', mode: 'queue', content: [{ type: 'text', text: 'work' }] };
+  const cancelRequest = { sessionId: 'session-1' };
   const modelRequest = { sessionId: 'session-1', provider: 'fixture', model: 'fixture-model' };
 
   assert.deepEqual(await adapter.resolve('session-1'), { id: 'agent-1', sessionId: 'session-1' });
+  assert.deepEqual(await adapter.create(createRequest), { sessionId: 'session-created', agentPreset: 'fixture' });
   assert.deepEqual(await adapter.prompt(promptRequest, signal), { accepted: true });
+  assert.deepEqual(await adapter.cancel(cancelRequest), { accepted: true });
   assert.deepEqual(await adapter.selectModel(modelRequest, signal), { selected: true });
   assert.deepEqual(calls, [
     ['resolveAgent', 'session-1'],
+    ['create', createRequest],
     ['prompt', promptRequest, signal],
+    ['cancel', cancelRequest],
     ['selectModel', modelRequest, signal],
   ]);
   await assert.rejects(() => new SessionAdapter({ resolveAgent: async () => undefined }).resolve('missing'), { code: 'team/session-not-found' });
+});
+
+test('mail delivery sends queue and steer prompts, records admission, and keeps one WAL stream', async t => {
+  const root = await temporaryRoot(t);
+  const prompts = [];
+  const controller = {
+    async prompt(request, signal) {
+      prompts.push({ request, signal });
+      assert.equal(signal instanceof AbortSignal, true);
+      return { accepted: true };
+    },
+  };
+  const context = new Context();
+  context.provide('sessionController', controller);
+  const service = new TianshuQunceService(context, { workspaceRoot: root, ownerId: 'mail-host' });
+  t.after(() => service.close());
+
+  const created = await service.dispatchAsOwner({ requestId: 'mail-create-host', action: 'team.create', payload: createPayload });
+  for (const [requestId, messageId, mode] of [['mail-queue-host', 'message-queue', 'queue'], ['mail-steer-host', 'message-steer', 'steer']]) {
+    await service.dispatchAsOwner({ requestId, teamId: created.teamId, action: 'mail.send', payload: { messageId, toMemberId: 'member-1', content: `${mode} content`, deliveryMode: mode } });
+  }
+  for (let i = 0; i < 80; i++) {
+    const view = await service.get({ teamId: created.teamId });
+    if (view.mailbox.every(mail => mail.state === 'admitted')) break;
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+  const view = await service.get({ teamId: created.teamId });
+  assert.deepEqual(view.mailbox.map(mail => mail.state), ['admitted', 'admitted']);
+  assert.deepEqual(prompts.map(item => item.request.mode).sort(), ['queue', 'steer']);
+  assert.deepEqual(prompts.map(item => item.request.content[0]), [{ type: 'text', text: 'queue content' }, { type: 'text', text: 'steer content' }]);
+  assert.equal(view.cursor, 5);
+  assert.deepEqual(view.mailbox.map(mail => mail.receipts.map(receipt => receipt.stage)), [['admitted'], ['admitted']]);
+});
+
+test('mail delivery retries a failed prompt and recovers queued intent after service restart', async t => {
+  const root = await temporaryRoot(t);
+  let attempts = 0;
+  const failingContext = new Context();
+  failingContext.provide('sessionController', { async prompt() { attempts += 1; throw new Error('controller temporarily unavailable'); } });
+  const first = new TianshuQunceService(failingContext, { workspaceRoot: root, ownerId: 'restart-host' });
+  const created = await first.dispatchAsOwner({ requestId: 'mail-restart-create', action: 'team.create', payload: createPayload });
+  await first.dispatchAsOwner({ requestId: 'mail-restart-send', teamId: created.teamId, action: 'mail.send', payload: { messageId: 'message-restart', toMemberId: 'member-1', content: 'retry me', deliveryMode: 'queue' } });
+  await new Promise(resolve => setTimeout(resolve, 20));
+  assert.equal((await first.get({ teamId: created.teamId })).mailbox[0].state, 'queued');
+  await first.close();
+  assert.equal(attempts >= 1, true);
+
+  const recoveredContext = new Context();
+  const recoveredPrompts = [];
+  recoveredContext.provide('sessionController', { async prompt(request, signal) { recoveredPrompts.push({ request, signal }); return { accepted: true }; } });
+  const second = new TianshuQunceService(recoveredContext, { workspaceRoot: root, ownerId: 'restart-host-2' });
+  t.after(() => second.close());
+  for (let i = 0; i < 80; i++) {
+    const view = await second.get({ teamId: created.teamId });
+    if (view.mailbox[0].state === 'admitted') break;
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+  const view = await second.get({ teamId: created.teamId });
+  assert.equal(view.mailbox[0].state, 'admitted');
+  assert.equal(recoveredPrompts.length, 1);
+  assert.equal(recoveredPrompts[0].request.requestId.startsWith('qunce-mail-'), true);
+  assert.equal(recoveredPrompts[0].signal instanceof AbortSignal, true);
 });
 
 test('Typert direct descriptors bind service implementations and enforce strict named inputs', async () => {

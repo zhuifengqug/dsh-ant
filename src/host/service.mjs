@@ -4,6 +4,7 @@ import { createTeamActionService } from '../core/actions.mjs';
 import { TeamError, invariant } from '../core/errors.mjs';
 import { agentContext, ownerContext, remoteContext } from './context.mjs';
 import { SessionAdapter } from './session-adapter.mjs';
+import { MailDeliveryService } from './mail-delivery.mjs';
 
 const DEFAULT_OWNER_ID = 'tianshu-qunce-host';
 const serviceStates = new WeakMap();
@@ -29,6 +30,20 @@ function isActionContext(value) {
   return value && typeof value === 'object' && typeof value.actor === 'string';
 }
 
+async function dispatchThroughService(receiver, input, context, signal) {
+  abortIfRequested(signal);
+  const service = await receiver.ready();
+  abortIfRequested(signal);
+  const receipt = await service.dispatch(input, context);
+  if (input?.action === 'mail.send') {
+    const view = await service.get({ teamId: receipt.teamId });
+    const mail = view.mailbox.find(item => item.messageId === input.payload?.messageId);
+    const delivery = stateOf(receiver).mailDelivery;
+    if (mail?.state === 'queued' && delivery) void delivery.schedule(receipt.teamId, mail);
+  }
+  return receipt;
+}
+
 function normalizeConfig(config = {}) {
   return {
     workspaceRoot: config.workspaceRoot ?? process.cwd(),
@@ -48,12 +63,23 @@ export class TianshuQunceService extends TypertRemoteService {
       closePromise: undefined,
       sessionAdapter: ctx?.sessionController ? new SessionAdapter(ctx.sessionController) : undefined,
       actionService: undefined,
+      mailDelivery: undefined,
+      recoveryPromise: undefined,
     };
     state.actionService = Promise.resolve().then(() => createTeamActionService({
       workspaceRoot: normalizedConfig.workspaceRoot,
       ownerId: normalizedConfig.ownerId,
       config: { includeArchived: normalizedConfig.includeArchived },
-    }));
+    })).then(service => {
+      if (state.closed || !state.sessionAdapter) {
+        state.recoveryPromise = Promise.resolve();
+        return service;
+      }
+      state.mailDelivery = new MailDeliveryService({ actionService: service, sessionAdapter: state.sessionAdapter });
+      state.recoveryPromise = state.mailDelivery.recover();
+      state.recoveryPromise.catch(() => undefined);
+      return service;
+    });
     // Observe initialization failures without hiding them from ready().
     state.actionService.catch(() => undefined);
     serviceStates.set(this[symbols.original] ?? this, state);
@@ -67,6 +93,7 @@ export class TianshuQunceService extends TypertRemoteService {
     const state = stateOf(this);
     invariant(!state.closed, 'team/lease-lost', 'Tianshu Qunce service is closed');
     const service = await state.actionService;
+    await state.recoveryPromise;
     invariant(!state.closed, 'team/lease-lost', 'Tianshu Qunce service is closed');
     return service;
   }
@@ -76,24 +103,15 @@ export class TianshuQunceService extends TypertRemoteService {
     const context = isActionContext(contextOrSignal)
       ? contextOrSignal
       : remoteContext(this.ctx?.invocation);
-    abortIfRequested(signal);
-    const service = await this.ready();
-    abortIfRequested(signal);
-    return service.dispatch(input, context);
+    return dispatchThroughService(this, input, context, signal);
   }
 
   async dispatchAsOwner(input, signal) {
-    abortIfRequested(signal);
-    const service = await this.ready();
-    abortIfRequested(signal);
-    return service.dispatch(input, ownerContext());
+    return dispatchThroughService(this, input, ownerContext(), signal);
   }
 
   async dispatchFromRemote(input, invocation, signal) {
-    abortIfRequested(signal);
-    const service = await this.ready();
-    abortIfRequested(signal);
-    return service.dispatch(input, remoteContext(invocation));
+    return dispatchThroughService(this, input, remoteContext(invocation), signal);
   }
 
   async dispatchAsAgent(input, agent, signal) {
@@ -108,7 +126,7 @@ export class TianshuQunceService extends TypertRemoteService {
     abortIfRequested(signal);
     const member = view.members.find(candidate => candidate.status === 'active' && candidate.sessionId === sessionId);
     invariant(member, 'team/forbidden', 'Calling agent is not an active Team member');
-    return actionService.dispatch(input, agentContext(agent, { teamId, memberId: member.memberId }));
+    return dispatchThroughService(this, input, agentContext(agent, { teamId, memberId: member.memberId }), signal);
   }
 
   async get(input, signal) {
@@ -132,10 +150,22 @@ export class TianshuQunceService extends TypertRemoteService {
     return adapter.resolve(sessionId, signal);
   }
 
+  async createSession(request) {
+    const adapter = stateOf(this).sessionAdapter;
+    invariant(adapter, 'team/unavailable', 'Session controller is unavailable');
+    return adapter.create(request);
+  }
+
   async prompt(request, signal) {
     const adapter = stateOf(this).sessionAdapter;
     invariant(adapter, 'team/unavailable', 'Session controller is unavailable');
     return adapter.prompt(request, signal);
+  }
+
+  async cancelSession(request) {
+    const adapter = stateOf(this).sessionAdapter;
+    invariant(adapter, 'team/unavailable', 'Session controller is unavailable');
+    return adapter.cancel(request);
   }
 
   async selectModel(request, signal) {
@@ -148,7 +178,9 @@ export class TianshuQunceService extends TypertRemoteService {
     const state = stateOf(this);
     if (state.closePromise) return state.closePromise;
     state.closed = true;
-    state.closePromise = state.actionService.then(service => service.close(), () => undefined);
+    state.closePromise = Promise.resolve(state.mailDelivery?.close())
+      .catch(() => undefined)
+      .then(() => state.actionService.then(service => service.close(), () => undefined));
     state.closePromise.catch(() => undefined);
     return state.closePromise;
   }

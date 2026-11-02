@@ -46,8 +46,17 @@ export function foldTeam(events) {
         case 'member.removed': find(view.members, 'memberId', payload.memberId).status = 'removed'; break;
         case 'member.model-change-requested':
         case 'member.model-selected': Object.assign(find(view.members, 'memberId', payload.memberId), payload.selection ?? { provider: payload.provider, model: payload.model, reasoningEffort: payload.reasoningEffort }); break;
-        case 'mail.queued':
-        case 'mail.admitted': view.mailbox.push({ ...payload, state: event.type === 'mail.admitted' ? 'admitted' : 'queued', receipts: [] }); break;
+        case 'mail.queued': {
+          invariant(!view.mailbox.some(item => item.messageId === payload.messageId), 'team/rebuild-required', 'Duplicate mailbox identity');
+          const recipient = view.members.find(item => item.memberId === payload.toMemberId);
+          view.mailbox.push({ ...payload, toSessionId: payload.toSessionId ?? recipient?.sessionId, state: 'queued', receipts: [] }); break;
+        }
+        case 'mail.admitted': {
+          const mail = find(view.mailbox, 'messageId', payload.messageId);
+          invariant(mail.state === 'queued', 'team/rebuild-required', 'Mailbox admission is out of order');
+          invariant(payload.sessionId === mail.toSessionId && payload.deliveryMode === mail.deliveryMode && payload.accepted === true, 'team/rebuild-required', 'Mailbox admission does not match queued delivery');
+          mail.state = 'admitted'; mail.receipts.push({ stage: 'admitted', eventSeq: event.eventSeq, sessionId: payload.sessionId, deliveryMode: payload.deliveryMode }); break;
+        }
         case 'mail.read': {
           const mail = find(view.mailbox, 'messageId', payload.messageId);
           invariant(['admitted', 'delivered', 'queued'].includes(mail.state), 'team/rebuild-required', 'Mailbox read receipt is out of order');

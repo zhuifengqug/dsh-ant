@@ -16,9 +16,23 @@ export class SessionAdapter {
     return agent;
   }
 
+  async create(request) {
+    invariant(this.#controller && typeof this.#controller.create === 'function', 'team/unavailable', 'Session controller is unavailable');
+    return this.#controller.create(request);
+  }
+
   async prompt(request, signal) {
     invariant(this.#controller && typeof this.#controller.prompt === 'function', 'team/unavailable', 'Session controller is unavailable');
-    return this.#controller.prompt(request, signal);
+    const result = await this.#controller.prompt(request, signal);
+    invariant(result && result.accepted === true, 'team/unavailable', 'Session controller did not confirm inbox admission', { sessionId: request.sessionId, retryable: true });
+    return result;
+  }
+
+  async cancel(request) {
+    invariant(this.#controller && typeof this.#controller.cancel === 'function', 'team/unavailable', 'Session controller is unavailable');
+    const result = await this.#controller.cancel(request);
+    invariant(result && result.accepted === true, 'team/unavailable', 'Session controller did not confirm cancellation', { sessionId: request.sessionId, retryable: true });
+    return result;
   }
 
   async selectModel(request, signal) {

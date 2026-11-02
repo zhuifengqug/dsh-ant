@@ -70,3 +70,11 @@ export function requestDigest(request) {
 export function stableTeamId(workspaceIdentity, requestId) {
   return `team-${digest({ workspaceIdentity, requestId }).slice(0, 32)}`;
 }
+
+export function stableMailRequestId(teamId, messageId) {
+  return `qunce-mail-${digest({ teamId, messageId }).slice(0, 40)}`;
+}
+
+export function stableMailAdmissionRequestId(teamId, messageId) {
+  return `qunce-admit-${digest({ teamId, messageId }).slice(0, 40)}`;
+}

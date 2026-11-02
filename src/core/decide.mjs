@@ -99,14 +99,15 @@ export function decideAction(view, request, context) {
     return [change('member.model-change-requested', payload)];
   }
   if (action === 'mail.send') {
-    member(payload.toMemberId);
+    const recipient = member(payload.toMemberId);
+    requireState(typeof recipient.sessionId === 'string' && recipient.sessionId.length > 0, 'Recipient has no bound Session');
     requireState(!view.mailbox.some(item => item.messageId === payload.messageId), 'Mailbox identity already exists');
     if (payload.taskId) task(payload.taskId);
     if (payload.attemptId) {
       requireState(payload.taskId, 'attemptId requires taskId');
       requireState(active(attempt(payload.taskId, payload.attemptId)), 'Attempt is not active');
     }
-    return [change('mail.queued', { ...payload, fromMemberId: context.memberId ?? 'owner' }, payload.attemptId)];
+    return [change('mail.queued', { ...payload, toSessionId: recipient.sessionId, fromMemberId: context.memberId ?? 'owner' }, payload.attemptId)];
   }
   if (action === 'mail.read' || action === 'mail.consume') {
     const mail = view.mailbox.find(item => item.messageId === payload.messageId);

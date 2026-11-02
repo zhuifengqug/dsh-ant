@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { readdir } from 'node:fs/promises';
 import { TeamError, invariant } from './errors.mjs';
 import { parseGet, parseList, parseRequest } from './codec.mjs';
 import { requestDigest, stableTeamId } from './canonical.mjs';
@@ -72,11 +73,34 @@ export class TeamActionService {
     return { ...view, cursor: history.cursor, walDigest: history.walDigest };
   }
 
+  async admitMail(input) {
+    const receipt = await this.#wal.admitMail(input);
+    const history = await this.#wal.read(input.teamId);
+    const view = foldTeam(history.events);
+    if (view) await this.#wal.writeSnapshot(input.teamId, { ...view, cursor: history.cursor }, { cursor: history.cursor, walDigest: history.walDigest });
+    return receipt;
+  }
+
+  async pendingMail() {
+    const teamsRoot = path.join(this.#lease.root, 'teams');
+    let names;
+    try { names = await readdir(teamsRoot, { withFileTypes: true }); }
+    catch (error) { if (error.code === 'ENOENT') return []; throw error; }
+    const pending = [];
+    for (const entry of names.filter(item => item.isDirectory()).sort((a, b) => a.name.localeCompare(b.name))) {
+      const history = await this.#wal.read(entry.name);
+      const view = foldTeam(history.events);
+      if (view?.lifecycle === 'archived' || view?.lifecycle === 'deleting') continue;
+      for (const mail of view?.mailbox ?? []) if (mail.state === 'queued') pending.push({ teamId: entry.name, mail: structuredClone(mail) });
+    }
+    return pending;
+  }
+
   async list(input = {}) {
     const request = parseList(input);
     const teamsRoot = path.join(this.#lease.root, 'teams');
     let names;
-    try { names = await (await import('node:fs/promises')).readdir(teamsRoot, { withFileTypes: true }); }
+    try { names = await readdir(teamsRoot, { withFileTypes: true }); }
     catch (error) { if (error.code === 'ENOENT') return { teams: [], cursor: request.cursor }; throw error; }
     const teams = [];
     for (const entry of names.filter(item => item.isDirectory()).sort((a, b) => a.name.localeCompare(b.name))) {

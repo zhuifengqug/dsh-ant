@@ -2,8 +2,8 @@
   "name": "@zhuifengqug/dsh-tianshu-qunce",
   "version": "0.1.0",
   "scripts": {
-    "test": "node --test tests/core/*.test.mjs tests/host/*.test.mjs",
-    "check:syntax": "node --check index.js && node --check typert.host.mjs && node --check typert.remote-client.mjs && node --check src/host/command.mjs && node --check src/host/context.mjs && node --check src/host/service.mjs && node --check src/host/session-adapter.mjs && node --check src/host/tool.mjs && node --check src/host/typert-spec.mjs"
+    "test": "node --test tests/core/*.test.mjs tests/host/*.test.mjs tests/client/*.test.mjs",
+    "check:syntax": "node --check index.js && node --check client.js && node --check typert.host.mjs && node --check typert.remote-client.mjs && node --check src/host/command.mjs && node --check src/host/context.mjs && node --check src/host/service.mjs && node --check src/host/session-adapter.mjs && node --check src/host/mail-delivery.mjs && node --check src/host/tool.mjs && node --check src/host/typert-spec.mjs"
   },
   "description": "天枢·群策：DSH 多会话协作 Host bundle",
   "type": "module",
@@ -12,12 +12,14 @@
     ".": "./index.js",
     "./typert": "./typert.host.mjs",
     "./remote": "./typert.remote-client.mjs",
+    "./client": "./client.js",
     "./locale/*.json": "./locale/*.json",
     "./icon": "./icon.svg",
     "./package.json": "./package.json"
   },
   "files": [
     "index.js",
+    "client.js",
     "typert.host.mjs",
     "typert.remote-client.mjs",
     "cordis.patch.yml",
@@ -30,23 +32,34 @@
     "node": ">=22.19.0"
   },
   "dependencies": {
-    "@deepseek-ai/dsh-typert-protocol": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-typert-protocol": "0.2.1-rc.5",
     "@deepseek-ai/schemastery": "~3.18.5",
     "zod": "4.4.3"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "~4.0.5",
-    "@deepseek-ai/dsh-api-session-controller": "0.2.1-rc.2",
-    "@deepseek-ai/dsh-commands": "0.2.1-rc.2",
-    "@deepseek-ai/dsh-tools": "0.2.1-rc.2"
+    "@deepseek-ai/dsh-api-session-controller": "0.2.1-rc.5",
+    "@deepseek-ai/dsh-commands": "0.2.1-rc.5",
+    "@deepseek-ai/dsh-tools": "0.2.1-rc.5"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-api-gateway": "0.2.1-rc.2",
-    "@deepseek-ai/dsh-typert-registry": "0.2.1-rc.2"
+    "@deepseek-ai/dsh-api-gateway": "0.2.1-rc.5",
+    "@deepseek-ai/dsh-typert-registry": "0.2.1-rc.5"
   },
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-api-remotes",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-sidebar"
+      ]
     }
   }
 }
