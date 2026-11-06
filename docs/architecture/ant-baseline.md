@@ -1,4 +1,4 @@
-# 天枢·群策架构基线
+# 虫珀·玄驹架构基线
 
 状态：设计已确认，实施未验证。决策理由见 [ADR-0001](../adr/0001-team-wal-as-canonical-owner.md)；领域词汇见根目录 [GLOSSARY.md](../../GLOSSARY.md)。
 
@@ -12,10 +12,10 @@
 
 ## 运行与生命周期
 
-- **并发契约**：同一群策数据根在 V1 只允许一个 DSH Host 写入；单个 Host 内可并行处理多个团队、成员和任务。第二个 Host 的写入必须失败关闭并显式显示 writer 已占用，不得静默分叉状态。
+- **并发契约**：同一玄驹数据根在 V1 只允许一个 DSH Host 写入；单个 Host 内可并行处理多个团队、成员和任务。第二个 Host 的写入必须失败关闭并显式显示 writer 已占用，不得静默分叉状态。
 - **Writer lease**：实现必须在 POSIX 与 Windows 上防止两个 Host 同时获得同一数据根的写权限，并在进程异常退出后允许后继 Host 恢复。具体 API 与失效检测机制由 #2 实现阶段针对目标 Node/DSH 环境选定和验证；DSH `storage-json` 的 rename 原子性、Domain 进程内写链、Session 私有锁均不满足替代证明。
 - **归档**：先记录 `archiving`，drain 活动 attempt/邮箱处理，再记录 `drain-complete` 与 `archived`，最后迁移完整团队目录。归档保留同一 WAL 与团队身份；恢复接续原历史。
-- **删除**：按用户确认的“目录缺席即删除”语义，清除整个团队目录中的 WAL、快照、邮箱和归档内容，并清理群策创建的成员会话；原有普通 DSH 会话保留。成功删除后不留 tombstone、删除收据或团队摘要。
+- **删除**：按用户确认的“目录缺席即删除”语义，清除整个团队目录中的 WAL、快照、邮箱和归档内容，并清理玄驹创建的成员会话；原有普通 DSH 会话保留。成功删除后不留 tombstone、删除收据或团队摘要。
 - **Host 兼容**：目标基线为 DSH `0.2.1-rc.2` / Node `22.23.2`。插件使用公开 Host 服务和 Cordis lifecycle，不修改 Agent loop，不依赖页面 DOM/iframe，不把只读 `sessionReferenceResolver` 当消息通道。
 
 ## 必须满足的恢复不变量
@@ -39,6 +39,6 @@
 
 ## 来源
 
-- [会话与模型契约研究](../research/2026-10-31-tianshu-qunce-contracts-session.md)
-- [持久化与恢复研究](../research/2026-10-31-tianshu-qunce-persistence.md)
+- [会话与模型契约研究](../research/2026-10-31-ant-contracts-session.md)
+- [持久化与恢复研究](../research/2026-10-31-ant-persistence.md)
 - DSH Host service contracts and pinned package sources listed in [ADR-0001](../adr/0001-team-wal-as-canonical-owner.md#evidence-references).

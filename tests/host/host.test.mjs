@@ -11,9 +11,9 @@ import { createTypertRemoteInfo } from '@deepseek-ai/dsh-typert-protocol/remote-
 import { z } from 'zod';
 import { apply } from '../../index.js';
 import { ownerContext, remoteContext } from '../../src/host/context.mjs';
-import { createQunceCommand } from '../../src/host/command.mjs';
-import { TianshuQunceService } from '../../src/host/service.mjs';
-import { createQunceTool } from '../../src/host/tool.mjs';
+import { createAntCommand } from '../../src/host/command.mjs';
+import { AntService } from '../../src/host/service.mjs';
+import { createAntTool } from '../../src/host/tool.mjs';
 import { createTypertSpec } from '../../src/host/typert-spec.mjs';
 import { SessionAdapter } from '../../src/host/session-adapter.mjs';
 import { TYPERT } from '../../typert.host.mjs';
@@ -30,7 +30,7 @@ const createPayload = {
 };
 
 async function temporaryRoot(t) {
-  const root = await mkdtemp(path.join(os.tmpdir(), 'qunce-host-'));
+  const root = await mkdtemp(path.join(os.tmpdir(), 'ant-host-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   return root;
 }
@@ -44,7 +44,7 @@ test('trusted context accepts only owner principals and ignores request-shaped i
 
 test('command dispatches as the owner and returns stable parse errors', async () => {
   const calls = [];
-  const command = createQunceCommand({
+  const command = createAntCommand({
     async dispatchAsOwner(request, signal) {
       calls.push({ request, signal });
       return { outcome: 'committed', requestId: request.requestId, teamId: 'team-1', lastEventSeq: 3 };
@@ -65,7 +65,7 @@ test('command dispatches as the owner and returns stable parse errors', async ()
 
 test('tool schema compiles, validates arguments, and shares the agent service operation', async () => {
   const calls = [];
-  const tool = defineTool(createQunceTool({
+  const tool = defineTool(createAntTool({
     async dispatchAsAgent(request, agent, signal) {
       calls.push({ request, agent, signal });
       return { outcome: 'committed', requestId: request.requestId, teamId: request.teamId };
@@ -141,7 +141,7 @@ test('mail delivery sends queue and steer prompts, records admission, and keeps 
   };
   const context = new Context();
   context.provide('sessionController', controller);
-  const service = new TianshuQunceService(context, { workspaceRoot: root, ownerId: 'mail-host' });
+  const service = new AntService(context, { workspaceRoot: root, ownerId: 'mail-host' });
   t.after(() => service.close());
 
   const created = await service.dispatchAsOwner({ requestId: 'mail-create-host', action: 'team.create', payload: createPayload });
@@ -166,7 +166,7 @@ test('mail delivery retries a failed prompt and recovers queued intent after ser
   let attempts = 0;
   const failingContext = new Context();
   failingContext.provide('sessionController', { async prompt() { attempts += 1; throw new Error('controller temporarily unavailable'); } });
-  const first = new TianshuQunceService(failingContext, { workspaceRoot: root, ownerId: 'restart-host' });
+  const first = new AntService(failingContext, { workspaceRoot: root, ownerId: 'restart-host' });
   const created = await first.dispatchAsOwner({ requestId: 'mail-restart-create', action: 'team.create', payload: createPayload });
   await first.dispatchAsOwner({ requestId: 'mail-restart-send', teamId: created.teamId, action: 'mail.send', payload: { messageId: 'message-restart', toMemberId: 'member-1', content: 'retry me', deliveryMode: 'queue' } });
   await new Promise(resolve => setTimeout(resolve, 20));
@@ -177,7 +177,7 @@ test('mail delivery retries a failed prompt and recovers queued intent after ser
   const recoveredContext = new Context();
   const recoveredPrompts = [];
   recoveredContext.provide('sessionController', { async prompt(request, signal) { recoveredPrompts.push({ request, signal }); return { accepted: true }; } });
-  const second = new TianshuQunceService(recoveredContext, { workspaceRoot: root, ownerId: 'restart-host-2' });
+  const second = new AntService(recoveredContext, { workspaceRoot: root, ownerId: 'restart-host-2' });
   t.after(() => second.close());
   for (let i = 0; i < 80; i++) {
     const view = await second.get({ teamId: created.teamId });
@@ -187,7 +187,7 @@ test('mail delivery retries a failed prompt and recovers queued intent after ser
   const view = await second.get({ teamId: created.teamId });
   assert.equal(view.mailbox[0].state, 'admitted');
   assert.equal(recoveredPrompts.length, 1);
-  assert.equal(recoveredPrompts[0].request.requestId.startsWith('qunce-mail-'), true);
+  assert.equal(recoveredPrompts[0].request.requestId.startsWith('ant-mail-'), true);
   assert.equal(recoveredPrompts[0].signal instanceof AbortSignal, true);
 });
 
@@ -213,16 +213,16 @@ test('Cordis service binds Remote invocation, commits through TeamActionService,
   new TypertRegistry(context);
   context.provide('remoteAccess', { decide: () => ({ kind: 'allow' }) });
   const root = await temporaryRoot(t);
-  const service = new TianshuQunceService(context, { workspaceRoot: root, ownerId: 'host-test' });
+  const service = new AntService(context, { workspaceRoot: root, ownerId: 'host-test' });
   context.typert.register(TYPERT);
   const gateway = new TypertGatewayService(context, {});
   t.after(async () => {
     await service.close();
     await context.fiber.dispose();
   });
-  assert.equal(context.tianshuQunce.name, 'tianshuQunce');
+  assert.equal(context.ant.name, 'ant');
   assert.equal(service.typertRemote.service, service);
-  assert.equal(service.typertRemote.serviceKey, 'tianshuQunce');
+  assert.equal(service.typertRemote.serviceKey, 'ant');
   assert.equal(service.typertRemote.namespace, 'team');
 
   const request = { requestId: 'service-create', action: 'team.create', payload: createPayload };
@@ -231,12 +231,12 @@ test('Cordis service binds Remote invocation, commits through TeamActionService,
   assert.equal((await service.get({ teamId: created.teamId })).teamId, created.teamId);
 
   const remoteContext = context.extend({ invocation: { peer: { principal: { kind: 'owner' } } } });
-  const remoteService = remoteContext.tianshuQunce;
+  const remoteService = remoteContext.ant;
   const remoteCreated = await remoteService.dispatch({ requestId: 'service-remote-create', action: 'team.create', payload: createPayload });
   assert.equal(remoteCreated.outcome, 'committed');
 
   const untrustedContext = context.extend({ invocation: { peer: { principal: { kind: 'agent', id: 'session-1' } } } });
-  await assert.rejects(untrustedContext.tianshuQunce.dispatch({ requestId: 'service-denied', action: 'team.create', payload: createPayload }), { code: 'team/forbidden' });
+  await assert.rejects(untrustedContext.ant.dispatch({ requestId: 'service-denied', action: 'team.create', payload: createPayload }), { code: 'team/forbidden' });
 
   const peer = { principal: { kind: 'owner' }, signal: new AbortController().signal, interactions: 'answer' };
   const gatewayResult = await gateway.invoke({ namespace: 'team', method: 'dispatch', args: { request: { requestId: 'gateway-create', action: 'team.create', payload: createPayload } }, peer });
@@ -261,7 +261,7 @@ test('apply registers command and tool once; Cordis fiber disposal unregisters i
     context.provide(name, value);
   }
   apply(context, { workspaceRoot: root, ownerId: 'apply-test' });
-  const service = context.tianshuQunce;
+  const service = context.ant;
   assert.equal(events.filter(event => event.startsWith('register:')).length, 2);
   await context.fiber.dispose();
   assert.deepEqual(events.filter(event => event.startsWith('dispose:')), ['dispose:tools', 'dispose:commands']);

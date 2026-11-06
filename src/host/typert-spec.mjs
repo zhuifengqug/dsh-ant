@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const PACKAGE_NAME = '@zhuifengqug/dsh-tianshu-qunce';
+export const PACKAGE_NAME = '@zhuifengqug/dsh-ant';
 
 const requestSchema = z.record(z.string(), z.unknown());
 const resultSchema = z.record(z.string(), z.unknown());
@@ -25,9 +25,9 @@ export function createTypertSpec() {
     package: PACKAGE_NAME,
     methods: {
       'team/dispatch': {
-        service: 'tianshuQunce',
+        service: 'ant',
         implementation: 'dispatch',
-        description: 'Dispatch one durable Tianshu Qunce Team action.',
+        description: 'Dispatch one durable Amber Ant Team action.',
         invocation: { kind: 'direct' },
         parameters: [{
           name: 'request',
@@ -55,9 +55,9 @@ export function createTypertSpec() {
         cancellation: { parameter: 'signal' },
       },
       'team/get': {
-        service: 'tianshuQunce',
+        service: 'ant',
         implementation: 'get',
-        description: 'Read one durable Tianshu Qunce Team view.',
+        description: 'Read one durable Amber Ant Team view.',
         invocation: { kind: 'direct' },
         parameters: [{
           name: 'request',
@@ -85,9 +85,9 @@ export function createTypertSpec() {
         cancellation: { parameter: 'signal' },
       },
       'team/list': {
-        service: 'tianshuQunce',
+        service: 'ant',
         implementation: 'list',
-        description: 'List durable Tianshu Qunce Teams.',
+        description: 'List durable Amber Ant Teams.',
         invocation: { kind: 'direct' },
         parameters: [{
           name: 'request',

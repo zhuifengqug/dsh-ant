@@ -1,14 +1,14 @@
-# 天枢·群策 #9 Host 实施计划
+# 虫珀·玄驹 #9 Host 实施计划
 
 ## Goal / Architecture / Tech Stack
 
-依已复审的 [Host 契约](tianshu-qunce-host-contract.md) 实现真实 Host：严格 DTO → 唯一动作 owner → fenced 根租约 → 每团队串行事务 WAL → 可重建读面 → Session/Typert/命令/工具适配器。目标 DSH 0.2.1-rc.2、Node 22.23.2；先用原生 ESM 和 Node 内建测试，接入层使用目标版本已发布 API。
+依已复审的 [Host 契约](ant-host-contract.md) 实现真实 Host：严格 DTO → 唯一动作 owner → fenced 根租约 → 每团队串行事务 WAL → 可重建读面 → Session/Typert/命令/工具适配器。目标 DSH 0.2.1-rc.2、Node 22.23.2；先用原生 ESM 和 Node 内建测试，接入层使用目标版本已发布 API。
 
 本计划沿用架构文档目录，和父契约相邻。Aegis 用于约束新持久化 owner 的文件边界与验证，而不是追加设计批准门。
 
 ## Baseline / Authority / Compatibility
 
-- [领域术语](../../GLOSSARY.md)、[ADR-0001](../adr/0001-team-wal-as-canonical-owner.md)、[架构基线](tianshu-qunce-baseline.md)、[Host 契约](tianshu-qunce-host-contract.md)、[Client 输入](tianshu-qunce-client-design.md)。#2/#3 已复审；#9 的代码实施属于总目标。
+- [领域术语](../../GLOSSARY.md)、[ADR-0001](../adr/0001-team-wal-as-canonical-owner.md)、[架构基线](ant-baseline.md)、[Host 契约](ant-host-contract.md)、[Client 输入](ant-client-design.md)。#2/#3 已复审；#9 的代码实施属于总目标。
 - Team WAL 是唯一团队事实源；租约元数据仅表示当前写入资格，不持有团队状态。快照、读面、Session 副本不能替代 WAL。
 - 不改 DSH Agent loop、既有 agentTeams/subagents 或用户 profile；不复用 Session 私有锁。静态 Client 仅用 Typert Remote。
 - 基线第 24 行旧“非法父链”以新 Host 契约的 causation 引用校验为准，代码落地时同步基线。
@@ -25,7 +25,7 @@
 
 Mode: off / Decision: skipped / Strict authority: none。采用实现后的行为回归与故障注入；不宣称 RED/GREEN。执行 inline；当前任务模块强依赖，协调成本高于并行收益。现分支 master 继续；不创建 worktree。
 
-TaskStartSnapshot：root `D:\dsh-workspaces\dev\天枢\天枢-蜂群`；HEAD `e52b236ffb9e62ab3d605b3c2fbf16904cece79a`；master ahead 7；暂存为空；既有修改 `docs/agents/workspace.yaml`，未跟踪 `.dsh-mattskillsdeck-cache/`、`AGENTS.md`、`docs/agents/{domain,issue-tracker,triage-labels}.md` 全保留。一个工作树，无 merge/rebase/cherry-pick 状态。
+TaskStartSnapshot：root `D:\dsh-workspaces\dev\虫珀\玄驹`；HEAD `e52b236ffb9e62ab3d605b3c2fbf16904cece79a`；master ahead 7；暂存为空；既有修改 `docs/agents/workspace.yaml`，未跟踪 `.dsh-mattskillsdeck-cache/`、`AGENTS.md`、`docs/agents/{domain,issue-tracker,triage-labels}.md` 全保留。一个工作树，无 merge/rebase/cherry-pick 状态。
 
 ## 任务与证明
 

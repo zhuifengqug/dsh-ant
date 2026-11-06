@@ -1,8 +1,8 @@
-# 天枢·群策 Client 轨道罗盘页面设计
+# 虫珀·玄驹 Client 轨道罗盘页面设计
 
 状态：设计稿，已获用户批准写入；未实现、未安装、未作为运行时证明。
 
-本稿把已提交的 [轨道罗盘 HTML 视觉基线](../../tianshu-qunce-preview.html) 映射到真实 DSH Client 页面。它遵守已复审的 [Host 状态层与类型化动作契约](tianshu-qunce-host-contract.md)、[T1 架构基线](tianshu-qunce-baseline.md)、[GLOSSARY](../../GLOSSARY.md) 与 [Team WAL ADR](../adr/0001-team-wal-as-canonical-owner.md)。独立 HTML 只提供视觉和交互参考，不构成插件完成证据。
+本稿把已提交的 [轨道罗盘 HTML 视觉基线](../../ant-preview.html) 映射到真实 DSH Client 页面。它遵守已复审的 [Host 状态层与类型化动作契约](ant-host-contract.md)、[T1 架构基线](ant-baseline.md)、[GLOSSARY](../../GLOSSARY.md) 与 [Team WAL ADR](../adr/0001-team-wal-as-canonical-owner.md)。独立 HTML 只提供视觉和交互参考，不构成插件完成证据。
 
 ## 1. 目标与非目标
 
@@ -25,7 +25,7 @@
 
 Client bundle 通过 `window.__ModuleLoader__.load({ id: packageName, factory })` 注册懒加载 factory。资源注册在 Client entry 的 `apply(ctx)` 中完成，并由 `ctx.effect`、`ctx.on` 和 slot disposer 管理。
 
-主面板注册到 `main` keyed slot，使用自有 key `tianshu-qunce`；`conversation` 已被占用，不能复用。侧栏注册到 `sidebar.panellist` list slot，使用自有 id `tianshu-qunce`、稳定 label 与显式 order。侧栏点击由宿主选择对应 main key，页面本身不操作导航 DOM。
+主面板注册到 `main` keyed slot，使用自有 key `ant`；`conversation` 已被占用，不能复用。侧栏注册到 `sidebar.panellist` list slot，使用自有 id `ant`、稳定 label 与显式 order。侧栏点击由宿主选择对应 main key，页面本身不操作导航 DOM。
 
 当前 live inspection 的事实是：`main` registration 必须提供 `key: string`，root owner props 为空，`conversation` 的替换风险为 `shadows-shipped-ui`；`sidebar.panellist` 必须提供 `id: string`，`order` 可选、`label` 可为字符串或随 locale 重读的 thunk，fresh id 的替换风险为 `none`。实现前若宿主 slot registration options 发生变化，必须重新 inspection，不以本稿缓存替代现场契约。
 
@@ -124,7 +124,7 @@ remote.team.dispatch(request)
 
 | 验收面 | 必须观测 |
 |---|---|
-| Slot | `main` 自有 key `tianshu-qunce` 与 `sidebar.panellist` 自有 id 同时注册；不覆盖 `conversation`；卸载后注册与样式 disposer 清理 |
+| Slot | `main` 自有 key `ant` 与 `sidebar.panellist` 自有 id 同时注册；不覆盖 `conversation`；卸载后注册与样式 disposer 清理 |
 | Remote | Client 调用 Typert `remote.team.get/list/dispatch`；不出现动态 `host.call`；请求字段符合 #2 schema；错误保留稳定 code |
 | Visual | 轨道罗盘包含成员/attempt/任务三层、依赖方向、状态文本和计数；节点不重叠；窄屏纵向堆叠；浅色/深色可读 |
 | Interaction | 任务选择、检查台、用户动作按钮和模型路由展示；按钮调用 dispatch，不改本地事实；回执后按游标 get/list |
@@ -141,8 +141,8 @@ remote.team.dispatch(request)
 - Builtin 的 `host.call` 属于动态 Host/Client package bridge，静态 bundle 使用 Typert generated Remote；
 - Theme tokens 与 light/dark 要求来自实时 `Theme.listTokens`；
 - Client `layout`、`locale`、`slots`、`theme`、`sessions`、`uiWorkspace`、`workspaces` 的 catalog 已读回，页面只使用实现阶段重新 inspection 后的实际签名；
-- Client Event catalog 当前含 `connection/reset`、`locale/change`、`slots/changed`、`theme/change`，没有把未存在的群策事件写成当前能力。
+- Client Event catalog 当前含 `connection/reset`、`locale/change`、`slots/changed`、`theme/change`，没有把未存在的玄驹事件写成当前能力。
 
-本设计稿的真实依据还包括 [Host 契约](tianshu-qunce-host-contract.md)、[T1 基线](tianshu-qunce-baseline.md)、[GLOSSARY](../../GLOSSARY.md)、[Team WAL ADR](../adr/0001-team-wal-as-canonical-owner.md) 和已提交的 [HTML 视觉基线](../../tianshu-qunce-preview.html)。实现前重新检查这些 live API 与安装 profile；若 slot props、Typert exports 或 TeamView schema 与本稿不一致，以新鲜 inspection 和 #2/#9 已批准契约为准，并记录差异。
+本设计稿的真实依据还包括 [Host 契约](ant-host-contract.md)、[T1 基线](ant-baseline.md)、[GLOSSARY](../../GLOSSARY.md)、[Team WAL ADR](../adr/0001-team-wal-as-canonical-owner.md) 和已提交的 [HTML 视觉基线](../../ant-preview.html)。实现前重新检查这些 live API 与安装 profile；若 slot props、Typert exports 或 TeamView schema 与本稿不一致，以新鲜 inspection 和 #2/#9 已批准契约为准，并记录差异。
 
 本稿是 #3 设计输入，不是 Client 实现、安装或运行时完成证明。

@@ -72,9 +72,9 @@ export function stableTeamId(workspaceIdentity, requestId) {
 }
 
 export function stableMailRequestId(teamId, messageId) {
-  return `qunce-mail-${digest({ teamId, messageId }).slice(0, 40)}`;
+  return `ant-mail-${digest({ teamId, messageId }).slice(0, 40)}`;
 }
 
 export function stableMailAdmissionRequestId(teamId, messageId) {
-  return `qunce-admit-${digest({ teamId, messageId }).slice(0, 40)}`;
+  return `ant-admit-${digest({ teamId, messageId }).slice(0, 40)}`;
 }

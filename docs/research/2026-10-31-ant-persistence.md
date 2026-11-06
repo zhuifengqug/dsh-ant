@@ -1,4 +1,4 @@
-# 天枢群策持久化边界研究
+# 虫珀玄驹持久化边界研究
 
 - 研究票：Wayfinder #12《核实 WAL、邮箱、快照与恢复的持久化边界》
 - 研究日期：2026-10-31
@@ -15,11 +15,11 @@
 4. **邮箱是持久 JSONL，但不是独立 append-only WAL**：发送路径读取整个文件后再原子替换；消息带投递租约、`deliveredAt`、`readAt`、`discardedAt` 与 task/attempt 来源绑定。`src/state.ts:450-480,526-635`。这让邮箱适合恢复和审计，却不能把文件偏移直接当成跨进程消费游标。
 5. **attempt 是执行代际的能力令牌**。新代际生成随机 `attemptId`、清理旧证据；重分配清除旧 capability 并生成 handoff；调度器只对本进程没有观察到的持久 open attempt 做一次冷恢复，并在 dispatch 失败时按精确 `attemptId` 回滚。`src/state.ts:170-233`、`src/scheduler.ts:436-570`。
 6. **归档保留完整 team 目录，永久删除才清除 archive**。结束团队会退休成员、丢弃未读旧邮件、停止成员激活、写 `team-deleted` 事件，再把 `team.json` 与 inbox 一起移动至 archive；删除 archive 是精确列举、所有权校验后的直接递归删除，无备份。`src/tools.ts:2647-2679`、`src/state.ts:992-1088`。
-7. **最需要群策补强的边界**是：事件版本与幂等键、跨进程 writer/锁、邮箱 queue/delivery/read/consume 的明确状态机、递归 drain 成员后代与旧输入、归档失败重试状态、snapshot cursor 与 WAL 的绑定、永久删除前的可审计确认。
+7. **最需要玄驹补强的边界**是：事件版本与幂等键、跨进程 writer/锁、邮箱 queue/delivery/read/consume 的明确状态机、递归 drain 成员后代与旧输入、归档失败重试状态、snapshot cursor 与 WAL 的绑定、永久删除前的可审计确认。
 
 ## 证据分栏：现有事实、设计建议、待验证项
 
-| 主题 | 现有事实 | 群策设计建议 | 待验证项 |
+| 主题 | 现有事实 | 玄驹设计建议 | 待验证项 |
 | --- | --- | --- | --- |
 | 团队真相源 | `team.json` 是 activity panel 的 authoritative source；Session/plugin record 是 travelling copy。`src/plugin-records.ts:11-22`。 | 每个团队只设一个 durable aggregate owner；快照、面板、projection 都从它或其明确事件游标派生。 | 多进程同时改同一团队时当前 process-local lock 的结果；是否需要跨进程文件锁或 SQLite writer。 |
 | 事件/WAL | 11 个 `agent-teams/*` 事件；host vocabulary 走 `Session.append`，否则走 `plugin:agent-teams/*`，一次 mutation 只写一条腿。`src/event-types.ts:167-179`、`src/events.ts:11-16,41-69`。 | 事件头固定 `schemaVersion/eventSeq/eventId/causationId/idempotencyKey/aggregateVersion`；提交顺序写 WAL → 更新 snapshot，或明确 snapshot → WAL 的恢复规则。 | Host Session `seq` 与 durable team mutation 的原子关系；append 失败后的补偿、丢失事件审计；Session migration 对 plugin record 的实际保留率。 |
@@ -49,7 +49,7 @@
 
 事件记录的主要价值是随 fork/resume 携带、供 Conversation Node 确定性 fold、供结构审计和第二浏览器窗口使用。`src/plugin-records.ts:1-10`、`docs/developing-dsh-plugins.md:253-274`。但 plugin record surface 是 experimental，Session format migration 只 best-effort 保留；缺 record 只能解释为没有 travelling copy，不能解释为团队不存在。`src/plugin-records.ts:16-22`。
 
-事件失败只记录 warning，不阻止团队工具执行。`src/events.ts:34-69`。因此当前系统允许出现“磁盘 mutation 已成功、Session event 缺失”的事实组合；研究笔记与群策状态机不能把 Session log 当磁盘状态的提交确认。
+事件失败只记录 warning，不阻止团队工具执行。`src/events.ts:34-69`。因此当前系统允许出现“磁盘 mutation 已成功、Session event 缺失”的事实组合；研究笔记与玄驹状态机不能把 Session log 当磁盘状态的提交确认。
 
 ### 3. `agentTeams` projection 只折叠结构
 
@@ -59,7 +59,7 @@ Projection member 只有 `id/name/role/status`；task 只有结构、status、as
 
 `revision` 的语义是每条真正改变 team 的 log record 加一；无 agent-teams record 的 log 得到 `revision: 0` 和空 team list，但这只说明“该 log 没有团队”，不说明 workspace 没有团队。`src/event-types.ts:224-237`。测试进一步固定了空 log、member/task/message fold、removed member 历史行、重复 lifecycle、未知成员/任务/事件不改变 identity、两种 event writer leg 等行为。`scripts/projection-tdd.mjs:34-142`。
 
-Projection registry 的 contract 是 key `agentTeams`、`stateVersion: 1`，wire view 是 whole value，客户端替换整个 projection，而非应用 delta。`scripts/projection-tdd.mjs:144-178`。这是一种结构投影版本，不是 team state schema version，也不是 WAL event version，三者应在群策设计中分开命名。
+Projection registry 的 contract 是 key `agentTeams`、`stateVersion: 1`，wire view 是 whole value，客户端替换整个 projection，而非应用 delta。`scripts/projection-tdd.mjs:144-178`。这是一种结构投影版本，不是 team state schema version，也不是 WAL event version，三者应在玄驹设计中分开命名。
 
 ## 二、事件、WAL、版本与幂等
 
@@ -78,7 +78,7 @@ payload 主要表达结构变化与可见摘要。`task-amended` 只记录 contr
 
 当前 plugin payload 没有独立的 `eventVersion`/`schemaVersion`/`eventId`/`causationId`/`idempotencyKey`/`aggregateVersion`。因此“Session seq + projection revision + task attempt”不能合并称为一个 WAL 游标。
 
-### 建议的群策事件合同
+### 建议的玄驹事件合同
 
 这是设计建议，不是插件现状：
 
@@ -108,7 +108,7 @@ payload 主要表达结构变化与可见摘要。`task-amended` 只记录 contr
 4. 应用事件更新 snapshot/team.json，写入 `lastEventSeq`。
 5. 发布 Session travelling record；发布失败进入 outbox/retry，不回滚已提交团队状态。
 
-当前插件没有这套 WAL/outbox 闭环；因此上面只应作为群策方案验收基线。
+当前插件没有这套 WAL/outbox 闭环；因此上面只应作为玄驹方案验收基线。
 
 ## 三、成员、任务、attempt 与证据
 
@@ -140,7 +140,7 @@ dispatch 被拒绝时，只有 task 仍匹配此次 ticket 的 exact `attemptId`
 
 `readCurrentMailbox` 在 team lock 内读取未读 mail，先 discard obsolete records，再返回 current records。`src/mailbox.ts:33-41`。step admission 解析 receipt，按 recipient 每步只做一次读取/ack；current mail 被确认后才注入模型输入，旧 mail 被 discard。读失败时该 batch 保持 unacked，receipt 原样 pass-through，宿主不会因某个坏 team.json 被卡住。`src/mailbox.ts:62-174`。
 
-这里有一个需要在群策中固定的语义核对：当前 `acknowledgeMailbox` 把“已进入 admission”与 `readAt` 同时落盘，而 `markMailboxDelivered` 才提供 delivery/read 分离的低层操作。仓内延迟审计曾指出 `readAt` 只能代表进入宿主队列时会过早，需区分持久化、入队、投递、消费、完成。`docs/session-latency-audit-2026-09-12/README.md:61-67`。因此设计验收应单独记录 `queuedAt/deliveredAt/readAt/consumedAt/completedAt`；当前源码是否已经由所有 host path 正确使用这些阶段，仍需真实 Loader E2E。
+这里有一个需要在玄驹中固定的语义核对：当前 `acknowledgeMailbox` 把“已进入 admission”与 `readAt` 同时落盘，而 `markMailboxDelivered` 才提供 delivery/read 分离的低层操作。仓内延迟审计曾指出 `readAt` 只能代表进入宿主队列时会过早，需区分持久化、入队、投递、消费、完成。`docs/session-latency-audit-2026-09-12/README.md:61-67`。因此设计验收应单独记录 `queuedAt/deliveredAt/readAt/consumedAt/completedAt`；当前源码是否已经由所有 host path 正确使用这些阶段，仍需真实 Loader E2E。
 
 重复 receipt 的最小幂等要求是：同一 message id 在同一 recipient/attempt 下最多注入一次；第二次 receipt 只能返回空输入或既有消费 receipt。当前 admission 会在 `readAt` 已存在时从 current batch 排除，但没有独立的消费结果 ledger；这属于设计待验证项。
 
@@ -190,7 +190,7 @@ staged plan 没有 child sessions；discard 先写 `plan-discarded`，archive wh
 
 `deleteArchivedTeam` 先获取 archive id 列表，只有 exact id 在列表中才构造路径并递归 `rm`；不存在时返回 false，重复删除幂等。`src/state.ts:1072-1088`。离线 route tests 固定了：认证先于 handler 工作、非 POST 为 405、坏 body/缺字段为 400、错误 captain 所有权为 404 且 archive 保留、正确 owner 为 200、删除异常为 500 且 archive 保留、路径样式 id 不能触及 live sibling。`scripts/archive-delete.test.mjs:84-294`。
 
-永久删除当前直接清除 archive 目录；源码没有同时清理 Session travelling copy、宿主事件日志、retired-members index、外部 trace 或用户自定义 workspace artifacts。群策若把“永久删除”定义为全域 erasure，必须新增清理清单和独立验收；若定义为“archive filesystem removal”，应在接口命名与文档中明确。
+永久删除当前直接清除 archive 目录；源码没有同时清理 Session travelling copy、宿主事件日志、retired-members index、外部 trace 或用户自定义 workspace artifacts。玄驹若把“永久删除”定义为全域 erasure，必须新增清理清单和独立验收；若定义为“archive filesystem removal”，应在接口命名与文档中明确。
 
 ## 七、清理矩阵
 
@@ -201,13 +201,13 @@ staged plan 没有 child sessions；discard 先写 `plan-discarded`，archive wh
 | task dependency/evidence | 保留在 archive | 保留 rejected graph | historic snapshot 展示结构，archive state 保留完整字段 | 随 archive 删除 | Session projection 不含完整 evidence。 |
 | active member process/activation | 退休、stop activations | staged 无 child；cancel captain turn | historic 不声明 live activity | archive deletion 不负责 runtime stop | 归档前递归 drain 后代仍需真实 E2E，仓内审计记录过旧队列/孙级唤醒边界。 |
 | member status/removed rows | 标 removed；archive historic includeRemoved | 无 child，state 保留 | removed rows 保留 | 随 archive 删除；retired index 是否同步清理未实现 | `src/tools.ts:2654-2669`、`src/snapshot.ts:298-314`。 |
-| `retired-members.json` | union member IDs，跨 team root 保存 | 通常不新增 child id | 仍可作为 deny-list | 当前 deleteArchivedTeam 不清理 | 这是永久删除清理缺口，需群策定义引用计数或 tombstone 保留期。 |
+| `retired-members.json` | union member IDs，跨 team root 保存 | 通常不新增 child id | 仍可作为 deny-list | 当前 deleteArchivedTeam 不清理 | 这是永久删除清理缺口，需玄驹定义引用计数或 tombstone 保留期。 |
 | Session `agent-teams/*` / `plugin:*` | append `team-deleted`，但 append failure 只 warning | append `plan-discarded` | fork/resume 可携带 travelling copy | 当前 archive delete 不触及 session log | missing event 不等于 missing team。 |
 | `agentTeams` projection | phase/deleted 结构记录 | discarded phase | 只能恢复 session log 结构 | 客户端可能保留到下一 poll | projection stateVersion 1、revision 是派生值。 |
 | host live snapshot | live scan | live row 消失后 archive scan | archive snapshot historic | host list 去掉删除项 | snapshot store 保留最后成功值，失败时旧值继续显示。 |
 | client activity cache | 继续显示 live/archive | archive row 由下一 poll 纠正 | historic row 展示 | `pruneArchivedTeamLocally` 先删本地 row，失败则保留并重试 | 本地 prune 不是 durable deletion。 |
 | hidden `.previous-*` | 新 archive 成功后 best-effort rm | 同上 | discovery 忽略 | 当前 delete 仅按可见 team id 删除，不触及 hidden leftovers | 需增加清理/recovery audit。 |
-| external workspace artifacts / provider side effects | 不由 archive 管理 | 不由 archive 管理 | archive 不重放外部副作用 | 当前未删除 | 需由群策明确 artifacts owner 与 side-effect ledger。 |
+| external workspace artifacts / provider side effects | 不由 archive 管理 | 不由 archive 管理 | archive 不重放外部副作用 | 当前未删除 | 需由玄驹明确 artifacts owner 与 side-effect ledger。 |
 
 ## 八、外部一手资料的可迁移启示
 
@@ -235,7 +235,7 @@ OpenHands SDK/Agent Server 固定提交源码可定位到：
 
 官方状态教程：<https://microsoft.github.io/autogen/stable/user-guide/agentchat-user-guide/tutorial/state.html>。Agent/team 有 `save_state()` 和 `load_state()`；示例状态含 `type` 与 `version: "1.0.0"`，team 状态覆盖 manager 与 agent state，可 JSON 序列化后重建 team。
 
-该材料支持群策建议：snapshot schema version 必须显式，恢复要调用 load_state，不能把 reset 或重新构造对象当恢复完成。
+该材料支持玄驹建议：snapshot schema version 必须显式，恢复要调用 load_state，不能把 reset 或重新构造对象当恢复完成。
 
 微软旧仓库 README 已标 archived/no longer maintained：<https://raw.githubusercontent.com/microsoft/autogen/main/README.md>。旧运行时源码只作为历史边界：`_single_threaded_agent_runtime.py` 的 save/load 只覆盖已实例化 agent、明确不包含 subscriptions；stop 会完成当前消息、丢弃队列并重置内存 Queue。它不能代表当前 AG2 v1。
 
@@ -301,7 +301,7 @@ CrewAI 官方资料显示 checkpoint 可保存完整 RuntimeState、任务进度
 2. 只执行 delivery acceptance，断言 `deliveredAt` 与 `readAt` 的关系符合合同。
 3. 只执行 step admission，断言 mailbox 字段与宿主 pending input 分别可观测。
 4. 模型实际消费后写 `consumedAt`，重复 receipt 不重复消费。
-5. 当前插件需特别记录 `acknowledgeMailbox` 同时写 delivered/read 的实际结果；该结果若与群策合同不符，应作为实现差距，而非改写研究结论。
+5. 当前插件需特别记录 `acknowledgeMailbox` 同时写 delivered/read 的实际结果；该结果若与玄驹合同不符，应作为实现差距，而非改写研究结论。
 
 覆盖：邮箱阶段、宿主队列与持久 unread 的边界。对应资料：`src/state.ts:526-635`、`docs/session-latency-audit-2026-09-12/README.md:61-67`。
 
@@ -337,7 +337,7 @@ CrewAI 官方资料显示 checkpoint 可保存完整 RuntimeState、任务进度
 
 1. 两个独立 Node processes 同时读改同一 team.json 和同一 inbox JSONL。
 2. 记录丢写、last-writer-wins、JSON 损坏、邮箱重复/覆盖、Session event 顺序。
-3. 以当前插件的真实结果标记“process-local lock only”；若群策要求多进程一致性，则要求 durable writer lock、monotonic aggregate version、WAL append、recovery scan 和冲突诊断全部通过。
+3. 以当前插件的真实结果标记“process-local lock only”；若玄驹要求多进程一致性，则要求 durable writer lock、monotonic aggregate version、WAL append、recovery scan 和冲突诊断全部通过。
 4. 单独模拟 Session append 失败，断言工具 mutation 仍成功，并记录“磁盘真相已提交、travelling event 缺失”的可观察组合。
 
 覆盖：当前明确已知边界与未来多进程方案的最小 falsification。
@@ -356,7 +356,7 @@ CrewAI 官方资料显示 checkpoint 可保存完整 RuntimeState、任务进度
 - normal end/staged discard 的 archive move、hidden previous recovery目录、historic archive read。
 - exact archive deletion、重复 false、ownership/auth/path traversal/failure 保留等 route semantics。
 
-### 属于群策设计建议
+### 属于玄驹设计建议
 
 - 增加 durable team WAL、明确事件 schema/version、aggregate eventSeq、causation/idempotency key。
 - 将 snapshot 与 WAL cursor/checksum/schema version绑定。

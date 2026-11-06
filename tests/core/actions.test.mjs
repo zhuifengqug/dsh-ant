@@ -17,7 +17,7 @@ const createPayload = {
 };
 const user = { actor: 'user', principal: { kind: 'owner' } };
 async function fixture(t) {
-  const root = await mkdtemp(path.join(os.tmpdir(), 'qunce-actions-'));
+  const root = await mkdtemp(path.join(os.tmpdir(), 'ant-actions-'));
   const service = await createTeamActionService({ workspaceRoot: root, ownerId: 'test-host' });
   t.after(async () => { await service.close(); await rm(root, { recursive: true, force: true }); });
   return { service, root };

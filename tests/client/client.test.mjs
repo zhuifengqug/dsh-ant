@@ -39,7 +39,7 @@ async function loadClient() {
     console,
     window,
   }, { filename: clientPath });
-  assert.equal(registration?.id, '@zhuifengqug/dsh-tianshu-qunce');
+  assert.equal(registration?.id, '@zhuifengqug/dsh-ant');
   const plugin = registration.factory(specifier => {
     if (specifier === 'react') return fakeReact();
     if (specifier === 'zod') return { z };
@@ -211,10 +211,10 @@ test('client apply mounts both slots, reloads after a receipt, and disposes in r
   const runtime = createClientContext(remoteTeam);
   const { plugin } = await loadClient();
   const cleanup = await plugin.apply(runtime.ctx);
-  assert.equal(runtime.remote.mounted.package, '@zhuifengqug/dsh-tianshu-qunce');
+  assert.equal(runtime.remote.mounted.package, '@zhuifengqug/dsh-ant');
   assert.deepEqual(runtime.registrations.map(item => [item.options.name, item.options.key ?? item.options.id]), [
-    ['main', 'tianshu-qunce'],
-    ['sidebar.panellist', 'tianshu-qunce'],
+    ['main', 'ant'],
+    ['sidebar.panellist', 'ant'],
   ]);
   assert.equal(runtime.localeRegistrations, 1);
   assert.equal(runtime.localeSubscriptions, 1);
@@ -241,7 +241,7 @@ test('client apply mounts both slots, reloads after a receipt, and disposes in r
 
   await cleanup();
   assert.deepEqual(runtime.disposeOrder.slice(0, 6), [
-    'tianshu-qunce', 'tianshu-qunce', 'locale-subscription', 'locale', 'follow', 'remote',
+    'ant', 'ant', 'locale-subscription', 'locale', 'follow', 'remote',
   ]);
   assert.equal(runtime.followDisposals, 1);
   await runtime.disposeEffects();

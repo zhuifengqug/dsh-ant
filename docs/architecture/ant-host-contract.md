@@ -1,12 +1,12 @@
-# 天枢·群策 Host 状态层与类型化动作契约
+# 虫珀·玄驹 Host 状态层与类型化动作契约
 
 状态：设计稿，已通过用户复审；未实现、未安装、未作为运行时证明。
 
-本稿把 T1 架构基线转换为 Host 状态层、统一动作入口、静态 Client Remote 与适配器边界。领域词汇以根目录 [GLOSSARY.md](../../GLOSSARY.md) 为准，事实源决策见 [ADR-0001](../adr/0001-team-wal-as-canonical-owner.md)，运行时基线见 [架构基线](tianshu-qunce-baseline.md)。
+本稿把 T1 架构基线转换为 Host 状态层、统一动作入口、静态 Client Remote 与适配器边界。领域词汇以根目录 [GLOSSARY.md](../../GLOSSARY.md) 为准，事实源决策见 [ADR-0001](../adr/0001-team-wal-as-canonical-owner.md)，运行时基线见 [架构基线](ant-baseline.md)。
 
 ## 1. 目标与非目标
 
-目标：在 DSH `0.2.1-rc.2` / Node `22.23.2` 上，为代码仓库任务定义一个可重放、可恢复、可人工接管的团队 Host 契约；Web UI、Headless、`/qunce` 与 agent tool 使用同一动作语义。
+目标：在 DSH `0.2.1-rc.2` / Node `22.23.2` 上，为代码仓库任务定义一个可重放、可恢复、可人工接管的团队 Host 契约；Web UI、Headless、`/ant` 与 agent tool 使用同一动作语义。
 
 非目标：本稿不实现 WAL、writer lease、Host Service、Typert 生成产物、Client 页面、Agent loop 修改、普通 Session policy registration、安装 bundle 或端到端运行。`storageDomain/storage-json`、Session projection、Session record 与 `agentTeams` 仍分别承担派生净状态、Session 折叠、Travelling Copy 和兼容边界，不成为 Team WAL owner。
 
@@ -22,7 +22,7 @@
 - 查找 `requestId`/`idempotencyKey`，生成事件 envelope 并 durable append Team WAL；
 - 在 WAL 提交后折叠 snapshot/read model，发布失效通知并生成统一 receipt/error。
 
-`TeamActionService` 的内部 dispatcher 是 Host、Web、Headless、`/qunce` 与 agent tool 的共同业务入口。适配器不得复制授权、幂等、WAL 或生命周期逻辑。对同一 `teamId` 的动作在单 Host 内串行化；不同团队仍可并行。`team.create` 以数据根级 writer lease 与创建幂等键串行化，避免两个请求生成两个事实团队。
+`TeamActionService` 的内部 dispatcher 是 Host、Web、Headless、`/ant` 与 agent tool 的共同业务入口。适配器不得复制授权、幂等、WAL 或生命周期逻辑。对同一 `teamId` 的动作在单 Host 内串行化；不同团队仍可并行。`team.create` 以数据根级 writer lease 与创建幂等键串行化，避免两个请求生成两个事实团队。
 
 ### 2.2 TeamViewService
 
@@ -30,7 +30,7 @@
 
 ### 2.3 TeamWriterLease
 
-`TeamWriterLease` 是同一群策数据根的单 Host 写入抽象，最小操作为：
+`TeamWriterLease` 是同一玄驹数据根的单 Host 写入抽象，最小操作为：
 
 - `acquire(root, ownerId): Promise<{ ownerId: string; epoch: number; fencingToken: string }>`；
 - `renew(ownerId, epoch, fencingToken)`；
@@ -198,7 +198,7 @@ type TeamRestorePayload = Record<never, never>
 type TeamDeletePayload = Record<never, never>
 ```
 
-`team.create` 的 payload 声明团队目标与初始成员计划；workspace 根取自 Host 配置，`workspaceRelativePath` 必须规范化并确认仍处于绑定根之下。`maxActiveAttempts` 首版上限为 4；`mode: 'fast'` 只跳过计划确认，不跳过质量门和人工调度。`sessionMode` 允许持久成员与临时成员混用；已有普通会话通过明确 `sessionId` 绑定，群策创建的成员会话由生命周期清理矩阵管理。其余动作的 `teamId` 必需。每个命名 payload 类型的字段规则由同一 Host/Client 共享的生成 schema 固定，适配器不另行定义字段语义。
+`team.create` 的 payload 声明团队目标与初始成员计划；workspace 根取自 Host 配置，`workspaceRelativePath` 必须规范化并确认仍处于绑定根之下。`maxActiveAttempts` 首版上限为 4；`mode: 'fast'` 只跳过计划确认，不跳过质量门和人工调度。`sessionMode` 允许持久成员与临时成员混用；已有普通会话通过明确 `sessionId` 绑定，玄驹创建的成员会话由生命周期清理矩阵管理。其余动作的 `teamId` 必需。每个命名 payload 类型的字段规则由同一 Host/Client 共享的生成 schema 固定，适配器不另行定义字段语义。
 
 `requestId` 是调用方为一次业务请求提供的稳定幂等键，dispatcher 将 `idempotencyKey` 固定设为 `requestId`，并对规范化后的 `{action, teamId, payload, expectedEventSeq}` 计算 `payloadDigest`：先按 RFC 8785 JSON Canonicalization Scheme 生成 UTF-8 字节，再计算 SHA-256。各入口必须使用同一 canonicalizer/schema version。相同 `requestId` 与相同 digest 的重放返回原提交游标和事件 ID，结果为 `duplicate`；相同 requestId 搭配不同 digest 返回 `team/duplicate-request-conflict`，不得再次写 WAL。只要创建所得 Team WAL 仍存在，`team.create` 的 duplicate receipt 必须返回首次提交生成的 `teamId`；Host 在根级 writer lease 下扫描 Team WAL，或使用可重建索引定位原始 receipt，索引不形成第二事实 owner。物理删除整个团队目录后，创建请求历史也随 WAL 一并消失；不得保留删除回执或额外身份索引来恢复它。`team.delete` 的成功响应丢失后重放按目录缺席返回 `team/not-found`。`teamId` 在 `team.create` 时缺省，在其余动作中必需；`expectedEventSeq` 用于 CAS，过期时不写新事件。
 
@@ -333,7 +333,7 @@ trusted caller context
 | 成员/agent | 权限范围内的邮箱发送/读取/消费、质量报告、加入申请、提案、团队视图读取 |
 | system/queen | 计划确认后的自动推进、质量门推进、一次自动 repair、恢复调度 |
 
-`agent tool` 不得代替用户执行用户专属人工动作。Host `approval` 只处理宿主工具的 open-turn approval，不承担群策动作的通用用户授权。请求上下文中的 `surface`、`principal` 与 authority 来自受信 Host/Remote peer；调用方只能提交 action 与 payload。
+`agent tool` 不得代替用户执行用户专属人工动作。Host `approval` 只处理宿主工具的 open-turn approval，不承担玄驹动作的通用用户授权。请求上下文中的 `surface`、`principal` 与 authority 来自受信 Host/Remote peer；调用方只能提交 action 与 payload。
 
 ## 7. 生命周期、归档与清理
 
@@ -365,7 +365,7 @@ validate explicit teamId, user authority and current writer fencing
 ## 8. 四类适配器
 
 - Web Client：只调用 `remote.team.dispatch/get/list`，只消费 `TeamView` 与失效通知，不读团队目录、不操作 DOM/iframe。
-- `/qunce`：解析确定性命令后调用 `TeamActionService`。
+- `/ant`：解析确定性命令后调用 `TeamActionService`。
 - Headless：调用同一 Host service。
 - agent tool：经过工具 scope/guard 后调用同一 dispatcher，不复制业务逻辑。
 
@@ -376,7 +376,7 @@ validate explicit teamId, user authority and current writer fencing
 | 验收面 | 必须观测 |
 |---|---|
 | Typert 发布 | `./typert`、`./remote`、Client bundle、strict schema、exports、`team` namespace、`dispatch/get/list` endpoint 无冲突 |
-| 统一动作 | Web、Headless、`/qunce`、agent tool 对同一输入产生同一 receipt/error 语义 |
+| 统一动作 | Web、Headless、`/ant`、agent tool 对同一输入产生同一 receipt/error 语义 |
 | 幂等与 CAS | 相同 request 重放为 `duplicate`；不同 payload 为 conflict；过期 cursor 为 stale 且 WAL 不增长 |
 | Writer lease | 第二 Host 为 `team/lease-conflict`；lease 丢失后的写入拒绝；崩溃后后继 Host 可恢复 |
 | WAL 与读面 | append/replay、Team-local eventSeq 连续性、eventId 唯一、causation 引用与 aggregateVersion 校验、snapshot 游标/digest/schema 检查、read-model rebuild、通知失效后 get 读回最新状态 |
@@ -399,10 +399,10 @@ validate explicit teamId, user authority and current writer fencing
 
 依据：
 
-- [T1 架构基线](tianshu-qunce-baseline.md)；
+- [T1 架构基线](ant-baseline.md)；
 - [ADR-0001](../adr/0001-team-wal-as-canonical-owner.md)；
-- [会话契约研究](../research/2026-10-31-tianshu-qunce-contracts-session.md)；
-- [持久化研究](../research/2026-10-31-tianshu-qunce-persistence.md)；
+- [会话契约研究](../research/2026-10-31-ant-contracts-session.md)；
+- [持久化研究](../research/2026-10-31-ant-persistence.md)；
 - DSH `dsh-typert-protocol`、`dsh-typert-registry`、`dsh-typert-loader` 与 `dsh-api-job-controller` `0.2.1-rc.2` 的已读 Host/Client 产物。
 
 本稿是设计输入，不是实现完成证明。

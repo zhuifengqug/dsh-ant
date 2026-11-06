@@ -1,7 +1,7 @@
 import { TeamError } from '../core/errors.mjs';
 import { serializeError } from './context.mjs';
 
-export const QUNCE_TOOL_PARAMETERS = {
+export const ANT_TOOL_PARAMETERS = {
   request: {
     type: 'json',
     description: 'Canonical Team action request validated by the durable Host service.',
@@ -9,7 +9,7 @@ export const QUNCE_TOOL_PARAMETERS = {
   },
 };
 
-export const QUNCE_TOOL_OUTPUT = {
+export const ANT_TOOL_OUTPUT = {
   schema: {
     oneOf: [
       {
@@ -39,16 +39,16 @@ export const QUNCE_TOOL_OUTPUT = {
   render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }],
 };
 
-/** Tool registration stays on the same Host service operation as /qunce. */
-export function createQunceTool(service) {
+/** Tool registration stays on the same Host service operation as /ant. */
+export function createAntTool(service) {
   return {
-    name: 'qunce_team_dispatch',
-    description: 'Dispatch one Team action through the durable Tianshu Qunce Host service.',
-    parameters: QUNCE_TOOL_PARAMETERS,
-    output: QUNCE_TOOL_OUTPUT,
+    name: 'ant_team_dispatch',
+    description: 'Dispatch one Team action through the durable Amber Ant Host service.',
+    parameters: ANT_TOOL_PARAMETERS,
+    output: ANT_TOOL_OUTPUT,
     async execute(args, exec) {
       if (!exec?.agent) {
-        return serializeError(new TeamError('team/forbidden', 'qunce_team_dispatch requires a calling agent Session'));
+        return serializeError(new TeamError('team/forbidden', 'ant_team_dispatch requires a calling agent Session'));
       }
       try {
         return await service.dispatchAsAgent(args.request, exec.agent, exec.signal);

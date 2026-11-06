@@ -2,7 +2,7 @@
 
 **Status**: recorded-from-plan
 
-**记录目的**：为天枢·群策首个代码仓库闭环建立领域与架构基线。本记录描述已由用户确认的设计方向，不把尚未实现的 Host、Client 或安装行为写成已验证事实。
+**记录目的**：为虫珀·玄驹首个代码仓库闭环建立领域与架构基线。本记录描述已由用户确认的设计方向，不把尚未实现的 Host、Client 或安装行为写成已验证事实。
 
 ## Context
 
@@ -14,8 +14,8 @@
 2. **快照与读面是派生物。** 快照绑定 `lastEventSeq`、WAL digest 与 schema version，可由 WAL 删除后重建。DSH `storageDomain/storage-json` 可承载类型校验后的快照、索引或读面；它不承载 Team WAL，不拥有邮箱或归档事实，也不作为第二真相源。Session record、客户端活动投影和跨会话摘要均是 Travelling Copy，只承担审计、携带和展示。
 3. **邮箱不设独立 owner。** 邮箱正文与各阶段回执都是 Team Event。`queue`/`steer` 的 Host 接纳结果单独记录为外部交互证据；Host 返回 `accepted` 只表示消息进入 Agent inbox，不表示模型响应、工具执行或任务完成。
 4. **归档迁移完整团队历史。** 归档先记录 `archiving`，等待活动 attempt 与消息处理完成，再记录 `drain-complete`、`archived`，随后迁移完整团队目录。归档目录继续保存原 WAL；不建立 archive manifest、归档 WAL 或其他平行 owner。恢复沿用原团队身份和历史，再记录恢复事件。
-5. **删除采用目录缺席语义。** 删除先在 WAL 中记录请求和完成意图，完成后清除整个团队目录及其派生物：WAL、快照、邮箱、归档内容和群策创建的成员会话一并移除，不保留 tombstone、删除收据或团队摘要。用户原有普通会话保留；删除完成后，团队数据根下没有该团队目录即表示团队不存在。宿主 Session 自己的历史仍由宿主规则管理，不由群策伪造清理结果。
-6. **V1 采用单 Host 写入边界。** 同一个群策数据根只允许一个 DSH Host 取得团队写入权；一个 Host 内可以并行运行多个团队、成员和任务。第二个 Host 不进入团队写平面，而是报告 writer 已占用并进入不可写的 `needs_attention` 状态。实现必须提供稳定的根级 writer lease，并在 POSIX 与 Windows 上分别验证；当前 DSH `storage-json` 的原子替换和进程内 write chain、Session 私有锁均不能被当作这个 lease 的替代品。跨 Host 同写不属于 V1 合同。
+5. **删除采用目录缺席语义。** 删除先在 WAL 中记录请求和完成意图，完成后清除整个团队目录及其派生物：WAL、快照、邮箱、归档内容和玄驹创建的成员会话一并移除，不保留 tombstone、删除收据或团队摘要。用户原有普通会话保留；删除完成后，团队数据根下没有该团队目录即表示团队不存在。宿主 Session 自己的历史仍由宿主规则管理，不由玄驹伪造清理结果。
+6. **V1 采用单 Host 写入边界。** 同一个玄驹数据根只允许一个 DSH Host 取得团队写入权；一个 Host 内可以并行运行多个团队、成员和任务。第二个 Host 不进入团队写平面，而是报告 writer 已占用并进入不可写的 `needs_attention` 状态。实现必须提供稳定的根级 writer lease，并在 POSIX 与 Windows 上分别验证；当前 DSH `storage-json` 的原子替换和进程内 write chain、Session 私有锁均不能被当作这个 lease 的替代品。跨 Host 同写不属于 V1 合同。
 
 ## Alternatives considered
 
@@ -38,9 +38,9 @@
 
 ## Evidence references
 
-- `docs/research/2026-10-31-tianshu-qunce-persistence.md:22-210`：当前参考插件的持久化事实、WAL 建议、邮箱回执、归档/删除矩阵与 OpenHands 增补。
-- `docs/research/2026-10-31-tianshu-qunce-contracts-session.md:486-519`：DSH Session 模型路由、queue/steer、principal、幂等与未覆盖边界。
+- `docs/research/2026-10-31-ant-persistence.md:22-210`：当前参考插件的持久化事实、WAL 建议、邮箱回执、归档/删除矩阵与 OpenHands 增补。
+- `docs/research/2026-10-31-ant-contracts-session.md:486-519`：DSH Session 模型路由、queue/steer、principal、幂等与未覆盖边界。
 - `D:\deepseek HARNESS\resources\app\dsh\node_modules\@deepseek-ai\dsh-storage-domain\lib\index.js:93-101,193-225,337-397`：Domain 进程内写链、先持久化再更新内存、schema 校验与生命周期。
 - `D:\deepseek HARNESS\resources\app\dsh\node_modules\@deepseek-ai\dsh-storage-json\lib\index.js:8-17,57-64,161-167,275-299,540-607`：原子替换、净状态格式、一进程一写者、per-record 语义与 backend lifecycle。
 - `D:\deepseek HARNESS\resources\app\dsh\node_modules\@deepseek-ai\dsh-session-persistence-jsonl\lib\index.js:619-648,655-722`：Session 私有跨进程锁的边界。
-- `D:\dsh-workspaces\dev\local-plugins\dsh-agent-teams-router\src\state.ts:993-1088`、`src\tools.ts:2672-2677`：参考插件归档/删除行为，作为比较材料而非群策现状。
+- `D:\dsh-workspaces\dev\local-plugins\dsh-agent-teams-router\src\state.ts:993-1088`、`src\tools.ts:2672-2677`：参考插件归档/删除行为，作为比较材料而非玄驹现状。

@@ -6,13 +6,13 @@ import { agentContext, ownerContext, remoteContext } from './context.mjs';
 import { SessionAdapter } from './session-adapter.mjs';
 import { MailDeliveryService } from './mail-delivery.mjs';
 
-const DEFAULT_OWNER_ID = 'tianshu-qunce-host';
+const DEFAULT_OWNER_ID = 'ant-host';
 const serviceStates = new WeakMap();
 
 function stateOf(receiver) {
   const original = receiver?.[symbols.original] ?? receiver;
   const state = serviceStates.get(original);
-  invariant(state, 'team/unavailable', 'Tianshu Qunce service state is unavailable');
+  invariant(state, 'team/unavailable', 'Amber Ant service state is unavailable');
   return state;
 }
 
@@ -53,9 +53,9 @@ function normalizeConfig(config = {}) {
 }
 
 /** Host-facing facade over the canonical TeamActionService. */
-export class TianshuQunceService extends TypertRemoteService {
+export class AntService extends TypertRemoteService {
   constructor(ctx, config = {}) {
-    super(ctx, 'tianshuQunce', { namespace: 'team' });
+    super(ctx, 'ant', { namespace: 'team' });
     const normalizedConfig = normalizeConfig(config);
     const state = {
       config: normalizedConfig,
@@ -91,10 +91,10 @@ export class TianshuQunceService extends TypertRemoteService {
 
   async ready() {
     const state = stateOf(this);
-    invariant(!state.closed, 'team/lease-lost', 'Tianshu Qunce service is closed');
+    invariant(!state.closed, 'team/lease-lost', 'Amber Ant service is closed');
     const service = await state.actionService;
     await state.recoveryPromise;
-    invariant(!state.closed, 'team/lease-lost', 'Tianshu Qunce service is closed');
+    invariant(!state.closed, 'team/lease-lost', 'Amber Ant service is closed');
     return service;
   }
 

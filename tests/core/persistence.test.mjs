@@ -13,7 +13,7 @@ import { parseRequest, parseList, ACTIONS } from '../../src/core/codec.mjs';
 
 const childFile = fileURLToPath(new URL('./lease-child.mjs', import.meta.url));
 async function fixture(t) {
-  const root = await mkdtemp(path.join(os.tmpdir(), 'qunce-core-'));
+  const root = await mkdtemp(path.join(os.tmpdir(), 'ant-core-'));
   const lease = new TeamWriterLease();
   const token = await lease.acquire(root, 'test-host');
   t.after(async () => { await lease.release(token.ownerId, token.epoch, token.fencingToken); await rm(root, { recursive: true, force: true }); });
@@ -65,7 +65,7 @@ test('second real process conflicts, epoch increments after release, old fencing
 });
 
 test('killed writer releases OS lease without stale-timeout theft', async t => {
-  const root = await mkdtemp(path.join(os.tmpdir(), 'qunce-crash-'));
+  const root = await mkdtemp(path.join(os.tmpdir(), 'ant-crash-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   const first = await child(root, 'hold');
   const stopped = once(first.proc, 'exit');
@@ -82,7 +82,7 @@ test('lease port override is rejected at the canonical owner', () => {
 });
 
 test('corrupt writer metadata maps to stable lease-lost', async t => {
-  const root = await mkdtemp(path.join(os.tmpdir(), 'qunce-lease-meta-'));
+  const root = await mkdtemp(path.join(os.tmpdir(), 'ant-lease-meta-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   await writeFile(path.join(root, '.writer.json'), '{broken');
   const lease = new TeamWriterLease();

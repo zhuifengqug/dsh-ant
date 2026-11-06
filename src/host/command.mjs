@@ -3,15 +3,15 @@ import { serializeError } from './context.mjs';
 
 function parseInput(rawInput) {
   const text = typeof rawInput === 'string' ? rawInput.trim() : '';
-  if (!text) throw new TeamError('team/invalid-action', 'Usage: /qunce <JSON team action request>');
+  if (!text) throw new TeamError('team/invalid-action', 'Usage: /ant <JSON team action request>');
   let value;
   try {
     value = JSON.parse(text);
   } catch (cause) {
-    throw new TeamError('team/invalid-action', `Invalid /qunce request: ${cause.message}`);
+    throw new TeamError('team/invalid-action', `Invalid /ant request: ${cause.message}`);
   }
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new TeamError('team/invalid-action', 'The /qunce request must be a JSON object');
+    throw new TeamError('team/invalid-action', 'The /ant request must be a JSON object');
   }
   return value;
 }
@@ -20,11 +20,11 @@ function formatResult(receipt) {
   return JSON.stringify(receipt);
 }
 
-export function createQunceCommand(service) {
+export function createAntCommand(service) {
   return {
-    definitionId: '@zhuifengqug/dsh-tianshu-qunce/command-qunce',
-    name: 'qunce',
-    description: 'Dispatch one Tianshu Qunce Team action as JSON.',
+    definitionId: '@zhuifengqug/dsh-ant/command-ant',
+    name: 'ant',
+    description: 'Dispatch one Amber Ant Team action as JSON.',
     input: { hint: '<JSON team action request>', attachments: false },
     handler: async invocation => {
       try {

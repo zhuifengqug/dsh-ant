@@ -3,16 +3,16 @@
   "policy": "dsh-plugin-naming/v1",
   "plugin": {
     "namespace": "zhuifengqug",
-    "name": "tianshu-qunce",
-    "coordinate": "zhuifengqug/tianshu-qunce",
-    "packageName": "@zhuifengqug/dsh-tianshu-qunce"
+    "name": "ant",
+    "coordinate": "zhuifengqug/ant",
+    "packageName": "@zhuifengqug/dsh-ant"
   },
   "names": {
-    "pluginNames": ["tianshu-qunce"],
-    "loaderIds": ["zhuifengqug-tianshu-qunce"],
-    "services": ["tianshuQunce"],
-    "tools": ["qunce_team_dispatch"],
-    "commands": ["qunce"],
+    "pluginNames": ["ant"],
+    "loaderIds": ["zhuifengqug-ant"],
+    "services": ["ant"],
+    "tools": ["ant_team_dispatch"],
+    "commands": ["ant"],
     "skills": [],
     "skillProviders": [],
     "events": [],

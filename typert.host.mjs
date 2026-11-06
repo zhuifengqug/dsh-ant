@@ -1,4 +1,4 @@
-/* Source-authored face for Tianshu Qunce; no generator output is claimed. */
+/* Source-authored face for Amber Ant; no generator output is claimed. */
 import { createTypertRemoteInfo } from '@deepseek-ai/dsh-typert-protocol/remote-info';
 import { z } from 'zod';
 import { createTypertSpec } from './src/host/typert-spec.mjs';
@@ -12,11 +12,11 @@ export const TYPERT = {
   get invocations() { return $remote.descriptors; },
   model: {
     services: [{
-      key: 'tianshuQunce',
+      key: 'ant',
       types: [],
-      exportName: 'TianshuQunceService',
-      description: 'Host service backing the Tianshu Qunce Team namespace.',
-      summary: 'Host service backing the Tianshu Qunce Team namespace.',
+      exportName: 'AntService',
+      description: 'Host service backing the Amber Ant Team namespace.',
+      summary: 'Host service backing the Amber Ant Team namespace.',
       tags: [],
       members: [
         { kind: 'method', name: 'dispatch', signature: 'dispatch(request: TeamDispatchRequest, signal: AbortSignal): Promise<TeamDispatchReceipt>' },

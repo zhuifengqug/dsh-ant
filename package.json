@@ -1,11 +1,11 @@
 {
-  "name": "@zhuifengqug/dsh-tianshu-qunce",
+  "name": "@zhuifengqug/dsh-ant",
   "version": "0.1.0",
   "scripts": {
     "test": "node --test tests/core/*.test.mjs tests/host/*.test.mjs tests/client/*.test.mjs",
     "check:syntax": "node --check index.js && node --check client.js && node --check typert.host.mjs && node --check typert.remote-client.mjs && node --check src/host/command.mjs && node --check src/host/context.mjs && node --check src/host/service.mjs && node --check src/host/session-adapter.mjs && node --check src/host/mail-delivery.mjs && node --check src/host/tool.mjs && node --check src/host/typert-spec.mjs"
   },
-  "description": "天枢·群策：DSH 多会话协作 Host bundle",
+  "description": "虫珀·玄驹：DSH 多会话协作 Host bundle",
   "type": "module",
   "main": "index.js",
   "exports": {
