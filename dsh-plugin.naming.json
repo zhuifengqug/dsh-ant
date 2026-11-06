@@ -4,7 +4,7 @@
   "plugin": {
     "namespace": "zhuifengqug",
     "name": "ant",
-    "coordinate": "zhuifengqug/ant",
+    "coordinate": "zhuifengqug/dsh-ant",
     "packageName": "@zhuifengqug/dsh-ant"
   },
   "names": {
