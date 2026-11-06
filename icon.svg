@@ -1,7 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="虫珀·玄驹">
   <rect width="96" height="96" rx="18" fill="#10171a"/>
-  <circle cx="48" cy="48" r="31" fill="none" stroke="#54b89b" stroke-width="3"/>
-  <circle cx="48" cy="48" r="18" fill="none" stroke="#d9b663" stroke-width="3"/>
-  <path d="M48 10v76M10 48h76" stroke="#df5e4e" stroke-width="2" opacity=".8"/>
-  <circle cx="48" cy="48" r="7" fill="#df5e4e"/>
+  <path d="M44 20 C39 12 34 9 29 8" stroke="#d9b663" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M52 20 C57 12 62 9 67 8" stroke="#d9b663" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <g stroke="#54b89b" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M44 44 L32 36 L24 30"/>
+    <path d="M44 46 L30 46 L21 44"/>
+    <path d="M44 48 L32 56 L25 64"/>
+    <path d="M52 44 L64 36 L72 30"/>
+    <path d="M52 46 L66 46 L75 44"/>
+    <path d="M52 48 L64 56 L71 64"/>
+  </g>
+  <ellipse cx="48" cy="66" rx="9" ry="11" fill="#54b89b"/>
+  <ellipse cx="48" cy="46" rx="5.5" ry="7" fill="#54b89b"/>
+  <circle cx="48" cy="26" r="6.5" fill="#d9b663"/>
+  <circle cx="45" cy="24" r="1.6" fill="#10171a"/>
+  <circle cx="51" cy="24" r="1.6" fill="#10171a"/>
 </svg>
