@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { readdir, readFile, open, link, unlink, stat, rename } from 'node:fs/promises';
+import { readdir, readFile, open, link, unlink, stat, rename, rm } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { digest, canonicalize, requestDigest, stableMailAdmissionRequestId, stableTeamId } from './canonical.mjs';
 import { parseRequest } from './codec.mjs';
@@ -198,6 +198,63 @@ export class TeamWal {
         throw new TeamError('team/persistence-failed', 'Archive move failed', { teamId, retryable: true }, { cause });
       }
       return 'moved';
+    });
+  }
+  /** Restore returns the retired directory to the live root; the WAL cursor continues where it stopped. */
+  restoreTeam(teamId) {
+    return this.#serial(teamId, async () => {
+      const view = foldTeam((await this.read(teamId)).events);
+      invariant(['planned', 'staged', 'running', 'interrupted', 'completed'].includes(view.lifecycle), 'team/invalid-state', 'Restored team must carry the lifecycle it came from');
+      const source = this.#archiveDirectory(teamId);
+      const target = this.directory(teamId);
+      await this.#lease.assert(this.#token);
+      try { await stat(source); }
+      catch (error) {
+        if (error.code !== 'ENOENT') throw error;
+        await stat(path.join(target, 'events'));
+        return 'duplicate';
+      }
+      try {
+        await ensureDirectory(path.join(this.#root, 'teams'));
+        await rename(source, target);
+        await syncDirectory(path.join(this.#root, 'teams'));
+        await syncDirectory(path.join(this.#root, 'archive'));
+      } catch (cause) {
+        throw new TeamError('team/persistence-failed', 'Restore move failed', { teamId, retryable: true }, { cause });
+      }
+      return 'moved';
+    });
+  }
+  /** Deletion removes the whole directory; a tombstone keeps replay idempotent. */
+  deleteTeam(teamId) {
+    return this.#serial(teamId, async () => {
+      const view = foldTeam((await this.read(teamId)).events);
+      invariant(view.lifecycle === 'deleting', 'team/invalid-state', 'Team must record a deletion intent before cleanup');
+      await this.#lease.assert(this.#token);
+      const live = this.directory(teamId), retired = this.#archiveDirectory(teamId);
+      let removed = false;
+      for (const base of [live, retired]) {
+        try { await stat(base); }
+        catch (error) { if (error.code === 'ENOENT') continue; throw error; }
+        try { await rm(base, { recursive: true, maxRetries: 3 }); }
+        catch (cause) { throw new TeamError('team/persistence-failed', 'Team directory removal failed', { teamId, retryable: true }, { cause }); }
+        removed = true;
+        await syncDirectory(path.dirname(base)).catch(() => {});
+      }
+      return removed ? 'removed' : 'duplicate';
+    });
+  }
+  tombstonePath(teamId) { return path.join(this.#root, 'tombstones', `${teamId}.json`); }
+  async readTombstone(teamId) {
+    try { return JSON.parse(await readFile(this.tombstonePath(teamId), 'utf8')); }
+    catch (error) { if (error.code === 'ENOENT') return undefined; throw error; }
+  }
+  async writeTombstone(teamId, record) {
+    return this.#serial(teamId, async () => {
+      await this.#lease.assert(this.#token);
+      await ensureDirectory(path.join(this.#root, 'tombstones'));
+      await atomicReplace(this.tombstonePath(teamId), canonicalize(record));
+      return true;
     });
   }
   /** A caller must name the exact WAL cut used to build state. Stale cuts are discarded. */

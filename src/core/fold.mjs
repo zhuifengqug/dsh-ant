@@ -40,7 +40,12 @@ export function foldTeam(events) {
         case 'member.accepted': {
           const invitation = find(view.invitations, 'invitationId', payload.invitationId);
           invitation.state = 'accepted';
-          if (payload.member) view.members.push({ ...payload.member, origin: 'existing', status: 'active' });
+          if (payload.member) {
+            const known = view.members.find(item => item.memberId === payload.member.memberId);
+            const origin = known?.origin ?? payload.member.origin ?? (payload.member.sessionId ? 'existing' : 'team-created');
+            const merged = { ...payload.member, origin, status: 'active' };
+            if (known) Object.assign(known, merged); else view.members.push(merged);
+          }
           break;
         }
         case 'member.removed': find(view.members, 'memberId', payload.memberId).status = 'removed'; break;
@@ -98,7 +103,7 @@ export function foldTeam(events) {
           view.interruptions.push({ ...payload, eventSeq: event.eventSeq }); view.lifecycle = 'interrupted'; break;
         case 'spend.recorded':
           view.spend.push({ ...payload, eventSeq: event.eventSeq }); break;
-        case 'team.archiving': view.lifecycle = 'archiving'; break;
+        case 'team.archiving': view.lifecycle = 'archiving'; view.archivePreviousLifecycle = payload.previousLifecycle ?? 'planned'; break;
         case 'team.drain-complete': view.lifecycle = 'drain-complete'; break;
         case 'team.archived': view.lifecycle = 'archived'; break;
         case 'team.restored': view.lifecycle = payload.previousLifecycle; break;

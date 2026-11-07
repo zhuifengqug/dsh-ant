@@ -63,14 +63,14 @@ test('member authority is bound to the invited session and cannot execute user a
   await assert.rejects(service.dispatch({ requestId: 'change-3', teamId: created.teamId, action: 'member.changeModel', payload: { memberId: 'member-1', provider: 'openai', model: 'gpt-5.6' } }, { actor: 'agent', teamId: created.teamId, memberId: 'member-1', sessionId: 'session-1' }), { code: 'team/forbidden' });
 });
 
-test('delete intent is durable and a second delete is an explicit in-progress state', async t => {
+test('delete removes the team record and a later delete is an explicit not-found state', async t => {
   const { service } = await fixture(t);
   const created = await service.dispatch({ requestId: 'create-4', action: 'team.create', payload: createPayload }, user);
   const deleted = await service.dispatch({ requestId: 'delete-4', teamId: created.teamId, action: 'team.delete', payload: {} }, user);
   assert.equal(deleted.outcome, 'committed');
-  const view = await service.get({ teamId: created.teamId });
-  assert.equal(view.lifecycle, 'deleting');
-  await assert.rejects(service.dispatch({ requestId: 'other-delete-4', teamId: created.teamId, action: 'team.delete', payload: {} }, user), { code: 'team/invalid-state' });
+  assert.equal(deleted.deletion, 'removed');
+  await assert.rejects(service.get({ teamId: created.teamId }), { code: 'team/not-found' });
+  await assert.rejects(service.dispatch({ requestId: 'other-delete-4', teamId: created.teamId, action: 'team.delete', payload: {} }, user), { code: 'team/not-found' });
 });
 
 test('mail admission mutates one queued message through the same WAL and is idempotent', async t => {
