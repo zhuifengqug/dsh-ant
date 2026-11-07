@@ -4,7 +4,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { createTeamActionService } from '../../src/core/actions.mjs';
-import { evaluateSchedule, runSchedule } from '../../src/core/scheduler.mjs';
+import { evaluateSchedule, releaseBatch, runSchedule } from '../../src/core/scheduler.mjs';
 
 const user = { actor: 'user', principal: { kind: 'owner' } };
 const member = (id, sessionId) => ({ memberId: id, role: 'engineer', sessionMode: 'persistent', sessionId, provider: 'deepseek', model: 'deepseek-v4', inScope: ['src'], outOfScope: [] });
@@ -40,12 +40,16 @@ test('two independent tasks start on their own and the downstream task follows i
   const attempt = view.attempts.find(item => item.taskId === 'task-1');
   await service.dispatch({ requestId: 'complete-1', teamId, action: 'task.complete', payload: { taskId: 'task-1', attemptId: attempt.attemptId, summary: 'done', evidence: [{ kind: 'command', locator: 'node --test', note: 'green' }] } }, { actor: 'agent', teamId, memberId: 'member-1', sessionId: 'session-1' });
 
-  await service.dispatch({ requestId: 'terminate-1', teamId, action: 'attempt.terminate', payload: { taskId: 'task-1', attemptId: attempt.attemptId } }, user);
+  await service.dispatch({ requestId: 'review-1', teamId, action: 'quality.review', payload: { taskId: 'task-1', attemptId: attempt.attemptId, reviewerMemberId: 'member-2', verdict: 'pass', criteria: ['tests pass'], summary: 'peer review' } }, { actor: 'agent', teamId, memberId: 'member-2', sessionId: 'session-2' });
+  assert.deepEqual((await runSchedule({ service, teamId })).dispatched, []);
+
+  const released = await releaseBatch({ service, teamId, taskIds: ['task-1'] });
+  assert.deepEqual(released.tick.ready, ['task-3']);
+  assert.deepEqual(released.tick.dispatched.map(item => item.taskId), ['task-3']);
+  assert.deepEqual(released.tick.wake, []);
 
   const second = await runSchedule({ service, teamId });
-  assert.deepEqual(second.ready, ['task-3']);
-  assert.equal(second.queued.length, 0);
-  assert.deepEqual(second.wake, []);
+  assert.deepEqual(second.dispatched, []);
 
   view = await service.get({ teamId });
   assert.ok(view.attempts.some(item => item.taskId === 'task-3' && item.state === 'running'));

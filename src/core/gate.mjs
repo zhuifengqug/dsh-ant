@@ -16,3 +16,8 @@ export function reviewAssignment(view, taskId) {
 export function openReviews(view) {
   return view.tasks.filter(task => task.selfCompleted === true && !['reviewed', 'released', 'anomalous'].includes(task.state)).map(task => ({ taskId: task.taskId, repairRounds: task.repairRounds ?? 0, ...reviewAssignment(view, task.taskId) }));
 }
+
+/** Tasks that passed the gate and wait for one human release. */
+export function pendingRelease(view) {
+  return view.tasks.filter(task => task.state === 'reviewed').map(task => ({ taskId: task.taskId, title: task.title, repairRounds: task.repairRounds ?? 0 }));
+}

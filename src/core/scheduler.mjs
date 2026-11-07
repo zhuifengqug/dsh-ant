@@ -1,12 +1,12 @@
 /** Pure readiness evaluation: the scheduler decides, the WAL commits. */
 import { resolvedTask } from './plan.mjs';
 
-const TERMINAL_ATTEMPT = new Set(['terminated']);
+const ACTIVE_ATTEMPT = new Set(['queued', 'running', 'paused']);
 
 export function evaluateSchedule(view) {
   const capacity = view.plan?.maxActiveAttempts ?? 1;
   const dependencies = view.plan?.dependencies ?? [];
-  const open = view.attempts.filter(item => !TERMINAL_ATTEMPT.has(item.state));
+  const open = view.attempts.filter(item => ACTIVE_ATTEMPT.has(item.state));
   const slots = Math.max(0, capacity - open.length);
   const ready = view.tasks.filter(task => task.state === 'pending' && !task.claimMemberId
     && dependencies.every(edge => edge.taskId !== task.taskId || resolvedTask(view.tasks.find(item => item.taskId === edge.blockedByTaskId))));
@@ -28,6 +28,17 @@ export function evaluateSchedule(view) {
     wake: wake.map(member => member.memberId),
     queued: ready.slice(assigns.length).map(task => task.taskId),
   };
+}
+
+const owner = { actor: 'user', principal: { kind: 'owner' } };
+
+/** Release one batch as the owner, then dispatch whatever the release unblocked. */
+export async function releaseBatch({ service, teamId, taskIds, context = owner }) {
+  const view = await service.get({ teamId });
+  const batchId = `batch-${view.cursor + 1}`;
+  const receipt = await service.dispatch({ requestId: `release-${teamId}-${view.cursor + 1}`, teamId, action: 'batch.release', payload: { batchId, taskIds }, }, context);
+  const tick = await runSchedule({ service, teamId });
+  return { batchId, receipt, tick };
 }
 
 /** One tick: wake stalled members, then start every ready task that has a free member and a slot. */

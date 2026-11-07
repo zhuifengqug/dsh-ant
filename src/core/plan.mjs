@@ -63,8 +63,8 @@ function validateScope(item) {
 }
 
 /** Dependencies are facts, not presentation order. */
-/** A task releases its dependents once it is delivered: self-reported, reviewed or released. */
-export const resolvedTask = task => Boolean(task) && (task.selfCompleted === true || ['completed', 'reviewed', 'released'].includes(task.state));
+/** A task releases its dependents only after a human released the batch it belongs to. */
+export const resolvedTask = task => Boolean(task) && task.state === 'released';
 
 export function readyTasks(view) {
   return view.tasks.filter(task => task.state === 'pending' && view.plan.dependencies.filter(edge => edge.taskId === task.taskId).every(edge => resolvedTask(view.tasks.find(parent => parent.taskId === edge.blockedByTaskId))));
