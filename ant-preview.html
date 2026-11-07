@@ -342,7 +342,7 @@
             <div class="divider"></div>
             <div class="section-label"><span>会话成员</span><button type="button" id="filterBtn">全部</button></div>
             <div class="member-list" id="memberList">
-              <div class="member-row" data-member="lead"><span class="member-avatar">枢<span class="presence"></span></span><span class="member-info"><strong>蜂王 · 主会话</strong><span>规划与汇总 · 当前会话</span></span><span class="member-kind">主</span></div>
+              <div class="member-row" data-member="lead"><span class="member-avatar">枢<span class="presence"></span></span><span class="member-info"><strong>蚁后 · 主会话</strong><span>规划与汇总 · 当前会话</span></span><span class="member-kind">主</span></div>
               <div class="member-row" data-member="backend"><span class="member-avatar">后<span class="presence"></span></span><span class="member-info"><strong>后端实现</strong><span class="model-label">deepseek / deepseek-v4</span></span><span class="member-kind">常驻</span></div>
               <div class="member-row" data-member="reviewer"><span class="member-avatar">审<span class="presence idle"></span></span><span class="member-info"><strong>代码审查</strong><span class="model-label">openai / gpt-5.6</span></span><span class="member-kind">临时</span></div>
               <div class="member-row" data-member="test"><span class="member-avatar">测<span class="presence"></span></span><span class="member-info"><strong>验证会话</strong><span class="model-label">deepseek / deepseek-v4</span></span><span class="member-kind">会话</span></div>
@@ -387,7 +387,7 @@
                </div>
                <div class="compass" aria-label="团队控制中心"><div class="compass-core">玄驹<span>控制中心</span></div></div>
               <button class="node done" type="button" data-id="req" aria-label="任务 T-01 需求梳理，已完成">
-                <span class="node-top"><span class="node-id">T-01</span><span class="node-status done">已完成</span></span><span class="node-title">需求梳理</span><span class="node-meta"><span class="mini-avatar">枢</span>蜂王 · 2 分钟</span>
+                <span class="node-top"><span class="node-id">T-01</span><span class="node-status done">已完成</span></span><span class="node-title">需求梳理</span><span class="node-meta"><span class="mini-avatar">枢</span>蚁后 · 2 分钟</span>
               </button>
               <button class="node" type="button" data-id="design" aria-label="任务 T-02 事件与状态模型，已完成">
                 <span class="node-top"><span class="node-id">T-02</span><span class="node-status done">已完成</span></span><span class="node-title">事件与状态模型</span><span class="node-meta"><span class="mini-avatar">后</span>后端实现</span>
@@ -402,7 +402,7 @@
                 <span class="node-top"><span class="node-id">T-05</span><span class="node-status ready">待派发</span></span><span class="node-title">独立代码审查</span><span class="node-meta"><span class="mini-avatar">审</span>未分配</span>
               </button>
               <button class="node blocked" type="button" data-id="integrate" aria-label="任务 T-06 集成与交付，等待前置任务">
-                <span class="node-top"><span class="node-id">T-06</span><span class="node-status blocked">等待前置</span></span><span class="node-title">集成与交付</span><span class="node-meta"><span class="mini-avatar">枢</span>蜂王</span>
+                <span class="node-top"><span class="node-id">T-06</span><span class="node-status blocked">等待前置</span></span><span class="node-title">集成与交付</span><span class="node-meta"><span class="mini-avatar">枢</span>蚁后</span>
               </button>
               <button class="node" type="button" data-id="audit" aria-label="任务 T-00 工作区盘点，待派发">
                 <span class="node-top"><span class="node-id">T-00</span><span class="node-status ready">待派发</span></span><span class="node-title">工作区盘点</span><span class="node-meta"><span class="mini-avatar">会</span>普通会话</span>
@@ -422,7 +422,7 @@
             </div>
             <div class="field">
               <label class="field-label" for="assigneeSelect">负责成员</label>
-              <div class="field-value"><select id="assigneeSelect" aria-label="选择负责成员"><option value="backend">后端实现</option><option value="reviewer">代码审查</option><option value="test">验证会话</option><option value="lead">蜂王 · 主会话</option></select></div>
+              <div class="field-value"><select id="assigneeSelect" aria-label="选择负责成员"><option value="backend">后端实现</option><option value="reviewer">代码审查</option><option value="test">验证会话</option><option value="lead">蚁后 · 主会话</option></select></div>
             </div>
             <div class="field">
               <label class="field-label" for="modelSelect">成员模型</label>
@@ -442,7 +442,7 @@
         <div class="metric"><span>等待依赖</span><strong id="blockedCount">02<em>项</em></strong></div>
         <div class="metric"><span>已完成</span><strong id="doneCount">02<em>项</em></strong></div>
       </section>
-      <section class="event-strip" aria-label="最近事件"><span class="event-title">最近事件</span><div class="event-list" id="eventList"><span class="event"><time>14:32:08</time><b>蜂王</b> 创建了计划</span><span class="event"><time>14:34:21</time><b>少爷</b> 确认并启动团队</span><span class="event"><time>14:36:04</time><b>后端实现</b> 开始 T-03</span><span class="event"><time>14:37:19</time><b>验证会话</b> 收到消息</span></div></section>
+      <section class="event-strip" aria-label="最近事件"><span class="event-title">最近事件</span><div class="event-list" id="eventList"><span class="event"><time>14:32:08</time><b>蚁后</b> 创建了计划</span><span class="event"><time>14:34:21</time><b>少爷</b> 确认并启动团队</span><span class="event"><time>14:36:04</time><b>后端实现</b> 开始 T-03</span><span class="event"><time>14:37:19</time><b>验证会话</b> 收到消息</span></div></section>
     </main>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -470,7 +470,7 @@
         integrate: { id: 'T-06', title: '集成与交付', desc: '汇总验证和审查结果，形成可安装交付物。', assignee: 'lead', state: 'blocked' },
         audit: { id: 'T-00', title: '工作区盘点', desc: '检查仓库状态、插件入口和可复用基础设施。', assignee: 'test', state: 'ready' },
       };
-      const memberNames = { lead: '蜂王 · 主会话', backend: '后端实现', reviewer: '代码审查', test: '验证会话' };
+      const memberNames = { lead: '蚁后 · 主会话', backend: '后端实现', reviewer: '代码审查', test: '验证会话' };
       const memberModels = {
         lead: 'deepseek / deepseek-v4',
         backend: 'deepseek / deepseek-v4',
@@ -559,8 +559,8 @@
         task.assignee = 'lead'; task.state = 'running'; $('assigneeSelect').value = 'lead';
         const node = document.querySelector(`.node[data-id="${selectedTask}"]`);
         node.classList.remove('blocked'); node.querySelector('.node-status').className = 'node-status running'; node.querySelector('.node-status').textContent = '执行中';
-        node.querySelector('.node-meta').lastChild.textContent = ' 蜂王接管';
-        recordEvent('少爷', `接管 ${task.id}`); refreshCounts(); renderTask(selectedTask); showToast(`${task.id} 已由蜂王接管`);
+        node.querySelector('.node-meta').lastChild.textContent = ' 蚁后接管';
+        recordEvent('少爷', `接管 ${task.id}`); refreshCounts(); renderTask(selectedTask); showToast(`${task.id} 已由蚁后接管`);
       });
       $('changeModelBtn').addEventListener('click', () => { $('modelSelect').focus(); showToast('选择模型后，从该成员的下一个请求起生效'); });
       $('messageBtn').addEventListener('click', () => showToast(`已打开与「${memberNames[taskData[selectedTask].assignee]}」的消息草稿`));

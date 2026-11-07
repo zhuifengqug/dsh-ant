@@ -64,7 +64,7 @@ remote.team.dispatch(request)
 
 轨道罗盘是信息位置编码，不是新的事实模型：
 
-- 内环：成员/会话节点。每个节点显示稳定 `memberId` 的短标签、role、sessionMode、provider/model 和 active/requested/unavailable 状态。蜂王节点使用品牌强调 token，其他成员按状态 token 表示可用、空闲、暂停或异常。
+- 内环：成员/会话节点。每个节点显示稳定 `memberId` 的短标签、role、sessionMode、provider/model 和 active/requested/unavailable 状态。蚁后节点使用品牌强调 token，其他成员按状态 token 表示可用、空闲、暂停或异常。
 - 中环：attempt 节点。每个 attempt 显示 `attemptId` 的短尾、所属 task、generation、running/paused/failed/completed/needs_attention 状态；失败 attempt 不从图上删除。
 - 外环：task 节点。每个任务显示 `taskId`、title、ownerMemberId、ready/running/blocked/done/needs_attention 状态和质量门摘要；依赖未满足的节点仍可定位但不可派发。
 - 连线：任务依赖用 SVG path 或等价 React 图形元素表示，方向从 `blockedByTaskId` 指向被阻塞任务；进行中的链路使用品牌强调 token，已完成链路使用成功状态 token，未完成普通链路使用边框/次级文本 token。连线只是 `TeamView` 的派生展示，不能由 Client 修改。
