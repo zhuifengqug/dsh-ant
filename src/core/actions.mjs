@@ -56,10 +56,28 @@ export class TeamActionService {
         viewState = 'rebuild-required';
         if (!(error instanceof TeamError)) throw error;
       }
-      return { ...receipt, teamId, viewState };
+      let archival;
+      if (request.action === 'team.archive') {
+        try { archival = await this.#advanceArchive(teamId); }
+        catch (error) { if (!(error instanceof TeamError)) throw error; archival = 'failed'; }
+      }
+      return { ...receipt, teamId, viewState, ...(archival ? { archival } : {}) };
     } catch (error) {
       throw wrapError(error, request.requestId, teamId);
     }
+  }
+
+  /** Archive is a physical retirement: drain, move the directory, then mark it archived. */
+  async #advanceArchive(teamId) {
+    const history = await this.#wal.read(teamId);
+    const view = foldTeam(history.events);
+    if (view.lifecycle === 'archived') return 'complete';
+    if (view.lifecycle !== 'archiving') return 'pending';
+    await this.#wal.appendInternal(teamId, [{ type: 'team.drain-complete', payload: { attempts: view.attempts.length, activeMembers: view.members.filter(item => item.status === 'active').length } }], `internal.drain-complete.${history.cursor + 1}`);
+    const move = await this.#wal.archiveTeam(teamId);
+    const retired = await this.#wal.read(teamId);
+    await this.#wal.appendInternal(teamId, [{ type: 'team.archived', payload: { archivedAt: new Date().toISOString() } }], `internal.archived.${retired.cursor + 1}`);
+    return move;
   }
 
   async get(input) {
@@ -98,12 +116,15 @@ export class TeamActionService {
 
   async list(input = {}) {
     const request = parseList(input);
-    const teamsRoot = path.join(this.#lease.root, 'teams');
-    let names;
-    try { names = await readdir(teamsRoot, { withFileTypes: true }); }
-    catch (error) { if (error.code === 'ENOENT') return { teams: [], cursor: request.cursor }; throw error; }
+    const names = [];
+    for (const teamsRoot of [path.join(this.#lease.root, 'teams'), path.join(this.#lease.root, 'archive')]) {
+      try {
+        for (const entry of await readdir(teamsRoot, { withFileTypes: true })) if (entry.isDirectory()) names.push({ isDirectory: () => true, name: entry.name });
+      } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    }
+    const seen = new Set();
     const teams = [];
-    for (const entry of names.filter(item => item.isDirectory()).sort((a, b) => a.name.localeCompare(b.name))) {
+    for (const entry of names.filter(item => !seen.has(item.name) && seen.add(item.name)).sort((a, b) => a.name.localeCompare(b.name))) {
       try {
         const view = await this.get({ teamId: entry.name });
         if (view.lifecycle === 'archived' && !request.includeArchived) continue;

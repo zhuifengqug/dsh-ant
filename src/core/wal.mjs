@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { readdir, readFile, open, link, unlink } from 'node:fs/promises';
+import { readdir, readFile, open, link, unlink, stat, rename } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { digest, canonicalize, requestDigest, stableMailAdmissionRequestId, stableTeamId } from './canonical.mjs';
 import { parseRequest } from './codec.mjs';
@@ -28,8 +28,21 @@ export class TeamWal {
     invariant(teamPattern.test(teamId) && !reservedName.test(teamId), 'team/invalid-action', 'Invalid team directory identity');
     return path.join(this.#root, 'teams', teamId);
   }
+  #archiveDirectory(teamId) {
+    invariant(teamPattern.test(teamId) && !reservedName.test(teamId), 'team/invalid-action', 'Invalid team directory identity');
+    return path.join(this.#root, 'archive', teamId);
+  }
+  /** Live teams win; archived teams stay readable at their retired location. */
+  async #eventsDirectory(teamId) {
+    for (const base of [this.directory(teamId), this.#archiveDirectory(teamId)]) {
+      const events = path.join(base, 'events');
+      try { await stat(events); return events; }
+      catch (error) { if (error.code !== 'ENOENT') throw error; }
+    }
+    return path.join(this.directory(teamId), 'events');
+  }
   async read(teamId) {
-    const directory = path.join(this.directory(teamId), 'events');
+    const directory = await this.#eventsDirectory(teamId);
     let names;
     try { names = await readdir(directory); }
     catch (error) { if (error.code === 'ENOENT') return { events: [], receipts: [], cursor: 0, walDigest: digest([]) }; throw error; }
@@ -133,7 +146,7 @@ export class TeamWal {
     return receipt;
   }
   async #append(teamId, record) {
-    const directory = path.join(this.directory(teamId), 'events');
+    const directory = await this.#eventsDirectory(teamId);
     const temporary = path.join(directory, `.txn-${randomUUID()}.tmp`);
     const destination = path.join(directory, `${String(record.firstEventSeq).padStart(16, '0')}.json`);
     try {
@@ -149,6 +162,44 @@ export class TeamWal {
       throw new TeamError('team/persistence-failed', 'WAL transaction commit failed', { teamId, requestId: record.requestId, retryable: true }, { cause });
     } finally { await unlink(temporary).catch(error => { if (error.code !== 'ENOENT') throw error; }); }
   }
+  /** System-owned lifecycle facts carry no request action; the request id is derived from the cut. */
+  appendInternal(teamId, changes, requestId) {
+    return this.#serial(teamId, async () => {
+      const history = await this.read(teamId);
+      const validated = validateChanges(changes);
+      const payloadDigest = digest(validated.length === 1 ? { type: validated[0].type, payload: validated[0].payload } : validated);
+      const old = history.receipts.find(item => item.requestId === requestId);
+      if (old) {
+        invariant(old.payloadDigest === payloadDigest, 'team/duplicate-request-conflict', 'Internal request identity reused with different payload', { requestId, teamId });
+        return { ...old.receipt, outcome: 'duplicate' };
+      }
+      return this.#appendChanges(teamId, history, requestId, payloadDigest, 'system', undefined, validated);
+    });
+  }
+  /** Physical retirement: the drained team directory moves out of the live root. */
+  archiveTeam(teamId) {
+    return this.#serial(teamId, async () => {
+      const view = foldTeam((await this.read(teamId)).events);
+      invariant(view.lifecycle === 'drain-complete', 'team/invalid-state', 'Team must drain before it leaves the live root');
+      const target = this.#archiveDirectory(teamId);
+      const source = this.directory(teamId);
+      await this.#lease.assert(this.#token);
+      try { await stat(source); }
+      catch (error) {
+        if (error.code !== 'ENOENT') throw error;
+        await stat(path.join(target, 'events'));
+        return 'duplicate';
+      }
+      try {
+        await ensureDirectory(path.join(this.#root, 'archive'));
+        await rename(source, target);
+        await syncDirectory(path.join(this.#root, 'archive'));
+      } catch (cause) {
+        throw new TeamError('team/persistence-failed', 'Archive move failed', { teamId, retryable: true }, { cause });
+      }
+      return 'moved';
+    });
+  }
   /** A caller must name the exact WAL cut used to build state. Stale cuts are discarded. */
   writeSnapshot(teamId, state, cut) {
     return this.#serial(teamId, async () => {
@@ -159,13 +210,14 @@ export class TeamWal {
       const body = { schemaVersion: 1, teamId, lastEventSeq: cut.cursor, walDigest: cut.walDigest, state };
       const snapshot = { ...body, checksum: digest(body) };
       validateSnapshot(snapshot);
-      await atomicReplace(path.join(this.directory(teamId), 'snapshot.json'), canonicalize(snapshot));
+      await atomicReplace(path.join(path.dirname(await this.#eventsDirectory(teamId)), 'snapshot.json'), canonicalize(snapshot));
       return true;
     });
   }
   async readSnapshot(teamId) {
     let snapshot;
-    try { snapshot = validateSnapshot(JSON.parse(await readFile(path.join(this.directory(teamId), 'snapshot.json'), 'utf8'))); }
+    const snapshotPath = path.join(path.dirname(await this.#eventsDirectory(teamId)), 'snapshot.json');
+    try { snapshot = validateSnapshot(JSON.parse(await readFile(snapshotPath, 'utf8'))); }
     catch (error) {
       if (error.code === 'ENOENT') return undefined;
       if (error instanceof TeamError && error.code === 'team/rebuild-required') throw error;

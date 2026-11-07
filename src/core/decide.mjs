@@ -127,6 +127,8 @@ export function decideAction(view, request, context) {
   }
   if (action === 'team.archive') {
     requireState(!['archived', 'archiving', 'deleting'].includes(view.lifecycle), 'Invalid archive state');
+    requireState(!view.attempts.some(item => item.state !== 'terminated'), 'Archive requires every attempt to be terminated');
+    requireState(!view.mailbox.some(item => ['queued', 'admitted'].includes(item.state)), 'Archive requires the mailbox to drain');
     return [change('team.archiving', { previousLifecycle: view.lifecycle })];
   }
   if (action === 'team.restore') {
