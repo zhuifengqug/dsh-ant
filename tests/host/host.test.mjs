@@ -233,14 +233,16 @@ test('Cordis service binds Remote invocation, commits through TeamActionService,
   const remoteContext = context.extend({ invocation: { peer: { principal: { kind: 'owner' } } } });
   const remoteService = remoteContext.ant;
   const remoteCreated = await remoteService.dispatch({ requestId: 'service-remote-create', action: 'team.create', payload: createPayload });
-  assert.equal(remoteCreated.outcome, 'committed');
+  assert.equal(remoteCreated.outcome, 'duplicate');
+  assert.equal(remoteCreated.teamId, created.teamId);
 
   const untrustedContext = context.extend({ invocation: { peer: { principal: { kind: 'agent', id: 'session-1' } } } });
   await assert.rejects(untrustedContext.ant.dispatch({ requestId: 'service-denied', action: 'team.create', payload: createPayload }), { code: 'team/forbidden' });
 
   const peer = { principal: { kind: 'owner' }, signal: new AbortController().signal, interactions: 'answer' };
   const gatewayResult = await gateway.invoke({ namespace: 'team', method: 'dispatch', args: { request: { requestId: 'gateway-create', action: 'team.create', payload: createPayload } }, peer });
-  assert.equal(gatewayResult.outcome, 'committed');
+  assert.equal(gatewayResult.outcome, 'duplicate');
+  assert.equal(gatewayResult.teamId, created.teamId);
 
   await service.close();
   await service.close();
@@ -262,9 +264,10 @@ test('apply registers command and tool once; Cordis fiber disposal unregisters i
   }
   apply(context, { workspaceRoot: root, ownerId: 'apply-test' });
   const service = context.ant;
-  assert.equal(events.filter(event => event.startsWith('register:')).length, 2);
+  assert.equal(events.filter(event => event.startsWith('register:commands:')).length, 1);
+  assert.deepEqual(events.filter(event => event.startsWith('register:tools:')).map(event => event.slice('register:tools:'.length)).sort(), ['ant_team_dispatch', 'ant_team_get', 'ant_team_list', 'ant_team_release', 'ant_team_schedule', 'ant_team_spend']);
   await context.fiber.dispose();
-  assert.deepEqual(events.filter(event => event.startsWith('dispose:')), ['dispose:tools', 'dispose:commands']);
+  assert.deepEqual(events.filter(event => event.startsWith('dispose:')), ['dispose:tools', 'dispose:tools', 'dispose:tools', 'dispose:tools', 'dispose:tools', 'dispose:tools', 'dispose:commands']);
   await assert.rejects(service.ready(), { code: 'team/lease-lost' });
   t.after(async () => { await context.fiber.dispose(); });
 });

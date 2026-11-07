@@ -71,6 +71,21 @@ export function stableTeamId(workspaceIdentity, requestId) {
   return `team-${digest({ workspaceIdentity, requestId }).slice(0, 32)}`;
 }
 
+/** Content identity of a goal: the same goal and task set always maps to the same team. */
+export function teamFingerprint(payload) {
+  return digest({
+    goal: payload.goal,
+    workspaceRelativePath: payload.workspaceRelativePath,
+    plan: payload.plan,
+    members: [...payload.members].map(item => ({ memberId: item.memberId, role: item.role, sessionMode: item.sessionMode, sessionId: item.sessionId ?? null, provider: item.provider, model: item.model, reasoningEffort: item.reasoningEffort ?? null })).sort((left, right) => left.memberId.localeCompare(right.memberId)),
+  });
+}
+
+/** A goal identity is content-derived so the same goal cannot start twice. */
+export function goalTeamId(workspaceIdentity, fingerprint) {
+  return stableTeamId(workspaceIdentity, `goal-${fingerprint}`);
+}
+
 export function stableMailRequestId(teamId, messageId) {
   return `ant-mail-${digest({ teamId, messageId }).slice(0, 40)}`;
 }

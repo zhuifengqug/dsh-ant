@@ -2,7 +2,7 @@ import path from 'node:path';
 import { readdir } from 'node:fs/promises';
 import { TeamError, invariant } from './errors.mjs';
 import { parseGet, parseList, parseRequest } from './codec.mjs';
-import { requestDigest, stableTeamId } from './canonical.mjs';
+import { goalTeamId, requestDigest, stableTeamId, teamFingerprint } from './canonical.mjs';
 import { foldTeam } from './fold.mjs';
 import { authorize, decideAction } from './decide.mjs';
 import { TeamWal } from './wal.mjs';
@@ -38,8 +38,14 @@ export class TeamActionService {
 
   async dispatch(input, context) {
     const request = parseRequest(input);
-    const teamId = request.teamId ?? stableTeamId(this.#workspaceIdentity, request.requestId);
+    const fingerprint = request.action === 'team.create' && !request.teamId ? teamFingerprint(request.payload) : undefined;
+    const teamId = request.teamId ?? (fingerprint && !request.payload.rerun ? goalTeamId(this.#workspaceIdentity, fingerprint) : stableTeamId(this.#workspaceIdentity, request.requestId));
     try {
+      await this.#authorizeRequest(request, context, teamId);
+      if (fingerprint) {
+        const replayed = await this.#replayCreate(request, teamId, fingerprint);
+        if (replayed) return replayed;
+      }
       if (request.action === 'team.delete') {
         const replayed = await this.#replayDelete(request, teamId);
         if (replayed) return replayed;
@@ -74,6 +80,27 @@ export class TeamActionService {
     } catch (error) {
       throw wrapError(error, request.requestId, teamId);
     }
+  }
+
+  /** Authorisation runs before every replay short-circuit so a denied caller learns nothing about state. */
+  async #authorizeRequest(request, context, teamId) {
+    let view;
+    try {
+      const history = await this.#wal.read(teamId);
+      view = history.events.length ? foldTeam(history.events) : undefined;
+    } catch (error) {
+      if (!(error instanceof TeamError && error.code === 'team/not-found')) throw error;
+    }
+    authorize(request, { ...context, teamId }, view);
+  }
+
+  /** The same goal and task set never starts a second round of dispatch unless rerun is explicit. */
+  async #replayCreate(request, teamId, fingerprint) {
+    let view;
+    try { view = await this.get({ teamId }); }
+    catch (error) { if (error instanceof TeamError && error.code === 'team/not-found') return undefined; throw error; }
+    if (view.fingerprint !== fingerprint) throw new TeamError('team/conflict', 'Team identity collides with a different goal', { requestId: request.requestId, teamId, retryable: false });
+    return { outcome: 'duplicate', requestId: request.requestId, teamId, firstEventSeq: view.cursor, lastEventSeq: view.cursor, eventIds: [], viewState: 'ready' };
   }
 
   /** A removed team leaves a tombstone so the same delete replays as a duplicate instead of a conflict. */

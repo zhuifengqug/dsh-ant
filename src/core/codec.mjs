@@ -18,13 +18,13 @@ const modelFields = { provider: text, model: text, reasoningEffort: optional(tex
 const task = object({ taskId: id, title: text, objective: text, inScope: strings, outOfScope: strings, acceptance: strings, verify: strings, ownerMemberId: optional(id), readOnly: optional({ type: 'boolean' }) });
 const dependency = object({ taskId: id, blockedByTaskId: id });
 const qualityGate = object({ gateId: id, taskId: id, kind: choice('verification', 'review', 'integration'), acceptance: strings });
-const plan = object({ planId: id, mode: choice('normal', 'fast'), tasks: array(task), dependencies: array(dependency), qualityGates: array(qualityGate), maxActiveAttempts: { type: 'integer', minimum: 1, maximum: 8 } });
+const plan = object({ planId: id, mode: choice('normal', 'fast'), tasks: array(task), dependencies: array(dependency), qualityGates: array(qualityGate), maxActiveAttempts: { type: 'integer', minimum: 1, maximum: 8 }, memberDelegation: optional({ type: 'boolean' }) });
 const member = object({ memberId: id, role: text, sessionMode: choice('persistent', 'ephemeral'), sessionId: optional(id), ...modelFields, inScope: strings, outOfScope: strings, executionPrompt: optional(text) });
 const evidence = object({ kind: choice('file', 'command', 'session', 'event'), locator: text, digest: optional(text), note: optional(text) });
 const attempt = { taskId: id, attemptId: id };
 
 export const payloadSchemas = {
-  'team.create': object({ goal: text, workspaceRelativePath: { type: 'string', minLength: 1, maxLength: 4096 }, plan, members: array(member) }),
+  'team.create': object({ goal: text, workspaceRelativePath: { type: 'string', minLength: 1, maxLength: 4096 }, plan, members: array(member), rerun: optional({ type: 'boolean' }) }),
   'plan.confirm': object({ planDigest: { type: 'string', pattern: '^[a-f0-9]{64}$' } }),
   'attempt.dispatch': object({ taskId: id, memberId: id, variants: optional({ type: 'integer', minimum: 1, maximum: 3 }) }),
   'attempt.pause': object(attempt),
@@ -32,7 +32,7 @@ export const payloadSchemas = {
   'attempt.takeover': object(attempt),
   'attempt.terminate': object({ ...attempt, reason: optional(text) }),
   'attempt.retry': object({ taskId: id, previousAttemptId: id, memberId: id }),
-  'member.invite': object({ sessionId: id, role: text }),
+  'member.invite': object({ sessionId: id, role: text, parentMemberId: optional(id) }),
   'member.accept': object({ invitationId: id }),
   'member.remove': object({ memberId: id }),
   'member.changeModel': object({ memberId: id, ...modelFields }),

@@ -91,7 +91,13 @@ export function decideAction(view, request, context) {
   if (action === 'member.invite') {
     requireState(!view.members.some(item => item.sessionId === payload.sessionId && item.status !== 'removed'), 'Session already belongs to the team');
     requireState(!view.invitations.some(item => item.sessionId === payload.sessionId && item.state === 'requested'), 'Invitation already pending');
-    return [change('member.invited', { ...payload, invitationId: `invitation-${randomUUID()}` })];
+    let depth;
+    if (payload.parentMemberId) {
+      requireState(view.plan.memberDelegation === true, 'Members may not spawn subagents');
+      requireState(!member(payload.parentMemberId).depth, 'Members may not spawn subagents');
+      depth = 1;
+    }
+    return [change('member.invited', { ...payload, ...(depth ? { depth } : {}), invitationId: `invitation-${randomUUID()}` })];
   }
   if (action === 'member.accept') {
     const invitation = view.invitations.find(item => item.invitationId === payload.invitationId && item.state === 'requested');

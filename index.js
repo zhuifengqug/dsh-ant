@@ -1,7 +1,7 @@
 import z from '@deepseek-ai/schemastery';
 import { defineTool } from '@deepseek-ai/dsh-tools';
 import { createAntCommand } from './src/host/command.mjs';
-import { createAntTool, ANT_TOOL_PARAMETERS, ANT_TOOL_OUTPUT } from './src/host/tool.mjs';
+import { createAntTools, ANT_TOOL_PARAMETERS, ANT_TOOL_OUTPUT } from './src/host/tool.mjs';
 import { AntService } from './src/host/service.mjs';
 
 export const name = 'ant';
@@ -19,7 +19,7 @@ export function apply(ctx, config = {}) {
     await service.close();
   }, 'ant: service');
   ctx.effect(() => ctx.commands.register(createAntCommand(service)), 'ant: command');
-  ctx.effect(() => ctx.tools.register(defineTool(createAntTool(service))), 'ant: tool');
+  for (const tool of createAntTools(service)) ctx.effect(() => ctx.tools.register(defineTool(tool)), 'ant: tool ' + tool.name);
 }
 
 export { AntService, ANT_TOOL_PARAMETERS, ANT_TOOL_OUTPUT };

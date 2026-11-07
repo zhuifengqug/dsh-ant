@@ -1,5 +1,5 @@
 import { invariant } from './errors.mjs';
-import { digest } from './canonical.mjs';
+import { digest, teamFingerprint } from './canonical.mjs';
 
 /** Pure TeamView fold. Unknown event types block reconstruction instead of being ignored. */
 export function foldTeam(events) {
@@ -14,7 +14,7 @@ export function foldTeam(events) {
     if (event.type === 'team.created') {
       invariant(!view, 'team/rebuild-required', 'Duplicate team creation');
       view = {
-        schemaVersion: 1, teamId: event.teamId, goal: payload.goal, workspaceRelativePath: payload.workspaceRelativePath,
+        schemaVersion: 1, teamId: event.teamId, goal: payload.goal, workspaceRelativePath: payload.workspaceRelativePath, fingerprint: teamFingerprint(payload),
         lifecycle: payload.plan.mode === 'fast' ? 'planned' : 'staged', plan: payload.plan, planDigest: digest(payload.plan),
         planConfirmed: payload.plan.mode === 'fast', members: payload.members.map(member => ({ ...member, origin: member.sessionId ? 'existing' : 'team-created', status: member.sessionId ? 'active' : 'requested' })),
         tasks: payload.plan.tasks.map(task => ({ ...task, state: 'pending' })), attempts: [], invitations: [], mailbox: [], claims: [], batches: [], reviews: [], spend: [], interruptions: [], cursor: 0,
@@ -48,7 +48,7 @@ export function foldTeam(events) {
           if (payload.member) {
             const known = view.members.find(item => item.memberId === payload.member.memberId);
             const origin = known?.origin ?? payload.member.origin ?? (payload.member.sessionId ? 'existing' : 'team-created');
-            const merged = { ...payload.member, origin, status: 'active' };
+            const merged = { ...payload.member, origin, status: 'active', ...(invitation.depth && !payload.member.depth ? { depth: invitation.depth } : {}) };
             if (known) Object.assign(known, merged); else view.members.push(merged);
           }
           break;

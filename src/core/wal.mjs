@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { readdir, readFile, open, link, unlink, stat, rename, rm } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
-import { digest, canonicalize, requestDigest, stableMailAdmissionRequestId, stableTeamId } from './canonical.mjs';
+import { digest, canonicalize, goalTeamId, requestDigest, stableMailAdmissionRequestId, stableTeamId, teamFingerprint } from './canonical.mjs';
 import { parseRequest } from './codec.mjs';
 import { foldTeam } from './fold.mjs';
 import { TeamError, invariant } from './errors.mjs';
@@ -84,7 +84,8 @@ export class TeamWal {
     return this.#serial(teamId, async () => {
       const request = parseRequest(input);
       if (request.action === 'team.create') {
-        invariant(teamId === stableTeamId(this.#lease.workspaceIdentity, request.requestId), 'team/invalid-action', 'Create identity belongs to the workspace/request owner');
+        const ownIdentities = [stableTeamId(this.#lease.workspaceIdentity, request.requestId), goalTeamId(this.#lease.workspaceIdentity, teamFingerprint(request.payload))];
+        invariant(ownIdentities.includes(teamId), 'team/invalid-action', 'Create identity belongs to the workspace/request owner');
       } else invariant(request.teamId === teamId, 'team/invalid-action', 'Request team mismatch');
       invariant(['user', 'agent', 'system'].includes(actor), 'team/forbidden', 'Trusted actor required');
       const history = await this.read(teamId);
