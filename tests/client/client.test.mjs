@@ -310,3 +310,117 @@ test('package manifest publishes the Client half and verified Host injects', asy
   });
   assert.equal(manifest.dsh.client.external, undefined);
 });
+
+function findAllByClass(node, className, hits = []) {
+  if (Array.isArray(node)) { for (const child of node) findAllByClass(child, className, hits); return hits; }
+  if (!node || typeof node !== 'object' || !node.props) return hits;
+  if (node.props.className === className) hits.push(node);
+  for (const child of node.children ?? []) findAllByClass(child, className, hits);
+  return hits;
+}
+
+function findByClass(node, className) {
+  return findAllByClass(node, className)[0];
+}
+
+function textOf(node) {
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(textOf).join('');
+  if (!node || typeof node !== 'object') return '';
+  return (node.children ?? []).map(textOf).join('');
+}
+
+async function mountWithView(view) {
+  const calls = [];
+  const remoteTeam = {
+    async list() { return { ok: true, value: { teams: [{ teamId: 'team-1', goal: 'Ship', lifecycle: 'running', cursor: 4 }] } }; },
+    async get(request) { return { ok: true, value: { ...view, teamId: request.teamId, cursor: view.cursor ?? 4 } }; },
+    async dispatch(request) { calls.push(request); return { ok: true, value: { outcome: 'committed', requestId: request.requestId, teamId: request.teamId, lastEventSeq: 9 } }; },
+  };
+  const runtime = createClientContext(remoteTeam);
+  const { plugin } = await loadClient();
+  const cleanup = await plugin.apply(runtime.ctx);
+  const main = runtime.registrations[0];
+  const props = main.options.inject();
+  main.component(props);
+  await new Promise(resolve => setImmediate(resolve));
+  const tree = main.component(props);
+  const nest = findByClass(tree, 'ant-nest');
+  assert.equal(nest.props['aria-label'], 'Colony section');
+  const nestElement = nest.children.find(child => typeof child.type === 'function');
+  const plan = nestElement.type(nestElement.props);
+  assert.equal(plan.props.className, 'ant-nest-plan');
+  return { props, plan, calls, runtime, cleanup, tree };
+}
+
+test('colony section counts every task in exactly one of the five chambers', async () => {
+  const view = {
+    lifecycle: 'running',
+    members: [
+      { memberId: 'member-1', status: 'active', sessionId: 's1' },
+      { memberId: 'member-2', status: 'removed' },
+    ],
+    attempts: [{ attemptId: 'attempt-1', taskId: 'task-3', memberId: 'member-1', state: 'running', generation: 1 }],
+    tasks: [
+      { taskId: 'task-1', state: 'pending' },
+      { taskId: 'task-2', state: 'reviewed' },
+      { taskId: 'task-3', state: 'running' },
+      { taskId: 'task-4', state: 'completed' },
+      { taskId: 'task-5', state: 'anomalous' },
+    ],
+    plan: { dependencies: [{ taskId: 'task-3', blockedByTaskId: 'task-1' }] },
+  };
+  const { props, plan, runtime, cleanup } = await mountWithView(view);
+  const chambers = findAllByClass(plan, 'ant-chamber');
+  assert.deepEqual(chambers.map(chamber => chamber.props['data-stage']), ['nursery', 'gate', 'corridor', 'pantry', 'refuse']);
+  assert.deepEqual(chambers.map(chamber => textOf(chamber.children[0].children[1])), ['1', '1', '1', '1', '1']);
+  assert.equal(props.model.getSnapshot().view.tasks.length, 5);
+  const counts = findByClass(plan, 'ant-ants');
+  assert.ok(counts, 'the corridor chamber carries the resident ant');
+  assert.equal(findAllByClass(plan, 'ant-tunnel').length, 1);
+  await cleanup();
+  await runtime.disposeEffects();
+});
+
+test('the gate releases the pending batch from the keyboard', async () => {
+  const view = {
+    lifecycle: 'running',
+    cursor: 4,
+    members: [{ memberId: 'member-1', status: 'active', sessionId: 's1' }],
+    attempts: [],
+    tasks: [{ taskId: 'task-2', state: 'reviewed' }, { taskId: 'task-6', state: 'reviewed' }],
+    plan: { dependencies: [] },
+  };
+  const { props, plan, calls, runtime, cleanup } = await mountWithView(view);
+  const gate = findByClass(plan, 'ant-gate');
+  assert.equal(gate.props.disabled, false);
+  assert.equal(textOf(gate), 'Gatepending release 2');
+  gate.props.onClick();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(calls[0].action, 'batch.release');
+  assert.equal(JSON.stringify(calls[0].payload), JSON.stringify({ batchId: 'batch-5', taskIds: ['task-2', 'task-6'] }));
+
+  const focused = [];
+  const fakeGate = { focus: () => focused.push('gate') };
+  plan.props.onKeyDown({ key: '2', preventDefault() {}, currentTarget: { querySelector: () => fakeGate } });
+  assert.equal(props.model.getSnapshot().selectedStage, 'gate');
+  assert.deepEqual(focused, ['gate']);
+  plan.props.onKeyDown({ key: '5', preventDefault() {}, currentTarget: { querySelector: () => fakeGate } });
+  assert.equal(props.model.getSnapshot().selectedStage, 'refuse');
+  plan.props.onKeyDown({ key: 'Escape', currentTarget: { querySelector: () => fakeGate } });
+  assert.equal(props.model.getSnapshot().selectedStage, undefined);
+  await cleanup();
+  await runtime.disposeEffects();
+});
+
+test('chambers stay distinguishable without accent colour and honour reduced motion', async () => {
+  const { plugin, source } = await loadClient();
+  assert.equal(typeof plugin.apply, 'function');
+  for (const stage of ['nursery', 'gate', 'corridor', 'pantry', 'refuse']) {
+    assert.match(source, new RegExp('\\.ant-chamber\\[data-stage=' + stage + '\\]\\{[^}]*border'));
+  }
+  assert.match(source, /@media\(prefers-reduced-motion:reduce\)/);
+  assert.match(source, /@media\(max-width:1024px\)[^@]*ant-nest-plan/);
+  assert.match(source, /@media\(max-width:768px\)[^@]*ant-nest-plan/);
+  assert.doesNotMatch(source, /ant-orbit/);
+});
