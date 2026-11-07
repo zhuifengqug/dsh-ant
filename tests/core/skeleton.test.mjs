@@ -14,7 +14,7 @@ const createPayload = {
   plan: {
     planId: 'plan-1', mode: 'normal', maxActiveAttempts: 2,
     tasks: [
-      { taskId: 'task-1', title: 'First', objective: 'First slice', inScope: ['src'], outOfScope: [], acceptance: ['works'], verify: ['node --test'] },
+      { taskId: 'task-1', title: 'First', objective: 'First slice', inScope: ['src'], outOfScope: [], acceptance: ['works'], verify: ['node --test'], readOnly: true },
       { taskId: 'task-2', title: 'Second', objective: 'Second slice', inScope: ['src'], outOfScope: [], acceptance: ['works'], verify: ['node --test'] },
     ],
     dependencies: [{ taskId: 'task-2', blockedByTaskId: 'task-1' }],

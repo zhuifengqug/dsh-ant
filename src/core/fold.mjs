@@ -34,7 +34,12 @@ export function foldTeam(events) {
         case 'attempt.takeover-requested':
         case 'attempt.taken-over': attempt().state = 'taken-over'; task().state = 'taken-over'; break;
         case 'attempt.terminate-requested':
-        case 'attempt.terminated': attempt().state = 'terminated'; task().state = 'terminated'; break;
+        case 'attempt.terminated': {
+          attempt().state = 'terminated';
+          const aborted = task();
+          if (!['reviewed', 'released', 'completed'].includes(aborted.state)) aborted.state = 'terminated';
+          break;
+        }
         case 'member.invited': view.invitations.push({ ...payload, state: 'requested' }); break;
         case 'member.accept-requested':
         case 'member.accepted': {
@@ -103,8 +108,12 @@ export function foldTeam(events) {
           attempt().selectedVariant = payload.variant; task().selectedAttemptId = payload.attemptId; break;
         case 'run.interrupted':
           view.interruptions.push({ ...payload, eventSeq: event.eventSeq }); view.lifecycle = 'interrupted'; break;
-        case 'spend.recorded':
-          view.spend.push({ ...payload, eventSeq: event.eventSeq }); break;
+        case 'spend.recorded': {
+          const entry = { ...payload, eventSeq: event.eventSeq };
+          view.spend.push(entry);
+          attempt().spend = entry;
+          break;
+        }
         case 'team.archiving': view.lifecycle = 'archiving'; view.archivePreviousLifecycle = payload.previousLifecycle ?? 'planned'; break;
         case 'team.drain-complete': view.lifecycle = 'drain-complete'; break;
         case 'team.archived': view.lifecycle = 'archived'; break;

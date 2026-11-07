@@ -3,8 +3,8 @@ import { invariant } from './errors.mjs';
 import { readyTasks, validatePlan } from './plan.mjs';
 
 const userOnly = new Set(['team.create', 'plan.confirm', 'attempt.takeover', 'attempt.terminate', 'member.invite', 'member.remove', 'member.changeModel', 'batch.release', 'attempt.select', 'team.archive', 'team.restore', 'team.delete']);
-const scheduled = new Set(['attempt.dispatch', 'attempt.pause', 'attempt.resume', 'attempt.retry', 'task.claim', 'run.interrupted']);
-const systemOnly = new Set(['attempt.dispatch', 'attempt.pause', 'attempt.resume', 'attempt.retry', 'run.interrupted']);
+const scheduled = new Set(['attempt.dispatch', 'attempt.pause', 'attempt.resume', 'attempt.retry', 'task.claim', 'run.interrupted', 'spend.record']);
+const systemOnly = new Set(['attempt.dispatch', 'attempt.pause', 'attempt.resume', 'attempt.retry', 'run.interrupted', 'spend.record']);
 const active = attempt => ['queued', 'running', 'paused'].includes(attempt.state);
 const change = (type, payload, attemptId) => ({ type, payload, ...(attemptId ? { attemptId } : {}) });
 const requireState = (condition, message) => invariant(condition, 'team/invalid-state', message);
@@ -55,7 +55,9 @@ export function decideAction(view, request, context) {
   const member = id => { const item = view.members.find(value => value.memberId === id && value.status === 'active'); requireState(item, 'Active member not found'); return item; };
   const attempt = (taskId, attemptId) => {
     const item = view.attempts.find(value => value.attemptId === attemptId && value.taskId === taskId);
-    requireState(item && view.attempts.filter(value => value.taskId === taskId).at(-1) === item, 'Stale attempt generation');
+    requireState(item, 'Stale attempt generation');
+    const siblings = view.attempts.filter(value => value.taskId === taskId);
+    requireState(siblings.at(-1) === item || task(taskId).readOnly === true, 'Stale attempt generation');
     return item;
   };
   if (action === 'plan.confirm') {
@@ -70,10 +72,14 @@ export function decideAction(view, request, context) {
     if (action === 'attempt.retry') {
       const previous = attempt(payload.taskId, payload.previousAttemptId);
       requireState(['failed', 'terminated'].includes(previous.state), 'Previous attempt is not retryable');
+    } else if (payload.variants > 1 && selected.state === 'running') {
+      requireState(selected.readOnly === true, 'Only read-only tasks may run candidates in parallel');
     } else requireState(readyTasks(view).some(item => item.taskId === selected.taskId), 'Task is not dependency-ready');
+    if (payload.variants > 1) requireState(selected.readOnly === true, 'Only read-only tasks may run candidates in parallel');
     requireState(!selected.ownerMemberId || selected.ownerMemberId === payload.memberId, 'Task ownership conflicts with dispatch');
     const attemptId = `attempt-${randomUUID()}`;
-    return [change('attempt.dispatched', { taskId: payload.taskId, memberId: payload.memberId, attemptId, generation: view.attempts.filter(item => item.taskId === payload.taskId).length + 1, ...(payload.variants ? { variants: payload.variants, variant: 1 } : {}) }, attemptId)];
+    const generation = view.attempts.filter(item => item.taskId === payload.taskId).length + 1;
+    return [change('attempt.dispatched', { taskId: payload.taskId, memberId: payload.memberId, attemptId, generation, ...(payload.variants ? { variants: payload.variants, variant: generation } : {}) }, attemptId)];
   }
   if (['attempt.pause', 'attempt.resume', 'attempt.takeover', 'attempt.terminate'].includes(action)) {
     const selected = attempt(payload.taskId, payload.attemptId);
@@ -172,7 +178,15 @@ export function decideAction(view, request, context) {
     const selected = attempt(payload.taskId, payload.attemptId);
     requireState(Number.isSafeInteger(selected.variant), 'Attempt has no candidate variant to select');
     requireState(selected.variant === payload.variant, 'Selected variant does not match the attempt');
-    return [change('attempt.selected', payload, payload.attemptId)];
+    const discarded = view.attempts.filter(item => item.taskId === payload.taskId && item.attemptId !== payload.attemptId && active(item));
+    return [change('attempt.selected', payload, payload.attemptId), ...discarded.map(item => change('attempt.terminate-requested', { taskId: payload.taskId, attemptId: item.attemptId }, item.attemptId))];
+  }
+  if (action === 'spend.record') {
+    const selected = attempt(payload.taskId, payload.attemptId);
+    requireState(!active(selected), 'Spend is recorded once the attempt is settled');
+    requireState(!view.spend.some(item => item.attemptId === payload.attemptId), 'Spend is already recorded for this attempt');
+    const known = Number.isSafeInteger(payload.tokensIn) && Number.isSafeInteger(payload.tokensOut);
+    return [change('spend.recorded', { ...payload, memberId: selected.memberId, known, ...(known ? {} : { tokensIn: null, tokensOut: null, costMicros: null }) }, payload.attemptId)];
   }
   if (action === 'run.interrupted') {
     requireState(view.attempts.some(active), 'No open attempt to interrupt');

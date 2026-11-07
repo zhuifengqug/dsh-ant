@@ -15,7 +15,7 @@ function object(fields) {
   };
 }
 const modelFields = { provider: text, model: text, reasoningEffort: optional(text) };
-const task = object({ taskId: id, title: text, objective: text, inScope: strings, outOfScope: strings, acceptance: strings, verify: strings, ownerMemberId: optional(id) });
+const task = object({ taskId: id, title: text, objective: text, inScope: strings, outOfScope: strings, acceptance: strings, verify: strings, ownerMemberId: optional(id), readOnly: optional({ type: 'boolean' }) });
 const dependency = object({ taskId: id, blockedByTaskId: id });
 const qualityGate = object({ gateId: id, taskId: id, kind: choice('verification', 'review', 'integration'), acceptance: strings });
 const plan = object({ planId: id, mode: choice('normal', 'fast'), tasks: array(task), dependencies: array(dependency), qualityGates: array(qualityGate), maxActiveAttempts: { type: 'integer', minimum: 1, maximum: 8 } });
@@ -45,6 +45,7 @@ export const payloadSchemas = {
   'quality.review': object({ ...attempt, reviewerMemberId: id, verdict: choice('pass', 'fail'), criteria: strings, summary: text }),
   'batch.release': object({ batchId: id, taskIds: { type: 'array', items: id, maxItems: 256 } }),
   'attempt.select': object({ ...attempt, variant: { type: 'integer', minimum: 1, maximum: 3 } }),
+  'spend.record': object({ ...attempt, tokensIn: optional({ type: 'integer', minimum: 0 }), tokensOut: optional({ type: 'integer', minimum: 0 }), costMicros: optional({ type: 'integer', minimum: 0 }), model: optional(text), source: optional(text) }),
   'run.interrupted': object({ reason: text }),
   'team.archive': object({}),
   'team.restore': object({}),
