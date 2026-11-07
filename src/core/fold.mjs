@@ -17,7 +17,7 @@ export function foldTeam(events) {
         schemaVersion: 1, teamId: event.teamId, goal: payload.goal, workspaceRelativePath: payload.workspaceRelativePath,
         lifecycle: payload.plan.mode === 'fast' ? 'planned' : 'staged', plan: payload.plan, planDigest: digest(payload.plan),
         planConfirmed: payload.plan.mode === 'fast', members: payload.members.map(member => ({ ...member, origin: member.sessionId ? 'existing' : 'team-created', status: member.sessionId ? 'active' : 'requested' })),
-        tasks: payload.plan.tasks.map(task => ({ ...task, state: 'pending' })), attempts: [], invitations: [], mailbox: [], cursor: 0,
+        tasks: payload.plan.tasks.map(task => ({ ...task, state: 'pending' })), attempts: [], invitations: [], mailbox: [], claims: [], batches: [], reviews: [], spend: [], interruptions: [], cursor: 0,
       };
     } else {
       invariant(view, 'team/rebuild-required', 'Team creation must be first');
@@ -70,6 +70,34 @@ export function foldTeam(events) {
           Object.assign(attempt(), { state: payload.verdict === 'pass' ? 'completed' : 'failed', quality: payload });
           task().state = payload.verdict === 'pass' ? 'completed' : 'failed';
           if (view.tasks.every(item => item.state === 'completed')) view.lifecycle = 'completed'; break;
+        case 'task.claimed': {
+          const claimed = task();
+          claimed.state = 'claimed'; claimed.claimMemberId = payload.memberId;
+          view.claims.push({ taskId: payload.taskId, memberId: payload.memberId, eventSeq: event.eventSeq });
+          break;
+        }
+        case 'task.completed':
+          attempt().completion = payload;
+          task().selfCompleted = true; break;
+        case 'quality.reviewed': {
+          Object.assign(attempt(), { state: payload.verdict === 'pass' ? 'reviewed' : 'failed', review: payload });
+          view.reviews.push({ ...payload, eventSeq: event.eventSeq });
+          const reviewed = task();
+          if (payload.verdict === 'fail') reviewed.state = 'failed';
+          else if (reviewed.selfCompleted) reviewed.state = 'reviewed';
+          break;
+        }
+        case 'batch.released': {
+          view.batches.push({ ...payload, state: 'released', eventSeq: event.eventSeq });
+          for (const releasedId of payload.taskIds) { const released = view.tasks.find(item => item.taskId === releasedId); if (released) released.state = 'released'; }
+          break;
+        }
+        case 'attempt.selected':
+          attempt().selectedVariant = payload.variant; task().selectedAttemptId = payload.attemptId; break;
+        case 'run.interrupted':
+          view.interruptions.push({ ...payload, eventSeq: event.eventSeq }); view.lifecycle = 'interrupted'; break;
+        case 'spend.recorded':
+          view.spend.push({ ...payload, eventSeq: event.eventSeq }); break;
         case 'team.archiving': view.lifecycle = 'archiving'; break;
         case 'team.drain-complete': view.lifecycle = 'drain-complete'; break;
         case 'team.archived': view.lifecycle = 'archived'; break;

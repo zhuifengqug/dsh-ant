@@ -43,7 +43,7 @@ test('canonical JSON sorts UTF-16 keys and matches numeric/string JCS examples',
 });
 
 test('strict nested action codec rejects spoofed authority and cross-action payloads', () => {
-  assert.equal(ACTIONS.length, 19);
+  assert.equal(ACTIONS.length, 25);
   const good = request('request-1');
   assert.deepEqual(parseRequest(good), good);
   for (const wrong of [{ ...good, principal: { kind: 'owner' } }, { ...good, payload: { memberId: 'm' } }, { ...good, action: 'team.delete', payload: { messageId: 'x' } }, { ...good, action: 'unknown' }]) assert.throws(() => parseRequest(wrong), { code: 'team/invalid-action' });

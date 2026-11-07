@@ -2,8 +2,9 @@ import { randomUUID } from 'node:crypto';
 import { invariant } from './errors.mjs';
 import { readyTasks, validatePlan } from './plan.mjs';
 
-const userOnly = new Set(['team.create', 'plan.confirm', 'attempt.takeover', 'attempt.terminate', 'member.invite', 'member.remove', 'member.changeModel', 'team.archive', 'team.restore', 'team.delete']);
-const scheduled = new Set(['attempt.dispatch', 'attempt.pause', 'attempt.resume', 'attempt.retry']);
+const userOnly = new Set(['team.create', 'plan.confirm', 'attempt.takeover', 'attempt.terminate', 'member.invite', 'member.remove', 'member.changeModel', 'batch.release', 'attempt.select', 'team.archive', 'team.restore', 'team.delete']);
+const scheduled = new Set(['attempt.dispatch', 'attempt.pause', 'attempt.resume', 'attempt.retry', 'task.claim', 'run.interrupted']);
+const systemOnly = new Set(['attempt.dispatch', 'attempt.pause', 'attempt.resume', 'attempt.retry', 'run.interrupted']);
 const active = attempt => ['queued', 'running', 'paused'].includes(attempt.state);
 const change = (type, payload, attemptId) => ({ type, payload, ...(attemptId ? { attemptId } : {}) });
 const requireState = (condition, message) => invariant(condition, 'team/invalid-state', message);
@@ -20,7 +21,7 @@ export function authorize(request, context, view) {
     invariant(context.teamId === request.teamId && view?.planConfirmed && scheduled.has(request.action), 'team/forbidden', 'Scheduler authority is limited to a confirmed team');
     return;
   }
-  invariant(!scheduled.has(request.action) && context.teamId === request.teamId, 'team/forbidden', 'Member action outside team');
+  invariant(!systemOnly.has(request.action) && context.teamId === request.teamId, 'team/forbidden', 'Member action outside team');
   const member = view?.members.find(item => item.memberId === context.memberId && item.status === 'active');
   invariant(member && member.sessionId === context.sessionId, 'team/forbidden', 'Active member Session binding required');
   if (['mail.read', 'mail.consume'].includes(request.action)) {
@@ -31,7 +32,10 @@ export function authorize(request, context, view) {
     const attempt = view.attempts.find(item => item.attemptId === request.payload.attemptId);
     invariant(attempt?.memberId === member.memberId, 'team/forbidden', 'Quality report is restricted to the assigned attempt');
   }
-  invariant(['member.accept', 'mail.send', 'mail.read', 'mail.consume', 'quality.report'].includes(request.action), 'team/forbidden', 'Action unavailable to member');
+  invariant(['member.accept', 'mail.send', 'mail.read', 'mail.consume', 'quality.report', 'task.claim', 'task.complete', 'quality.review'].includes(request.action), 'team/forbidden', 'Action unavailable to member');
+  if (request.action === 'task.claim') invariant(request.payload.memberId === member.memberId, 'team/forbidden', 'Claim must name the calling member');
+  if (request.action === 'task.complete') { const target = view.attempts.find(item => item.attemptId === request.payload.attemptId); invariant(target?.memberId === member.memberId, 'team/forbidden', 'Completion is restricted to the assigned attempt'); }
+  if (request.action === 'quality.review') invariant(request.payload.reviewerMemberId === member.memberId, 'team/forbidden', 'Review must name the calling member');
 }
 
 /** Produce durable intent/fact events only. Admission and side effects are separate events. */
@@ -69,9 +73,9 @@ export function decideAction(view, request, context) {
     } else requireState(readyTasks(view).some(item => item.taskId === selected.taskId), 'Task is not dependency-ready');
     requireState(!selected.ownerMemberId || selected.ownerMemberId === payload.memberId, 'Task ownership conflicts with dispatch');
     const attemptId = `attempt-${randomUUID()}`;
-    return [change('attempt.dispatched', { taskId: payload.taskId, memberId: payload.memberId, attemptId, generation: view.attempts.filter(item => item.taskId === payload.taskId).length + 1 }, attemptId)];
+    return [change('attempt.dispatched', { taskId: payload.taskId, memberId: payload.memberId, attemptId, generation: view.attempts.filter(item => item.taskId === payload.taskId).length + 1, ...(payload.variants ? { variants: payload.variants, variant: 1 } : {}) }, attemptId)];
   }
-  if (action.startsWith('attempt.')) {
+  if (['attempt.pause', 'attempt.resume', 'attempt.takeover', 'attempt.terminate'].includes(action)) {
     const selected = attempt(payload.taskId, payload.attemptId);
     const allowed = action === 'attempt.resume' ? selected.state === 'paused' : active(selected);
     requireState(allowed, 'Attempt is not controllable in its current state');
@@ -132,6 +136,44 @@ export function decideAction(view, request, context) {
   if (action === 'team.delete') {
     requireState(view.lifecycle !== 'deleting', 'Deletion intent already exists; resume cleanup');
     return [change('team.delete-requested', { memberSessions: view.members.filter(item => item.origin === 'team-created' && item.sessionId).map(item => item.sessionId) })];
+  }
+  if (action === 'task.claim') {
+    requireState(view.planConfirmed, 'Plan requires confirmation');
+    const selected = task(payload.taskId); member(payload.memberId);
+    requireState(!['completed', 'reviewed', 'released'].includes(selected.state), 'Task is already resolved');
+    requireState(!selected.claimMemberId, 'Task is already claimed');
+    requireState(!view.attempts.some(item => item.taskId === payload.taskId && active(item)), 'Task already has active work');
+    requireState(readyTasks(view).some(item => item.taskId === selected.taskId), 'Task is not dependency-ready');
+    return [change('task.claimed', payload)];
+  }
+  if (action === 'task.complete') {
+    const selected = attempt(payload.taskId, payload.attemptId);
+    requireState(selected.state === 'running', 'Completion requires the current admitted attempt');
+    requireState(payload.evidence.length > 0, 'Completion requires evidence');
+    return [change('task.completed', payload, payload.attemptId)];
+  }
+  if (action === 'quality.review') {
+    const selected = attempt(payload.taskId, payload.attemptId);
+    requireState(selected.state === 'running', 'Review requires the current admitted attempt');
+    member(payload.reviewerMemberId);
+    requireState(!view.attempts.some(item => item.taskId === payload.taskId && item.memberId === payload.reviewerMemberId), 'Reviewer must not be a claimant of the task');
+    requireState(payload.criteria.length > 0, 'Review requires explicit criteria');
+    return [change('quality.reviewed', payload, payload.attemptId)];
+  }
+  if (action === 'batch.release') {
+    requireState(payload.taskIds.length > 0, 'Batch release requires at least one task');
+    for (const taskId of payload.taskIds) requireState(task(taskId).state === 'reviewed', 'Task is not awaiting release');
+    return [change('batch.released', payload)];
+  }
+  if (action === 'attempt.select') {
+    const selected = attempt(payload.taskId, payload.attemptId);
+    requireState(Number.isSafeInteger(selected.variant), 'Attempt has no candidate variant to select');
+    requireState(selected.variant === payload.variant, 'Selected variant does not match the attempt');
+    return [change('attempt.selected', payload, payload.attemptId)];
+  }
+  if (action === 'run.interrupted') {
+    requireState(view.attempts.some(active), 'No open attempt to interrupt');
+    return [change('run.interrupted', payload)];
   }
   requireState(false, 'Action has no decision handler');
 }
