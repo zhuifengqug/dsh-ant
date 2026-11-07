@@ -88,8 +88,10 @@ export function foldTeam(events) {
           Object.assign(attempt(), { state: payload.verdict === 'pass' ? 'reviewed' : 'failed', review: payload });
           view.reviews.push({ ...payload, eventSeq: event.eventSeq });
           const reviewed = task();
-          if (payload.verdict === 'fail') reviewed.state = 'failed';
-          else if (reviewed.selfCompleted) reviewed.state = 'reviewed';
+          if (payload.verdict === 'fail') {
+            reviewed.repairRounds = (reviewed.repairRounds ?? 0) + 1;
+            reviewed.state = reviewed.repairRounds >= 2 ? 'anomalous' : 'failed';
+          } else if (reviewed.selfCompleted) reviewed.state = 'reviewed';
           break;
         }
         case 'batch.released': {

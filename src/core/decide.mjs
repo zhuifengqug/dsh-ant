@@ -157,6 +157,7 @@ export function decideAction(view, request, context) {
   if (action === 'quality.review') {
     const selected = attempt(payload.taskId, payload.attemptId);
     requireState(selected.state === 'running', 'Review requires the current admitted attempt');
+    requireState(task(payload.taskId).selfCompleted === true, 'Review requires the executor self-completion');
     member(payload.reviewerMemberId);
     requireState(!view.attempts.some(item => item.taskId === payload.taskId && item.memberId === payload.reviewerMemberId), 'Reviewer must not be a claimant of the task');
     requireState(payload.criteria.length > 0, 'Review requires explicit criteria');
