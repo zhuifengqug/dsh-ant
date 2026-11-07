@@ -167,6 +167,11 @@ window.__ModuleLoader__.load({
         persistence: 'The receipt was not persisted.', nest: 'Colony section', nursery: 'Nursery', gate: 'Gate hall', corridor: 'Main passage',
         pantry: 'Store', refuse: 'Refuse heap', ants: 'Ants', queen: 'Queen', gateOpen: 'Gate', pendingBatch: 'pending release',
         releaseNow: 'Release batch', stageHint: 'Press 1-5 for a chamber, Tab to the gate, Enter to release.',
+        stream: 'Activity', streamRunning: 'Running', streamIdle: 'Idle', streamHelp: 'Needs attention', noActivity: 'Nothing is running right now.',
+        autonomy: 'Autonomy', batchWindow: 'Batch window (minutes)', maxActive: 'Concurrent attempts', defaultVariants: 'Candidates per task',
+        variantWrite: 'Allow parallel candidates on write tasks', settings: 'Amber Ant settings', save: 'Save settings', saved: 'Saved. The next action already uses it.',
+        confirmL3: 'L3 releases batches by itself once the window closes. Switch anyway?', confirm: 'Switch to L3', cancel: 'Cancel',
+        settingsHint: 'The panel and the Host share one settings file.', pendingBadge: 'pending release',
       },
       zh: {
         panel: '玄驹', title: '虫珀·玄驹', subtitle: '多会话协作持久事实面', refresh: '刷新', loading: '正在读取团队事实', refreshing: '正在刷新',
@@ -177,6 +182,11 @@ window.__ModuleLoader__.load({
         committed: '已提交', duplicate: '重复请求', error: '动作失败', stale: '事实已前进，请刷新后重试。', unavailable: 'Host 暂不可用，仍保留最后已知事实。',
         persistence: '回执未持久化。', nest: '蚁巢剖面', nursery: '孵化室', gate: '闸门厅', corridor: '主通道', pantry: '储藏室', refuse: '废料堆',
         ants: '蚂蚁', queen: '蚁后', gateOpen: '巢门', pendingBatch: '待放行', releaseNow: '放行本批', stageHint: '按 1–5 切换巢室，Tab 到巢门，Enter 放行。',
+        stream: '活动流', streamRunning: '进行中', streamIdle: '空闲', streamHelp: '需干预', noActivity: '当前没有进行中的活动。',
+        autonomy: '自主级别', batchWindow: '批窗口（分钟）', maxActive: '并发上限', defaultVariants: '每任务候选数',
+        variantWrite: '允许写任务并行候选', settings: '玄驹设置', save: '保存设置', saved: '已保存，下一次动作即生效。',
+        confirmL3: 'L3 会在窗口到期后自动放行，仍要切换吗？', confirm: '切到 L3', cancel: '取消',
+        settingsHint: '面板与 Host 共用同一份设置文件。', pendingBadge: '待放行',
        
       },
     };
@@ -207,6 +217,9 @@ const CSS = `
       .ant-gate{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto;min-height:32px;padding:0 10px;border:1px solid var(--dsw-alias-label-primary);border-radius:6px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;cursor:pointer}.ant-gate[disabled]{cursor:default;opacity:.5}
       .ant-nest-hint{margin:10px 0 0;color:var(--dsw-alias-label-secondary);font-size:11px}
       .ant-facts{display:grid;gap:8px;margin:0 0 16px}.ant-fact{display:grid;grid-template-columns:minmax(80px,auto) 1fr;gap:8px;border-bottom:1px solid var(--dsw-alias-border-l1);padding-bottom:7px;font-size:12px}.ant-fact dt{color:var(--dsw-alias-label-secondary)}.ant-fact dd{margin:0;overflow-wrap:anywhere}.ant-actions{display:grid;gap:8px;margin-top:14px}.ant-actions .ant-button{width:100%;text-align:left}.ant-status{margin:0 0 12px;padding:9px 10px;border-left:3px solid var(--dsw-alias-state-idle-primary);background:var(--dsw-alias-bg-layer-2);font-size:12px}.ant-status.error{border-left-color:var(--dsw-alias-state-error-primary)}.ant-status.success{border-left-color:var(--dsw-alias-state-success-primary)}.ant-status.warn{border-left-color:var(--dsw-alias-state-warn-primary)}.ant-empty,.ant-loading{display:grid;place-items:center;min-height:220px;padding:24px;color:var(--dsw-alias-label-secondary);text-align:center}.ant-empty strong{display:block;margin-bottom:6px;color:var(--dsw-alias-label-primary)}.ant-member-list{display:grid;gap:6px;margin-top:12px}.ant-member{padding:8px;border-left:2px solid var(--dsw-alias-state-idle-primary);background:var(--dsw-alias-bg-layer-2)}.ant-member strong{display:block;font-size:12px}.ant-member small,.ant-note{color:var(--dsw-alias-label-secondary);font-size:11px}
+      .ant-main{display:flex;flex-direction:column;min-height:0;flex:1}.ant-stream{margin:0;border-top:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1)}.ant-stream summary{padding:9px 16px;cursor:pointer;color:var(--dsw-alias-label-secondary);font-size:11px;font-variant-numeric:tabular-nums}.ant-stream ul{display:grid;gap:4px;margin:0;padding:0 16px 14px;list-style:none}.ant-stream li{display:flex;gap:8px;align-items:baseline;padding:5px 8px;border-left:2px solid var(--dsw-alias-state-idle-primary);background:var(--dsw-alias-bg-base);font-size:11px}.ant-stream li[data-kind=help]{border-left-color:var(--dsw-alias-state-error-primary)}.ant-stream li strong{min-width:78px;font-weight:650}.ant-stream p{margin:0 0 12px;padding:0 16px}
+      .ant-glyph{position:relative;display:inline-flex}.ant-badge{position:absolute;top:-3px;right:-5px;min-width:13px;height:13px;padding:0 3px;border-radius:999px;background:var(--dsw-alias-state-error-primary);color:#fff;font-size:9px;line-height:13px;text-align:center;font-variant-numeric:tabular-nums}
+      .ant-settings{display:grid;gap:12px;max-width:560px}.ant-settings h2{margin:0;font-size:14px}.ant-settings .ant-field{display:grid;grid-template-columns:minmax(180px,1fr) minmax(120px,180px);gap:10px;align-items:center;font-size:12px}.ant-settings .ant-field select,.ant-settings .ant-field input{min-height:32px;padding:0 8px;border:1px solid var(--dsw-alias-border-l1);border-radius:6px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit}.ant-settings .ant-warn{padding:9px 10px;border-left:3px solid var(--dsw-alias-state-warn-primary);background:var(--dsw-alias-bg-layer-2);font-size:12px}.ant-settings .ant-row{display:flex;gap:8px}
       @media(prefers-reduced-motion:no-preference){.ant-ant[data-state=active]{animation:ant-crawl 3s ease-in-out infinite alternate}}
       @media(prefers-reduced-motion:reduce){.ant-ant,.ant-gate,.ant-chamber{animation:none!important;transition:none!important}}
       @keyframes ant-crawl{from{transform:translateX(0)}to{transform:translateX(5px)}}
@@ -266,7 +279,9 @@ const CSS = `
         try { const view = await read(teamId, atLeastEventSeq); if (!disposed && current === sequence) emit({ status: 'ready', view, error: undefined }); }
         catch (error) { if (!disposed && current === sequence) { const normalized = normalizeError(error); emit({ status: statusForError(normalized), error: normalized, view: normalized.code === 'team/not-found' ? undefined : state.view }); } }
       };
+      let bootstrapped = false;
       const loadList = async () => {
+        if (!disposed) bootstrapped = true;
         const current = ++sequence;
         emit({ status: state.view ? 'refreshing' : 'loading', error: undefined });
         try {
@@ -288,7 +303,7 @@ const CSS = `
         try { const receipt = unwrapRemoteResult(await remote.dispatch(request, nextSignal())); if (disposed) return; emit({ request: undefined, receipt }); await loadView(request.teamId, receipt?.lastEventSeq); }
         catch (error) { if (!disposed) { const normalized = normalizeError(error); emit({ request: undefined, status: statusForError(normalized), error: normalized }); } }
       };
-      return { subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); }, getSnapshot: () => state, loadList, selectTeam, selectNode, selectStage, dispatch, dispose() { disposed = true; sequence += 1; controller?.abort(); listeners.clear(); } };
+      return { subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); }, getSnapshot: () => state, loadList, ensureLoaded() { if (disposed || bootstrapped) return undefined; return loadList(); }, selectTeam, selectNode, selectStage, dispatch, dispose() { disposed = true; sequence += 1; controller?.abort(); listeners.clear(); } };
     }
 
     function useModel(model) { return React.useSyncExternalStore(model.subscribe, model.getSnapshot, model.getSnapshot); }
@@ -305,6 +320,14 @@ const CSS = `
     const CHAMBER_CENTERS = { nursery: [17, 26], corridor: [50, 50], pantry: [83, 26], refuse: [17, 74], gate: [83, 74] };
 
     /** One task lives in exactly one chamber; the five chambers partition the view. */
+    function pendingReleaseTasks(view) { return (view?.tasks ?? []).filter(task => task.state === 'reviewed'); }
+    function activitySummary(view) {
+      const holding = (view?.attempts ?? []).filter(item => ACTIVE_ATTEMPT.includes(item.state));
+      const busy = new Set(holding.map(item => item.memberId));
+      const idle = (view?.members ?? []).filter(member => member.status === 'active' && !busy.has(member.memberId)).length;
+      const broken = (view?.tasks ?? []).filter(task => task.state === 'anomalous' || task.state === 'failed').length;
+      return { running: holding.length, idle, needsHelp: broken + (view?.interruptions ?? []).length };
+    }
     function chamberOf(task, attempts) {
       if (task.state === 'reviewed') return 'gate';
       if (task.state === 'completed' || task.state === 'released') return 'pantry';
@@ -332,7 +355,7 @@ const CSS = `
       const tasks = view.tasks ?? [];
       const members = (view.members ?? []).filter(item => item.status === 'active');
       const counts = chamberCounts(view);
-      const pending = tasks.filter(task => task.state === 'reviewed');
+      const pending = pendingReleaseTasks(view);
       const tunnels = (view.plan?.dependencies ?? []).map(edge => {
         const blocker = tasks.find(item => item.taskId === edge.blockedByTaskId);
         const blocked = tasks.find(item => item.taskId === edge.taskId);
@@ -372,6 +395,67 @@ const CSS = `
     }
 
 
+
+    function ActivityStream({ state, locale }) {
+      const view = state.view ?? {};
+      const summary = activitySummary(view);
+      const tasks = view.tasks ?? [];
+      const rows = [];
+      for (const item of view.attempts ?? []) {
+        if (!ACTIVE_ATTEMPT.includes(item.state)) continue;
+        const task = tasks.find(entry => entry.taskId === item.taskId);
+        rows.push({ key: item.attemptId, kind: 'running', label: shortId(item.memberId), detail: task?.title ?? item.taskId });
+      }
+      const busy = new Set((view.attempts ?? []).filter(item => ACTIVE_ATTEMPT.includes(item.state)).map(item => item.memberId));
+      for (const member of view.members ?? []) {
+        if (member.status !== 'active' || busy.has(member.memberId)) continue;
+        rows.push({ key: 'idle-' + member.memberId, kind: 'idle', label: shortId(member.memberId), detail: member.role ?? locale.t('streamIdle') });
+      }
+      for (const item of view.interruptions ?? []) {
+        rows.push({ key: 'stop-' + (item.attemptId ?? item.eventSeq), kind: 'help', label: shortId(item.memberId ?? item.attemptId), detail: item.reason ?? locale.t('streamHelp') });
+      }
+      for (const task of tasks) {
+        if (task.state !== 'anomalous' && task.state !== 'failed') continue;
+        rows.push({ key: 'bad-' + task.taskId, kind: 'help', label: shortId(task.taskId), detail: task.title ?? task.taskId });
+      }
+      return h('details', { className: 'ant-stream', 'data-stream': '' },
+        h('summary', null, locale.t('stream') + ' · ' + locale.t('streamRunning') + ' ' + summary.running + ' · ' + locale.t('streamIdle') + ' ' + summary.idle + ' · ' + locale.t('streamHelp') + ' ' + summary.needsHelp),
+        rows.length ? h('ul', null, rows.map(row => h('li', { key: row.key, className: 'ant-row', 'data-kind': row.kind }, h('strong', null, row.label), h('span', null, row.detail)))) : h('p', { className: 'ant-note' }, locale.t('noActivity')));
+    }
+
+    const LEVELS = ['L1', 'L2', 'L3'];
+    const NUMBER_FIELDS = [['batchWindowMinutes', 'batchWindow', 1, 240], ['maxActiveAttempts', 'maxActive', 1, 8], ['defaultVariants', 'defaultVariants', 1, 3]];
+
+    function SettingsSection({ locale, remote }) {
+      const t = useLocale(locale);
+      const [form, setForm] = React.useState(undefined);
+      const [status, setStatus] = React.useState(undefined);
+      const [armed, setArmed] = React.useState(false);
+      React.useEffect(() => {
+        let closed = false;
+        Promise.resolve(remote.settings({})).then(result => { if (!closed) setForm(unwrapRemoteResult(result)); }, error => { if (!closed) setStatus(normalizeError(error)); });
+        return () => { closed = true; };
+      }, [remote]);
+      if (!form) return h('section', { className: 'ant-settings', 'aria-label': t.t('settings') }, h('h2', null, t.t('settings')), h('p', { className: 'ant-note' }, status ? t.t('error') + ' (' + status.code + ')' : t.t('loading')));
+      const update = patch => setForm({ ...form, ...patch });
+      const chooseLevel = level => { if (level === 'L3' && form.autonomy !== 'L3') { setArmed(true); return; } update({ autonomy: level }); };
+      const save = async () => {
+        setStatus(undefined);
+        try { setForm(unwrapRemoteResult(await remote.writeSettings({ patch: form }))); setStatus({ ok: true }); setArmed(false); }
+        catch (error) { setStatus(normalizeError(error)); }
+      };
+      const note = status?.ok ? t.t('saved') : status ? t.t('error') + ' (' + status.code + ')' : t.t('settingsHint');
+      return h('section', { className: 'ant-settings', 'aria-label': t.t('settings') },
+        h('h2', null, t.t('settings')),
+        h('label', { className: 'ant-field' }, h('span', null, t.t('autonomy')),
+          h('select', { value: form.autonomy, onChange: event => chooseLevel(event.target.value) }, LEVELS.map(level => h('option', { key: level, value: level }, level)))),
+        armed ? h('div', { className: 'ant-warn', role: 'alert' }, h('p', null, t.t('confirmL3')), h('div', { className: 'ant-row' }, h('button', { type: 'button', className: 'ant-button', onClick: () => { update({ autonomy: 'L3' }); setArmed(false); } }, t.t('confirm')), h('button', { type: 'button', className: 'ant-button', onClick: () => setArmed(false) }, t.t('cancel')))) : null,
+        NUMBER_FIELDS.map(([key, label, minimum, maximum]) => h('label', { className: 'ant-field', key }, h('span', null, t.t(label)), h('input', { type: 'number', min: minimum, max: maximum, value: form[key], onChange: event => update({ [key]: Number(event.target.value) }) }))),
+        h('label', { className: 'ant-field' }, h('span', null, t.t('variantWrite')), h('input', { type: 'checkbox', checked: form.variantWriteTasks === true, onChange: event => update({ variantWriteTasks: event.target.checked }) })),
+        h('div', { className: 'ant-row' }, h('button', { type: 'button', className: 'ant-button', onClick: save, disabled: armed }, t.t('save'))),
+        h('p', { className: 'ant-note', role: status?.ok ? 'status' : undefined }, note));
+    }
+
     function Index({ state, locale, onSelect }) {
       return h('aside', { className: 'ant-index', 'aria-label': locale.t('team') }, h('h2', { className: 'ant-section-title' }, locale.t('team')), state.teams.length ? state.teams.map(team => h('button', { key: team.teamId, type: 'button', className: 'ant-team-row', 'aria-current': state.selectedTeamId === team.teamId ? 'true' : undefined, onClick: () => onSelect(team.teamId) }, h('strong', { className: 'ant-team-id' }, shortId(team.teamId)), h('span', { className: 'ant-team-goal' }, team.goal ?? locale.t('unknown')), h('span', { className: 'ant-team-state' }, h('span', null, team.lifecycle ?? locale.t('unknown')), h('span', null, `${locale.t('cursor')} ${team.cursor ?? '?'}`)))) : h('p', { className: 'ant-note' }, locale.t('empty')), state.view?.members?.length ? h('div', { className: 'ant-member-list' }, state.view.members.filter(member => member.status !== 'removed').map(member => h('div', { className: 'ant-member', key: member.memberId }, h('strong', null, shortId(member.memberId)), h('small', null, `${member.role ?? locale.t('unknown')} · ${member.model ?? member.provider ?? locale.t('unknown')}`)))) : null);
     }
@@ -409,7 +493,7 @@ const CSS = `
         statusText(state, t),
         loading ? h('div', { className: 'ant-loading', role: 'status', 'aria-busy': 'true' }, t.t('loading'))
           : state.status === 'empty' ? h('div', { className: 'ant-empty', role: 'status' }, h('div', null, h('strong', null, t.t('empty')), h('span', null, t.t('emptyHint'))))
-          : h('div', { className: 'ant-body' },
+          : h('div', { className: 'ant-main' }, h('div', { className: 'ant-body' },
             h(Index, { state, locale: t, onSelect: model.selectTeam }),
             h('section', { className: 'ant-nest', 'aria-label': t.t('nest') },
               h('div', { className: 'ant-nest-header' },
@@ -417,10 +501,17 @@ const CSS = `
                 h('div', { className: 'ant-counts' }, STAGES.map(stage => h('span', { className: 'ant-chip', key: stage }, `${t.t(stage)} ${counts[stage]}`)))),
               h(Nest, { state, locale: t, dispatch: model.dispatch, onSelectStage: model.selectStage }),
               h('p', { className: 'ant-nest-hint' }, t.t('stageHint'))),
-            h(Inspector, { state, locale: t, dispatch: model.dispatch })));
+            h(Inspector, { state, locale: t, dispatch: model.dispatch })), h(ActivityStream, { state, locale: t })));
     }
 
-    function Sidebar({ locale }) { const t = useLocale(locale); return h('span', { title: t.t('panel'), 'aria-label': t.t('panel'), role: 'img', 'data-ant-icon': '' }, h('svg', { viewBox: '0 0 16 16', width: 16, height: 16, fill: 'none', stroke: 'currentColor', strokeWidth: 1.4, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true' }, h('circle', { cx: 8, cy: 4, r: 1.5 }), h('circle', { cx: 8, cy: 8, r: 1.2 }), h('ellipse', { cx: 8, cy: 12, rx: 1.7, ry: 2.2 }), h('path', { d: 'M7 3 6 1.6' }), h('path', { d: 'M9 3 10 1.6' }), h('path', { d: 'M6.9 7.4 4 6' }), h('path', { d: 'M6.9 8.2 3.6 8.8' }), h('path', { d: 'M6.9 9 4.2 11' }), h('path', { d: 'M9.1 7.4 12 6' }), h('path', { d: 'M9.1 8.2 12.4 8.8' }), h('path', { d: 'M9.1 9 11.8 11' }))); }
+    function Sidebar({ model, locale }) {
+      const t = useLocale(locale);
+      const state = useModel(model);
+      React.useEffect(() => { model.ensureLoaded(); }, [model]);
+      const pending = pendingReleaseTasks(state.view).length;
+      const label = pending ? `${t.t('panel')} · ${pending} ${t.t('pendingBadge')}` : t.t('panel');
+      return h('span', { className: 'ant-glyph', title: label, 'aria-label': label, role: 'img', 'data-ant-icon': '', 'data-pending': pending || undefined }, h('svg', { viewBox: '0 0 16 16', width: 16, height: 16, fill: 'none', stroke: 'currentColor', strokeWidth: 1.4, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true' }, h('circle', { cx: 8, cy: 4, r: 1.5 }), h('circle', { cx: 8, cy: 8, r: 1.2 }), h('ellipse', { cx: 8, cy: 12, rx: 1.7, ry: 2.2 }), h('path', { d: 'M7 3 6 1.6' }), h('path', { d: 'M9 3 10 1.6' }), h('path', { d: 'M6.9 7.4 4 6' }), h('path', { d: 'M6.9 8.2 3.6 8.8' }), h('path', { d: 'M6.9 9 4.2 11' }), h('path', { d: 'M9.1 7.4 12 6' }), h('path', { d: 'M9.1 8.2 12.4 8.8' }), h('path', { d: 'M9.1 9 11.8 11' })), pending ? h('span', { className: 'ant-badge', 'aria-hidden': 'true' }, String(pending)) : null);
+    }
     function StyleSheet() { return h('style', { 'data-ant': 'styles' }, CSS); }
 
     async function apply(ctx) {
@@ -435,8 +526,10 @@ const CSS = `
           remoteCtx.effect(() => model.dispose, 'ant: model');
           const mainDisposer = remoteCtx.slots.inject('main', () => remoteCtx.slots.register({ name: 'main', key: PANEL_ID, locale: LOCALE_NS, inject: () => ({ model, locale }) }, MainPanel));
           remoteCtx.effect(() => mainDisposer, 'ant: main slot');
-          const sidebarDisposer = remoteCtx.slots.inject('sidebar.panellist', () => remoteCtx.slots.register({ name: 'sidebar.panellist', id: PANEL_ID, order: 25, locale: LOCALE_NS, label: () => locale.t('panel'), inject: () => ({ locale }) }, Sidebar));
+          const sidebarDisposer = remoteCtx.slots.inject('sidebar.panellist', () => remoteCtx.slots.register({ name: 'sidebar.panellist', id: PANEL_ID, order: 25, locale: LOCALE_NS, label: () => locale.t('panel'), inject: () => ({ model, locale }) }, Sidebar));
           remoteCtx.effect(() => sidebarDisposer, 'ant: sidebar slot');
+          const settingsDisposer = remoteCtx.slots.inject('settings.section', () => remoteCtx.slots.register({ name: 'settings.section', id: PANEL_ID, order: 70, locale: LOCALE_NS, label: () => locale.t('settings'), inject: () => ({ locale, remote: remoteCtx.remote.team }) }, SettingsSection));
+          remoteCtx.effect(() => settingsDisposer, 'ant: settings slot');
         });
       } catch (error) {
         await remoteDisposer();

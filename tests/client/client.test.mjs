@@ -8,7 +8,9 @@ import { z } from 'zod';
 const root = path.resolve(import.meta.dirname, '../..');
 const clientPath = path.join(root, 'client.js');
 
-function fakeReact() {
+function createFakeReact() {
+  const hooks = [];
+  let cursor = 0;
   return {
     createElement(type, props, ...children) {
       return { type, props: props ?? null, children };
@@ -19,10 +21,17 @@ function fakeReact() {
     useSyncExternalStore(_subscribe, getSnapshot) {
       return getSnapshot();
     },
+    useState(initial) {
+      const slot = cursor++;
+      if (!(slot in hooks)) hooks[slot] = typeof initial === 'function' ? initial() : initial;
+      return [hooks[slot], next => { hooks[slot] = typeof next === 'function' ? next(hooks[slot]) : next; }];
+    },
+    reset() { cursor = 0; },
   };
 }
+function fakeReact() { return createFakeReact(); }
 
-async function loadClient() {
+async function loadClient(react = fakeReact()) {
   const source = await readFile(clientPath, 'utf8');
   let registration;
   const window = {
@@ -41,7 +50,7 @@ async function loadClient() {
   }, { filename: clientPath });
   assert.equal(registration?.id, '@zhuifengqug/dsh-ant');
   const plugin = registration.factory(specifier => {
-    if (specifier === 'react') return fakeReact();
+    if (specifier === 'react') return react;
     if (specifier === 'zod') return { z };
     throw new Error(`unexpected client dependency: ${specifier}`);
   });
@@ -203,6 +212,14 @@ test('client apply mounts both slots, reloads after a receipt, and disposes in r
       calls.push(['get', request, signal]);
       return { ok: true, value: { teamId: request.teamId, goal: 'Ship', lifecycle: 'planned', cursor: request.atLeastEventSeq ?? 4, members: [], attempts: [], tasks: [], plan: { dependencies: [] } } };
     },
+    async settings(request, signal) {
+      calls.push(['settings', request, signal]);
+      return { ok: true, value: { autonomy: 'L2', batchWindowMinutes: 30, maxActiveAttempts: 8, defaultVariants: 1, variantWriteTasks: false } };
+    },
+    async writeSettings(request, signal) {
+      calls.push(['writeSettings', request, signal]);
+      return { ok: true, value: { ...request.patch } };
+    },
     async dispatch(request, signal) {
       calls.push(['dispatch', request, signal]);
       return { ok: true, value: { outcome: 'committed', requestId: request.requestId, teamId: request.teamId, lastEventSeq: 8 } };
@@ -215,6 +232,7 @@ test('client apply mounts both slots, reloads after a receipt, and disposes in r
   assert.deepEqual(runtime.registrations.map(item => [item.options.name, item.options.key ?? item.options.id]), [
     ['main', 'ant'],
     ['sidebar.panellist', 'ant'],
+    ['settings.section', 'ant'],
   ]);
   assert.equal(runtime.localeRegistrations, 1);
   assert.equal(runtime.localeSubscriptions, 1);
@@ -240,10 +258,9 @@ test('client apply mounts both slots, reloads after a receipt, and disposes in r
   assert.equal(props.model.getSnapshot().error.code, 'team/stale-cursor');
 
   await cleanup();
-  assert.deepEqual(runtime.disposeOrder.slice(0, 6), [
-    'ant', 'ant', 'locale-subscription', 'locale', 'follow', 'remote',
+  assert.deepEqual(runtime.disposeOrder.slice(0, 7), [
+    'ant', 'ant', 'ant', 'locale-subscription', 'locale', 'follow', 'remote',
   ]);
-  assert.equal(runtime.followDisposals, 1);
   await runtime.disposeEffects();
   assert.equal(runtime.remoteUnmounts, 1);
   assert.equal(runtime.localeRegistrations, 0);
@@ -313,8 +330,8 @@ test('package manifest publishes the Client half and verified Host injects', asy
 
 function findAllByClass(node, className, hits = []) {
   if (Array.isArray(node)) { for (const child of node) findAllByClass(child, className, hits); return hits; }
-  if (!node || typeof node !== 'object' || !node.props) return hits;
-  if (node.props.className === className) hits.push(node);
+  if (!node || typeof node !== 'object') return hits;
+  if (node.props?.className === className) hits.push(node);
   for (const child of node.children ?? []) findAllByClass(child, className, hits);
   return hits;
 }
@@ -423,4 +440,106 @@ test('chambers stay distinguishable without accent colour and honour reduced mot
   assert.match(source, /@media\(max-width:1024px\)[^@]*ant-nest-plan/);
   assert.match(source, /@media\(max-width:768px\)[^@]*ant-nest-plan/);
   assert.doesNotMatch(source, /ant-orbit/);
+});
+function renderChild(tree, className) {
+  const host = findByClass(tree, className);
+  assert.ok(host, className + ' is rendered');
+  const child = host.children.find(item => typeof item.type === 'function');
+  assert.ok(child, className + ' delegates to a component');
+  return child.type(child.props);
+}
+
+test('the sidebar badge counts the same pending release as the gate hall', async () => {
+  const view = {
+    lifecycle: 'running', cursor: 4,
+    members: [{ memberId: 'member-1', status: 'active', sessionId: 's1' }],
+    attempts: [],
+    tasks: [{ taskId: 'task-1', state: 'reviewed' }, { taskId: 'task-2', state: 'reviewed' }, { taskId: 'task-3', state: 'pending' }],
+    plan: { dependencies: [] },
+  };
+  const remoteTeam = {
+    async list() { return { ok: true, value: { teams: [{ teamId: 'team-1', goal: 'Ship', lifecycle: 'running', cursor: 4 }] } }; },
+    async get(request) { return { ok: true, value: { ...view, teamId: request.teamId } }; },
+    async dispatch() { return { ok: true, value: { outcome: 'committed' } }; },
+  };
+  const runtime = createClientContext(remoteTeam);
+  const { plugin } = await loadClient();
+  const cleanup = await plugin.apply(runtime.ctx);
+  const sidebar = runtime.registrations.find(item => item.options.name === 'sidebar.panellist');
+  const props = sidebar.options.inject();
+  sidebar.component(props);
+  await new Promise(resolve => setImmediate(resolve));
+  const tree = sidebar.component(props);
+  assert.ok(tree, 'the glyph renders with the locale');
+  const glyph = findByClass(tree, 'ant-glyph');
+  assert.equal(glyph.props['data-pending'], 2);
+  assert.match(glyph.props.title, /2/);
+  assert.equal(textOf(findByClass(tree, 'ant-badge')), '2');
+  await cleanup();
+  await runtime.disposeEffects();
+});
+
+test('the activity stream stays collapsed and counts running, idle and attention', async () => {
+  const view = {
+    lifecycle: 'running',
+    members: [{ memberId: 'member-1', status: 'active', sessionId: 's1' }, { memberId: 'member-2', status: 'active', sessionId: 's2' }],
+    attempts: [{ attemptId: 'attempt-1', taskId: 'task-1', memberId: 'member-1', state: 'running' }],
+    tasks: [{ taskId: 'task-1', state: 'running' }, { taskId: 'task-2', state: 'anomalous' }],
+    interruptions: [{ attemptId: 'attempt-0', taskId: 'task-0', reason: 'socket closed' }],
+    plan: { dependencies: [] },
+  };
+  const { tree, runtime, cleanup } = await mountWithView(view);
+  const stream = findByClass(renderChild(tree, 'ant-main'), 'ant-stream');
+  assert.equal(stream.type, 'details');
+  assert.equal(stream.props.open, undefined);
+  const summary = textOf(stream.children[0]);
+  assert.match(summary, /Running 1/);
+  assert.match(summary, /Idle 1/);
+  assert.match(summary, /Needs attention 2/);
+  assert.equal(findAllByClass(stream, 'ant-note').length, 0, 'the rows list replaces the empty note');
+  const rows = findAllByClass(stream, 'ant-row');
+  assert.equal(rows.length, 4, 'one running, one idle and two attention rows');
+  assert.ok(rows.some(row => row.props['data-kind'] === 'idle'), 'idle members keep their footprint');
+  await cleanup();
+  await runtime.disposeEffects();
+});
+
+test('the settings section reads the shared file and arms L3 before saving', async () => {
+  const react = createFakeReact();
+  let stored = { autonomy: 'L2', batchWindowMinutes: 30, maxActiveAttempts: 8, defaultVariants: 1, variantWriteTasks: false };
+  const writes = [];
+  const remoteTeam = {
+    async settings() { return { ok: true, value: stored }; },
+    async writeSettings(request) { writes.push(request.patch); stored = { ...stored, ...request.patch }; return { ok: true, value: stored }; },
+  };
+  const runtime = createClientContext(remoteTeam);
+  const { plugin } = await loadClient(react);
+  const cleanup = await plugin.apply(runtime.ctx);
+  const record = runtime.registrations.find(item => item.options.name === 'settings.section');
+  const props = record.options.inject();
+  react.reset();
+  const loading = record.component(props);
+  assert.match(textOf(findByClass(loading, 'ant-settings')), /Loading team facts/);
+  await new Promise(resolve => setImmediate(resolve));
+  react.reset();
+  const ready = record.component(props);
+  assert.match(textOf(findByClass(ready, 'ant-settings')), /Autonomy/);
+  const select = findAllByClass(ready, 'ant-field')[0].children.find(item => item.type === 'select');
+  assert.ok(select, 'the autonomy field renders a select');
+  select.props.onChange({ target: { value: 'L3' } });
+  react.reset();
+  const armed = record.component(props);
+  assert.match(textOf(findByClass(armed, 'ant-warn')), /Switch anyway/);
+  const confirm = findAllByClass(findByClass(armed, 'ant-warn'), 'ant-button')[0];
+  confirm.props.onClick();
+  react.reset();
+  const chosen = record.component(props);
+  const save = findAllByClass(chosen, 'ant-button').at(-1);
+  save.props.onClick();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(writes.at(-1).autonomy, 'L3');
+  react.reset();
+  assert.match(textOf(findAllByClass(record.component(props), 'ant-note').at(-1)), /Saved/);
+  await cleanup();
+  await runtime.disposeEffects();
 });

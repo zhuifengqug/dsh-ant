@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { invariant } from './errors.mjs';
 import { readyTasks, validatePlan } from './plan.mjs';
+import { autonomyPolicy, capacityOf, candidatesAllowed } from './autonomy.mjs';
 
 const userOnly = new Set(['team.create', 'plan.confirm', 'attempt.takeover', 'attempt.terminate', 'member.invite', 'member.remove', 'member.changeModel', 'batch.release', 'attempt.select', 'team.archive', 'team.restore', 'team.delete']);
 const scheduled = new Set(['attempt.dispatch', 'attempt.pause', 'attempt.resume', 'attempt.retry', 'task.claim', 'run.interrupted', 'spend.record']);
@@ -68,14 +69,14 @@ export function decideAction(view, request, context) {
     requireState(view.planConfirmed, 'Plan requires confirmation');
     const selected = task(payload.taskId); member(payload.memberId);
     requireState(!view.attempts.some(item => active(item) && item.memberId === payload.memberId), 'Member already has active work');
-    requireState(view.attempts.filter(active).length < view.plan.maxActiveAttempts, 'Active attempt limit reached');
+    requireState(view.attempts.filter(active).length < capacityOf(view, autonomyPolicy(context.settings)), 'Active attempt limit reached');
     if (action === 'attempt.retry') {
       const previous = attempt(payload.taskId, payload.previousAttemptId);
       requireState(['failed', 'terminated'].includes(previous.state), 'Previous attempt is not retryable');
     } else if (payload.variants > 1 && selected.state === 'running') {
-      requireState(selected.readOnly === true, 'Only read-only tasks may run candidates in parallel');
+      requireState(candidatesAllowed(selected, autonomyPolicy(context.settings)), 'This task may not run candidates in parallel');
     } else requireState(readyTasks(view).some(item => item.taskId === selected.taskId), 'Task is not dependency-ready');
-    if (payload.variants > 1) requireState(selected.readOnly === true, 'Only read-only tasks may run candidates in parallel');
+    if (payload.variants > 1) requireState(candidatesAllowed(selected, autonomyPolicy(context.settings)), 'This task may not run candidates in parallel');
     requireState(!selected.ownerMemberId || selected.ownerMemberId === payload.memberId, 'Task ownership conflicts with dispatch');
     const attemptId = `attempt-${randomUUID()}`;
     const generation = view.attempts.filter(item => item.taskId === payload.taskId).length + 1;
@@ -177,6 +178,8 @@ export function decideAction(view, request, context) {
   }
   if (action === 'batch.release') {
     requireState(payload.taskIds.length > 0, 'Batch release requires at least one task');
+    const policy = autonomyPolicy(context.settings);
+    requireState(!policy.releaseCap || payload.taskIds.length <= policy.releaseCap, `${policy.autonomy} releases one task at a time`);
     for (const taskId of payload.taskIds) requireState(task(taskId).state === 'reviewed', 'Task is not awaiting release');
     return [change('batch.released', payload)];
   }

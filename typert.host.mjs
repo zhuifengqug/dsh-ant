@@ -22,6 +22,8 @@ export const TYPERT = {
         { kind: 'method', name: 'dispatch', signature: 'dispatch(request: TeamDispatchRequest, signal: AbortSignal): Promise<TeamDispatchReceipt>' },
         { kind: 'method', name: 'get', signature: 'get(request: TeamGetRequest, signal: AbortSignal): Promise<TeamView>' },
         { kind: 'method', name: 'list', signature: 'list(request: TeamListRequest, signal: AbortSignal): Promise<TeamListResult>' },
+        { kind: 'method', name: 'settings', signature: 'settings(request: AntSettingsRequest, signal: AbortSignal): Promise<AntSettings>' },
+        { kind: 'method', name: 'writeSettings', signature: 'writeSettings(request: AntSettingsPatch, signal: AbortSignal): Promise<AntSettings>' },
       ],
     }],
     events: [],

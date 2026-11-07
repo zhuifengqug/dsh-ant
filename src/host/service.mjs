@@ -5,6 +5,7 @@ import { TeamError, invariant } from '../core/errors.mjs';
 import { agentContext, ownerContext, remoteContext } from './context.mjs';
 import { SessionAdapter } from './session-adapter.mjs';
 import { MailDeliveryService } from './mail-delivery.mjs';
+import { createSettingsStore } from './settings.mjs';
 
 const DEFAULT_OWNER_ID = 'ant-host';
 const serviceStates = new WeakMap();
@@ -49,6 +50,7 @@ function normalizeConfig(config = {}) {
     workspaceRoot: config.workspaceRoot ?? process.cwd(),
     ownerId: config.ownerId ?? DEFAULT_OWNER_ID,
     includeArchived: config.includeArchived ?? false,
+    settingsFile: config.settingsFile,
   };
 }
 
@@ -59,6 +61,7 @@ export class AntService extends TypertRemoteService {
     const normalizedConfig = normalizeConfig(config);
     const state = {
       config: normalizedConfig,
+      settings: createSettingsStore({ file: normalizedConfig.settingsFile }),
       closed: false,
       closePromise: undefined,
       sessionAdapter: ctx?.sessionController ? new SessionAdapter(ctx.sessionController) : undefined,
@@ -69,7 +72,7 @@ export class AntService extends TypertRemoteService {
     state.actionService = Promise.resolve().then(() => createTeamActionService({
       workspaceRoot: normalizedConfig.workspaceRoot,
       ownerId: normalizedConfig.ownerId,
-      config: { includeArchived: normalizedConfig.includeArchived },
+      config: { includeArchived: normalizedConfig.includeArchived, readSettings: () => state.settings.read() },
     })).then(service => {
       if (state.closed || !state.sessionAdapter) {
         state.recoveryPromise = Promise.resolve();
@@ -88,6 +91,19 @@ export class AntService extends TypertRemoteService {
   get workspaceRoot() { return stateOf(this).config.workspaceRoot; }
   get config() { return { ...stateOf(this).config }; }
   get sessionAdapter() { return stateOf(this).sessionAdapter; }
+  get settingsFile() { return stateOf(this).settings.file; }
+
+  /** The panel's read side: one file, re-read when it changed. */
+  async settings(_request = {}, signal) {
+    abortIfRequested(signal);
+    return stateOf(this).settings.read();
+  }
+
+  /** The panel's write side; the next action already sees the new values. */
+  async writeSettings(request = {}, signal) {
+    abortIfRequested(signal);
+    return stateOf(this).settings.write(request?.patch ?? {});
+  }
 
   async ready() {
     const state = stateOf(this);

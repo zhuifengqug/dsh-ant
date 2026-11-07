@@ -14,6 +14,36 @@ const listSchema = z.strictObject({
   limit: z.number().int().min(1).max(100).optional(),
 });
 
+const settingsSchema = z.strictObject({});
+const settingsPatchSchema = z.strictObject({
+  patch: z.strictObject({
+    autonomy: z.enum(['L1', 'L2', 'L3']).optional(),
+    batchWindowMinutes: z.number().int().min(1).max(240).optional(),
+    maxActiveAttempts: z.number().int().min(1).max(8).optional(),
+    defaultVariants: z.number().int().min(1).max(3).optional(),
+    variantWriteTasks: z.boolean().optional(),
+  }),
+});
+
+const SETTINGS_JSON = { type: 'object', additionalProperties: false, properties: {} };
+const SETTINGS_PATCH_JSON = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    patch: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        autonomy: { type: 'string', enum: ['L1', 'L2', 'L3'] },
+        batchWindowMinutes: { type: 'integer', minimum: 1, maximum: 240 },
+        maxActiveAttempts: { type: 'integer', minimum: 1, maximum: 8 },
+        defaultVariants: { type: 'integer', minimum: 1, maximum: 3 },
+        variantWriteTasks: { type: 'boolean' },
+      },
+    },
+  },
+  required: ['patch'],
+};
 const requestJsonSchema = {
   type: 'object',
   additionalProperties: true,
@@ -112,6 +142,36 @@ export function createTypertSpec() {
           create: () => resultSchema,
           jsonSchema: resultJsonSchema,
         },
+        cancellation: { parameter: 'signal' },
+      },
+      'team/settings': {
+        service: 'ant',
+        implementation: 'settings',
+        description: 'Read the shared Amber Ant settings file.',
+        invocation: { kind: 'direct' },
+        parameters: [{
+          name: 'request',
+          description: 'Empty settings read request.',
+          source: 'json',
+          codec: { mode: 'strict', typeSymbol: `${PACKAGE_NAME}/types#AntSettingsRequest`, create: () => settingsSchema, jsonSchema: SETTINGS_JSON },
+          strictCodec: { mode: 'strict', typeSymbol: `${PACKAGE_NAME}/types#AntSettingsRequest`, create: () => settingsSchema, jsonSchema: SETTINGS_JSON },
+        }],
+        result: { mode: 'strict', typeSymbol: `${PACKAGE_NAME}/types#AntSettings`, create: () => resultSchema, jsonSchema: resultJsonSchema },
+        cancellation: { parameter: 'signal' },
+      },
+      'team/settings-write': {
+        service: 'ant',
+        implementation: 'writeSettings',
+        description: 'Merge a patch into the shared Amber Ant settings file.',
+        invocation: { kind: 'direct' },
+        parameters: [{
+          name: 'request',
+          description: 'Partial settings patch.',
+          source: 'json',
+          codec: { mode: 'strict', typeSymbol: `${PACKAGE_NAME}/types#AntSettingsPatch`, create: () => settingsPatchSchema, jsonSchema: SETTINGS_PATCH_JSON },
+          strictCodec: { mode: 'strict', typeSymbol: `${PACKAGE_NAME}/types#AntSettingsPatch`, create: () => settingsPatchSchema, jsonSchema: SETTINGS_PATCH_JSON },
+        }],
+        result: { mode: 'strict', typeSymbol: `${PACKAGE_NAME}/types#AntSettings`, create: () => resultSchema, jsonSchema: resultJsonSchema },
         cancellation: { parameter: 'signal' },
       },
     },

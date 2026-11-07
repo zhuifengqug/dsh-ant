@@ -123,7 +123,7 @@ test('a write task refuses parallel candidates before anything is committed', as
   await runSchedule({ service, teamId });
   await assert.rejects(
     service.dispatch({ requestId: 'sample-write', teamId, action: 'attempt.dispatch', payload: { taskId: 'task-1', memberId: 'member-2', variants: 2 } }, { actor: 'system', teamId }),
-    error => error.code === 'team/invalid-state' && /read-only/.test(error.message),
+    error => error.code === 'team/invalid-state' && /may not run candidates in parallel/.test(error.message),
   );
   assert.equal((await service.get({ teamId })).attempts.length, 1);
 });

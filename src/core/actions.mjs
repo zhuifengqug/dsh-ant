@@ -36,8 +36,16 @@ export class TeamActionService {
   get workspaceRoot() { return this.#workspaceRoot; }
   get wal() { return this.#wal; }
 
+  /** Settings are read per action, so a saved change tunes the very next dispatch. */
+  async #settings() {
+    const readSettings = this.#config.readSettings;
+    if (typeof readSettings !== 'function') return {};
+    try { return await readSettings(); } catch { return {}; }
+  }
+
   async dispatch(input, context) {
     const request = parseRequest(input);
+    const settings = await this.#settings();
     const fingerprint = request.action === 'team.create' && !request.teamId ? teamFingerprint(request.payload) : undefined;
     const teamId = request.teamId ?? (fingerprint && !request.payload.rerun ? goalTeamId(this.#workspaceIdentity, fingerprint) : stableTeamId(this.#workspaceIdentity, request.requestId));
     try {
@@ -52,7 +60,7 @@ export class TeamActionService {
       }
       const receipt = await this.#wal.transact(teamId, request, context, async history => {
         const view = history.events.length ? foldTeam(history.events) : undefined;
-        return decideAction(view, request, { ...context, teamId });
+        return decideAction(view, request, { ...context, teamId, settings });
       }, async (history, checkedRequest) => {
         const view = history.events.length ? foldTeam(history.events) : undefined;
         authorize(checkedRequest, { ...context, teamId }, view);

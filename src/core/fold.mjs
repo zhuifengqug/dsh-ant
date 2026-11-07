@@ -91,7 +91,7 @@ export function foldTeam(events) {
           task().selfCompleted = true; break;
         case 'quality.reviewed': {
           Object.assign(attempt(), { state: payload.verdict === 'pass' ? 'reviewed' : 'failed', review: payload });
-          view.reviews.push({ ...payload, eventSeq: event.eventSeq });
+          view.reviews.push({ ...payload, eventSeq: event.eventSeq, occurredAt: Date.parse(event.occurredAt) });
           const reviewed = task();
           if (payload.verdict === 'fail') {
             reviewed.repairRounds = (reviewed.repairRounds ?? 0) + 1;

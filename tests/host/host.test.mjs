@@ -194,10 +194,12 @@ test('mail delivery retries a failed prompt and recovers queued intent after ser
 test('Typert direct descriptors bind service implementations and enforce strict named inputs', async () => {
   const remoteInfo = createTypertRemoteInfo(createTypertSpec(), z);
   const descriptors = Object.fromEntries(remoteInfo.descriptors.map(descriptor => [descriptor.namespace + '/' + descriptor.method, descriptor]));
-  assert.deepEqual(Object.keys(descriptors).sort(), ['team/dispatch', 'team/get', 'team/list']);
+  assert.deepEqual(Object.keys(descriptors).sort(), ['team/dispatch', 'team/get', 'team/list', 'team/settings', 'team/settings-write']);
   assert.equal(descriptors['team/dispatch'].implementation, 'dispatch');
   assert.equal(descriptors['team/get'].implementation, 'get');
   assert.equal(descriptors['team/list'].implementation, 'list');
+  assert.equal(descriptors['team/settings'].implementation, 'settings');
+  assert.equal(descriptors['team/settings-write'].implementation, 'writeSettings');
   const request = { requestId: 'remote-1', action: 'team.create', payload: createPayload };
   assert.deepEqual(remoteInfo.methods['team/dispatch'].input({ strict: true }).create().parse({ request }), { request });
   assert.throws(() => remoteInfo.methods['team/dispatch'].input({ strict: true }).create().parse({ request, extra: true }));
