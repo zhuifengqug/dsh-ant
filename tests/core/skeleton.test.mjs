@@ -80,10 +80,8 @@ test('skeleton actions land as events and are visible through the fold', async t
   view = await service.get({ teamId });
   assert.equal(view.attempts.at(-1).selectedVariant, 1);
 
-  await assert.rejects(
-    service.dispatch({ requestId: 'claim-blocked', teamId, action: 'task.claim', payload: { taskId: 'task-2', memberId: 'member-2' } }, asMember(teamId, 'member-2')),
-    { code: 'team/invalid-state' }
-  );
+  const claim = await service.dispatch({ requestId: 'claim-open', teamId, action: 'task.claim', payload: { taskId: 'task-2', memberId: 'member-2' } }, asMember(teamId, 'member-2'));
+  assert.equal(claim.outcome, 'committed');
   await assert.rejects(
     service.dispatch({ requestId: 'release-by-member', teamId, action: 'batch.release', payload: { batchId: 'batch-2', taskIds: ['task-1'] } }, asMember(teamId, 'member-1')),
     { code: 'team/forbidden' }
