@@ -24,7 +24,7 @@ const evidence = object({ kind: choice('file', 'command', 'session', 'event'), l
 const attempt = { taskId: id, attemptId: id };
 
 export const payloadSchemas = {
-  'team.create': object({ goal: text, workspaceRelativePath: { type: 'string', minLength: 1, maxLength: 4096 }, plan, members: array(member), rerun: optional({ type: 'boolean' }) }),
+  'team.create': object({ goal: text, workspaceRelativePath: { type: 'string', minLength: 1, maxLength: 4096 }, plan, members: array(member), leadMemberId: optional(id), rerun: optional({ type: 'boolean' }) }),
   'plan.confirm': object({ planDigest: { type: 'string', pattern: '^[a-f0-9]{64}$' } }),
   'attempt.dispatch': object({ taskId: id, memberId: id, variants: optional({ type: 'integer', minimum: 1, maximum: 3 }) }),
   'attempt.pause': object(attempt),

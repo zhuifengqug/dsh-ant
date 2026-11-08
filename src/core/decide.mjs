@@ -30,8 +30,17 @@ export function authorize(request, context, view) {
   invariant(!userOnly.has(request.action), 'team/forbidden', 'Action is user-only');
   if (request.action === 'team.create') {
     invariant(context.actor === 'agent' && typeof context.sessionId === 'string' && context.sessionId.length > 0, 'team/forbidden', 'Team creation from a tool requires an agent Session');
-    const seated = (request.payload?.members ?? []).filter(item => item?.sessionId && item.sessionId === context.sessionId);
-    invariant(seated.length === 1, 'team/forbidden', 'Team creation must seat the calling Session as exactly one member');
+    const roster = request.payload?.members ?? [];
+    const lead = request.payload?.leadMemberId;
+    if (lead === undefined) {
+      const seated = roster.filter(item => item?.sessionId && item.sessionId === context.sessionId);
+      invariant(seated.length === 1, 'team/forbidden', 'Team creation must seat the calling Session as exactly one member');
+    } else {
+      const seat = roster.find(item => item?.memberId === lead);
+      invariant(seat, 'team/forbidden', 'Lead member is not in the roster');
+      invariant(!seat.sessionId || seat.sessionId === context.sessionId, 'team/forbidden', 'Lead member carries another Session');
+      invariant(!roster.some(item => item?.memberId !== lead && item?.sessionId === context.sessionId), 'team/forbidden', 'One Session cannot hold two team identities');
+    }
     return;
   }
   if (context.actor === 'system') {
@@ -61,8 +70,11 @@ export function decideAction(view, request, context) {
   authorize(request, context, view);
   if (action === 'team.create') {
     requireState(!view, 'Team already exists');
-    validatePlan(payload.plan, payload.members);
-    return [change('team.created', payload)];
+    const seated = context.actor === 'agent' && context.sessionId && payload.leadMemberId
+      ? { ...payload, members: payload.members.map(item => item.memberId === payload.leadMemberId ? { ...item, sessionId: context.sessionId } : item) }
+      : payload;
+    validatePlan(seated.plan, seated.members);
+    return [change('team.created', seated)];
   }
   invariant(view, 'team/not-found', 'Team does not exist', { teamId: request.teamId });
   if (view.lifecycle === 'deleting') requireState(action === 'team.delete', 'Team deletion is in progress');

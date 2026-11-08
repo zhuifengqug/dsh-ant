@@ -50,6 +50,25 @@ test('one Session opens one colony', async t => {
   assert.equal(second.message, 'This Session already belongs to a Team');
 });
 
+test('a lead seat takes the calling Session without naming it', async t => {
+  const { dispatch, service } = await fixture(t);
+  const request = payload('unused');
+  const { sessionId, ...seat } = request.members[0];
+  const members = [seat];
+  const created = await dispatch.execute({ request: { requestId: 'create-lead-seat', action: 'team.create', payload: { ...request, members, leadMemberId: 'member-1' } } }, asAgent('session-lead'));
+  assert.equal(created.outcome, 'committed');
+  const view = await service.get({ teamId: created.teamId });
+  assert.equal(view.members[0].sessionId, 'session-lead');
+  assert.equal(view.members[0].status, 'active');
+});
+
+test('a lead seat must name a member of the roster', async t => {
+  const { dispatch } = await fixture(t);
+  const refused = await dispatch.execute({ request: { requestId: 'create-bad-lead', action: 'team.create', payload: { ...payload(), leadMemberId: 'member-9' } } }, asAgent('session-lead'));
+  assert.equal(refused.code, 'team/forbidden');
+  assert.equal(refused.message, 'Lead member is not in the roster');
+});
+
 test('a colony must seat the calling Session', async t => {
   const { dispatch } = await fixture(t);
   const refused = await dispatch.execute({ request: { requestId: 'create-absent', action: 'team.create', payload: payload('session-somebody-else') } }, asAgent('session-lead'));

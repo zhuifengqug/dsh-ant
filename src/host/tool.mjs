@@ -127,7 +127,7 @@ export function createAntTools(service) {
 export function createAntTool(service) {
   return {
     name: 'ant_team_dispatch',
-    description: 'Dispatch one Team action through the durable Amber Ant Host service; a Session with no colony opens its own with team.create.',
+    description: 'Dispatch one Team action through the durable Amber Ant Host service; a Session with no colony opens its own with team.create and names its own seat through payload.leadMemberId.',
     parameters: ANT_TOOL_PARAMETERS,
     output: ANT_TOOL_OUTPUT,
     async execute(args, exec) {
