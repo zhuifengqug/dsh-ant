@@ -60,6 +60,7 @@ async function autoRelease({ service, teamId, policy, now }) {
 export async function runSchedule({ service, teamId, settings, now = Date.now() }) {
   const policy = autonomyPolicy(settings);
   const released = policy.autoRelease ? await autoRelease({ service, teamId, policy, now }) : undefined;
+  const hatched = await service.hatchMembers?.({ teamId });
   const view = await service.get({ teamId });
   const plan = evaluateSchedule(view, { policy });
   const dispatched = [];
@@ -79,5 +80,5 @@ export async function runSchedule({ service, teamId, settings, now = Date.now() 
   }
   const assignments = [...dispatched, ...resumed];
   const prompted = assignments.length ? await service.deliverWork?.({ teamId, assignments }) : undefined;
-  return { ...plan, ...(released ? { released } : {}), dispatched, ...(resumed.length ? { resumed } : {}), ...(prompted?.length ? { prompted } : {}) };
+  return { ...plan, ...(released ? { released } : {}), ...(hatched?.length ? { hatched } : {}), dispatched, ...(resumed.length ? { resumed } : {}), ...(prompted?.length ? { prompted } : {}) };
 }

@@ -5,8 +5,8 @@ import { autonomyPolicy, capacityOf, candidatesAllowed } from './autonomy.mjs';
 import { gateStatus } from './gate.mjs';
 
 const userOnly = new Set(['plan.confirm', 'attempt.takeover', 'attempt.terminate', 'member.invite', 'member.remove', 'member.changeModel', 'batch.release', 'attempt.select', 'team.archive', 'team.restore', 'team.delete']);
-const scheduled = new Set(['attempt.dispatch', 'attempt.pause', 'attempt.resume', 'attempt.retry', 'task.claim', 'run.interrupted', 'spend.record']);
-const systemOnly = new Set(['attempt.dispatch', 'attempt.pause', 'attempt.resume', 'attempt.retry', 'run.interrupted', 'spend.record']);
+const scheduled = new Set(['attempt.dispatch', 'attempt.pause', 'attempt.resume', 'attempt.retry', 'task.claim', 'run.interrupted', 'spend.record', 'member.hatch']);
+const systemOnly = new Set(['attempt.dispatch', 'attempt.pause', 'attempt.resume', 'attempt.retry', 'run.interrupted', 'spend.record', 'member.hatch']);
 const active = attempt => ['queued', 'running', 'paused'].includes(attempt.state);
 const change = (type, payload, attemptId) => ({ type, payload, ...(attemptId ? { attemptId } : {}) });
 const requireState = (condition, message) => invariant(condition, 'team/invalid-state', message);
@@ -116,6 +116,14 @@ export function decideAction(view, request, context) {
     requireState(allowed, 'Attempt is not controllable in its current state');
     const types = { 'attempt.pause': 'attempt.pause-requested', 'attempt.resume': 'attempt.resume-requested', 'attempt.takeover': 'attempt.takeover-requested', 'attempt.terminate': 'attempt.terminate-requested' };
     return [change(types[action], payload, payload.attemptId)];
+  }
+  if (action === 'member.hatch') {
+    requireState(view.planConfirmed, 'Plan requires confirmation');
+    const target = view.members.find(item => item.memberId === payload.memberId);
+    requireState(target, 'Member not found');
+    requireState(target.origin === 'team-created' && !target.sessionId, 'Member already holds a Session');
+    requireState(!view.members.some(item => item.memberId !== payload.memberId && item.sessionId === payload.sessionId && item.status !== 'removed'), 'Session already belongs to the team');
+    return [change('member.hatched', payload)];
   }
   if (action === 'member.invite') {
     requireState(!view.members.some(item => item.sessionId === payload.sessionId && item.status !== 'removed'), 'Session already belongs to the team');

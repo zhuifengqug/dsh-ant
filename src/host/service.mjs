@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { symbols } from '@deepseek-ai/cordis';
 import { TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol';
 import { createTeamActionService } from '../core/actions.mjs';
@@ -88,6 +89,7 @@ export class AntService extends TypertRemoteService {
       actionService: undefined,
       mailDelivery: undefined,
       recoveryPromise: undefined,
+      hatching: new Map(),
     };
     state.actionService = Promise.resolve().then(() => createTeamActionService({
       workspaceRoot: normalizedConfig.workspaceRoot,
@@ -218,6 +220,47 @@ export class AntService extends TypertRemoteService {
     const adapter = stateOf(this).sessionAdapter;
     invariant(adapter, 'team/unavailable', 'Session controller is unavailable');
     return adapter.create(request);
+  }
+
+  /**
+   * A colony that declares ephemeral members has to hatch their Sessions: the roster records
+   * intent, the Host owns Session creation, and the binding lands in the WAL as member.hatched.
+   * One hatch per team runs at a time, and a failed hatch leaves the member unhatched for retry.
+   */
+  async hatchMembers({ teamId }) {
+    const state = stateOf(this);
+    const adapter = state.sessionAdapter;
+    if (!adapter) return [];
+    const pendingRun = state.hatching.get(teamId);
+    if (pendingRun) return pendingRun;
+    const run = (async () => {
+      const service = await this.ready();
+      const view = await service.get({ teamId });
+      const waiting = view.planConfirmed
+        ? view.members.filter(member => member.origin === 'team-created' && !member.sessionId
+          && member.status !== 'removed' && member.sessionMode === 'ephemeral')
+        : [];
+      if (!waiting.length) return [];
+      const cwd = path.resolve(this.workspaceRoot, view.workspaceRelativePath ?? '.');
+      const hatched = [];
+      for (const member of waiting) {
+        try {
+          const created = await adapter.create({ cwd });
+          const sessionId = created?.sessionId ?? created?.session?.id ?? created?.agent?.session?.id;
+          invariant(typeof sessionId === 'string' && sessionId.length > 0, 'team/unavailable', 'Session creation returned no Session', { teamId, memberId: member.memberId, retryable: true });
+          try {
+            await adapter.selectModel({ sessionId, provider: member.provider, model: member.model, ...(member.reasoningEffort ? { reasoningEffort: member.reasoningEffort } : {}) });
+          } catch { /* the hatched Session runs on its default model */ }
+          await service.dispatch({ requestId: 'hatch-' + teamId + '-' + member.memberId, teamId, action: 'member.hatch', payload: { memberId: member.memberId, sessionId } }, { actor: 'system', teamId });
+          hatched.push({ memberId: member.memberId, sessionId });
+        } catch (error) {
+          hatched.push({ memberId: member.memberId, error: error?.message });
+        }
+      }
+      return hatched;
+    })().finally(() => state.hatching.delete(teamId));
+    state.hatching.set(teamId, run);
+    return run;
   }
 
   /**

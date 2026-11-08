@@ -33,6 +33,7 @@ export const payloadSchemas = {
   'attempt.terminate': object({ ...attempt, reason: optional(text) }),
   'attempt.retry': object({ taskId: id, previousAttemptId: id, memberId: id }),
   'member.invite': object({ sessionId: id, role: text, parentMemberId: optional(id) }),
+  'member.hatch': object({ memberId: id, sessionId: id }),
   'member.accept': object({ invitationId: id }),
   'member.remove': object({ memberId: id }),
   'member.changeModel': object({ memberId: id, ...modelFields }),

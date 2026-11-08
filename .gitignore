@@ -7,6 +7,7 @@ dist/
 .dsh-mattskillsdeck-cache/
 
 # 临时与系统文件
+.local/
 tmp/
 *.log
 .DS_Store

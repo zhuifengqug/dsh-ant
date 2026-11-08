@@ -40,6 +40,11 @@ export function foldTeam(events) {
           if (!['reviewed', 'released', 'completed'].includes(aborted.state)) aborted.state = 'terminated';
           break;
         }
+        case 'member.hatched': {
+          const target = find(view.members, 'memberId', payload.memberId);
+          target.sessionId = payload.sessionId; target.status = 'active';
+          break;
+        }
         case 'member.invited': view.invitations.push({ ...payload, state: 'requested' }); break;
         case 'member.accept-requested':
         case 'member.accepted': {

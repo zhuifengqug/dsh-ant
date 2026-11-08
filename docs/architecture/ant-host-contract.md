@@ -410,3 +410,13 @@ validate explicit teamId, user authority and current writer fencing
 ## sessionController.prompt
 
 `prompt(request, signal)` 会在准入消息前解引用调用方 signal（Host 内 `signal.throwIfAborted()`），因此没有自有生命周期的调用方也必须传一个：`await controller.prompt(request, signal ?? new AbortController().signal)`。漏传时抛 `Cannot read properties of undefined (reading 'throwIfAborted')`，消息不会进收件箱。
+
+## member.hatch
+
+名册里 `sessionMode: 'ephemeral'` 的成员没有 Session 就不是可派工的成员：Team 只是名册，Session 归 Host 拥有。孵化由调度 tick 触发，不建队即触发——`runSchedule` 在评估就绪性之前调用 `service.hatchMembers({ teamId })`，因此天然受 `plan.confirmed` 门控（未确认的计划不孵任何 Session）。
+
+流程：`sessionController.create({ cwd })`（cwd = `workspaceRoot/workspaceRelativePath`）→ 可选 `selectModel({ sessionId, provider, model, reasoningEffort })`（失败即回落到该 Session 的默认模型，不阻断孵化）→ 以 system 身份落 `member.hatch`，fold 把 `sessionId` 绑到成员并置 `status: 'active'`。system 权威要求 `planConfirmed`，所以 `member.hatch` 同时进 `scheduled` 与 `systemOnly`，成员不能自己认领。
+
+幂等：每个 team 同时只跑一个孵化批（`state.hatching`），requestId 固定为 `hatch-<teamId>-<memberId>`；创建失败只记 `{ memberId, error }` 返回给调用方，成员保持 `requested`，下一轮 tick 自动重试。已绑定的成员不会二次孵化，因为候选集要求 `origin === 'team-created' && !sessionId`。
+
+删除清理：孵化出的 Session 保留 `origin: 'team-created'`，`team.delete` 的会话血缘因此能把它们一并退休。
