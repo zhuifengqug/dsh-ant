@@ -23,8 +23,9 @@ export function reviewAssignment(view, taskId) {
 export function gateStatus(view, plan, taskId) {
   const task = view.tasks.find(item => item.taskId === taskId);
   const passes = (view.reviews ?? []).filter(review => review.taskId === taskId && review.verdict === 'pass');
-  const gates = (plan?.qualityGates ?? [])
-    .filter(gate => gate.taskId === taskId)
+  const declared = (plan?.qualityGates ?? []).filter(gate => gate.taskId === taskId);
+  const single = declared.filter(gate => gate.kind === 'review').length === 1;
+  const gates = declared
     .map(gate => ({
       gateId: gate.gateId,
       kind: gate.kind,
