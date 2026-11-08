@@ -1,5 +1,5 @@
 import { TeamError } from '../core/errors.mjs';
-import { runSchedule, releaseBatch } from '../core/scheduler.mjs';
+import { runSchedule } from '../core/scheduler.mjs';
 import { summarizeSpend } from '../core/spend.mjs';
 import { serializeError } from './context.mjs';
 
@@ -109,9 +109,12 @@ export function createAntTools(service) {
       description: 'Release a batch of reviewed tasks as the owner, then dispatch whatever the release unblocked.',
       parameters: { teamId: teamIdParameter, taskIds: { type: 'array', items: { type: 'string' }, description: 'Task identities to release.', required: true } },
       output: ANT_RESULT_OUTPUT,
-      async execute(args) {
+      async execute(args, exec) {
+        if (!exec?.agent) {
+          return serializeError(new TeamError('team/forbidden', 'ant_team_release requires a calling agent Session'));
+        }
         try {
-          return await releaseBatch({ service, teamId: args.teamId, taskIds: args.taskIds });
+          return await service.releaseAsAgent({ teamId: args.teamId, taskIds: args.taskIds }, exec.agent, exec.signal);
         } catch (error) {
           return serializeError(error);
         }
@@ -124,7 +127,7 @@ export function createAntTools(service) {
 export function createAntTool(service) {
   return {
     name: 'ant_team_dispatch',
-    description: 'Dispatch one Team action through the durable Amber Ant Host service.',
+    description: 'Dispatch one Team action through the durable Amber Ant Host service; a Session with no colony opens its own with team.create.',
     parameters: ANT_TOOL_PARAMETERS,
     output: ANT_TOOL_OUTPUT,
     async execute(args, exec) {
@@ -132,6 +135,7 @@ export function createAntTool(service) {
         return serializeError(new TeamError('team/forbidden', 'ant_team_dispatch requires a calling agent Session'));
       }
       try {
+        if (args?.request?.action === 'team.create') return await service.dispatchAsCreator(args.request, exec.agent, exec.signal);
         return await service.dispatchAsAgent(args.request, exec.agent, exec.signal);
       } catch (error) {
         return serializeError(error);

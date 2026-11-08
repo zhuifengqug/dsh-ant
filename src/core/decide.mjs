@@ -4,7 +4,7 @@ import { readyTasks, validatePlan } from './plan.mjs';
 import { autonomyPolicy, capacityOf, candidatesAllowed } from './autonomy.mjs';
 import { gateStatus } from './gate.mjs';
 
-const userOnly = new Set(['team.create', 'plan.confirm', 'attempt.takeover', 'attempt.terminate', 'member.invite', 'member.remove', 'member.changeModel', 'batch.release', 'attempt.select', 'team.archive', 'team.restore', 'team.delete']);
+const userOnly = new Set(['plan.confirm', 'attempt.takeover', 'attempt.terminate', 'member.invite', 'member.remove', 'member.changeModel', 'batch.release', 'attempt.select', 'team.archive', 'team.restore', 'team.delete']);
 const scheduled = new Set(['attempt.dispatch', 'attempt.pause', 'attempt.resume', 'attempt.retry', 'task.claim', 'run.interrupted', 'spend.record']);
 const systemOnly = new Set(['attempt.dispatch', 'attempt.pause', 'attempt.resume', 'attempt.retry', 'run.interrupted', 'spend.record']);
 const active = attempt => ['queued', 'running', 'paused'].includes(attempt.state);
@@ -28,6 +28,12 @@ export function authorize(request, context, view) {
     return;
   }
   invariant(!userOnly.has(request.action), 'team/forbidden', 'Action is user-only');
+  if (request.action === 'team.create') {
+    invariant(context.actor === 'agent' && typeof context.sessionId === 'string' && context.sessionId.length > 0, 'team/forbidden', 'Team creation from a tool requires an agent Session');
+    const seated = (request.payload?.members ?? []).filter(item => item?.sessionId && item.sessionId === context.sessionId);
+    invariant(seated.length === 1, 'team/forbidden', 'Team creation must seat the calling Session as exactly one member');
+    return;
+  }
   if (context.actor === 'system') {
     invariant(context.teamId === request.teamId && view?.planConfirmed && scheduled.has(request.action), 'team/forbidden', 'Scheduler authority is limited to a confirmed team');
     return;

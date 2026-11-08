@@ -31,7 +31,9 @@ test('create commits a stable TeamView, duplicate returns original teamId, and l
   assert.equal(first.outcome, 'committed');
   assert.equal(duplicate.outcome, 'duplicate');
   assert.equal(duplicate.teamId, first.teamId);
-  await assert.rejects(service.dispatch(request, { actor: 'agent', teamId: first.teamId, memberId: 'member-1', sessionId: 'session-1' }), { code: 'team/forbidden' });
+  const repeated = await service.dispatch({ ...request, requestId: 'create-agent' }, { actor: 'agent', teamId: first.teamId, memberId: 'member-1', sessionId: 'session-1' });
+  assert.equal(repeated.outcome, 'duplicate');
+  assert.equal(repeated.teamId, first.teamId);
   assert.equal((await service.get({ teamId: first.teamId })).cursor, 1);
   const view = await service.get({ teamId: first.teamId });
   assert.equal(view.lifecycle, 'staged');

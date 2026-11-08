@@ -29,6 +29,11 @@ export function agentContext(agent, { teamId, memberId } = {}) {
   };
 }
 
+export function creatorContext(agent) {
+  const sessionId = agent?.session?.id ?? agent?.session?.header?.id ?? agent?.id;
+  return { actor: 'agent', sessionId: stringId(sessionId, 'sessionId') };
+}
+
 export function systemContext(teamId) {
   return { actor: 'system', teamId: stringId(teamId, 'teamId') };
 }

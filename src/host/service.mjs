@@ -1,8 +1,9 @@
 import { symbols } from '@deepseek-ai/cordis';
 import { TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol';
 import { createTeamActionService } from '../core/actions.mjs';
+import { releaseBatch } from '../core/scheduler.mjs';
 import { TeamError, invariant } from '../core/errors.mjs';
-import { agentContext, ownerContext, remoteContext } from './context.mjs';
+import { agentContext, creatorContext, ownerContext, remoteContext } from './context.mjs';
 import { SessionAdapter } from './session-adapter.mjs';
 import { MailDeliveryService } from './mail-delivery.mjs';
 import { createSettingsStore } from './settings.mjs';
@@ -130,10 +131,26 @@ export class AntService extends TypertRemoteService {
     return dispatchThroughService(this, input, remoteContext(invocation), signal);
   }
 
-  async dispatchAsAgent(input, agent, signal) {
+  /** A Session with no colony of its own opens one; the caller must seat itself in the roster. */
+  async dispatchAsCreator(input, agent, signal) {
     abortIfRequested(signal);
     invariant(agent && typeof agent === 'object', 'team/forbidden', 'Calling agent is required');
-    const teamId = input?.teamId;
+    invariant(input?.action === 'team.create', 'team/forbidden', 'Creator dispatch is limited to team creation');
+    const context = creatorContext(agent);
+    const actionService = await this.ready();
+    for (const entry of (await actionService.list({})).teams) {
+      let view;
+      try { view = await actionService.get({ teamId: entry.teamId }); } catch { continue; }
+      const seated = (view.members ?? []).find(candidate => candidate.status === 'active' && candidate.sessionId === context.sessionId);
+      invariant(!seated, 'team/forbidden', 'This Session already belongs to a Team');
+    }
+    return dispatchThroughService(this, input, context, signal);
+  }
+
+  /** Resolve the calling Session to its active membership; every member surface goes through here. */
+  async resolveMember(agent, teamId, signal) {
+    abortIfRequested(signal);
+    invariant(agent && typeof agent === 'object', 'team/forbidden', 'Calling agent is required');
     invariant(typeof teamId === 'string' && teamId.length > 0, 'team/forbidden', 'Agent dispatch requires a teamId');
     const sessionId = sessionIdOf(agent);
     invariant(typeof sessionId === 'string' && sessionId.length > 0, 'team/forbidden', 'Calling agent session is required');
@@ -142,7 +159,18 @@ export class AntService extends TypertRemoteService {
     abortIfRequested(signal);
     const member = view.members.find(candidate => candidate.status === 'active' && candidate.sessionId === sessionId);
     invariant(member, 'team/forbidden', 'Calling agent is not an active Team member');
-    return dispatchThroughService(this, input, agentContext(agent, { teamId, memberId: member.memberId }), signal);
+    return { actionService, view, member, sessionId };
+  }
+
+  async dispatchAsAgent(input, agent, signal) {
+    const { member, sessionId } = await this.resolveMember(agent, input?.teamId, signal);
+    return dispatchThroughService(this, input, agentContext(agent, { teamId: input.teamId, memberId: member.memberId }), signal);
+  }
+
+  /** Batch release stays owner-authorised in the WAL; membership is what the tool boundary checks. */
+  async releaseAsAgent(input, agent, signal) {
+    const { actionService } = await this.resolveMember(agent, input?.teamId, signal);
+    return releaseBatch({ service: actionService, teamId: input.teamId, taskIds: input.taskIds ?? [], settings: stateOf(this).settings.read() });
   }
 
   async get(input, signal) {
