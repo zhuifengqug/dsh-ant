@@ -224,7 +224,10 @@ export class TeamActionService {
     const limit = request.limit ?? 100;
     const offset = request.cursor ? Number.parseInt(request.cursor, 10) : 0;
     invariant(Number.isSafeInteger(offset) && offset >= 0, 'team/invalid-action', 'Invalid list cursor');
-    return { teams: teams.slice(offset, offset + limit), cursor: offset + limit < teams.length ? String(offset + limit) : undefined };
+    const page = teams.slice(offset, offset + limit);
+    const result = { teams: page };
+    if (offset + limit < teams.length) result.cursor = String(offset + limit);
+    return result;
   }
 
   async close() { await this.#lease.release(this.#token.ownerId, this.#token.epoch, this.#token.fencingToken); }
