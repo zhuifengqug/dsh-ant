@@ -406,3 +406,7 @@ validate explicit teamId, user authority and current writer fencing
 - DSH `dsh-typert-protocol`、`dsh-typert-registry`、`dsh-typert-loader` 与 `dsh-api-job-controller` `0.2.1-rc.2` 的已读 Host/Client 产物。
 
 本稿是设计输入，不是实现完成证明。
+
+## sessionController.prompt
+
+`prompt(request, signal)` 会在准入消息前解引用调用方 signal（Host 内 `signal.throwIfAborted()`），因此没有自有生命周期的调用方也必须传一个：`await controller.prompt(request, signal ?? new AbortController().signal)`。漏传时抛 `Cannot read properties of undefined (reading 'throwIfAborted')`，消息不会进收件箱。

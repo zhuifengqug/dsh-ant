@@ -31,7 +31,8 @@ const request = (overrides = {}) => ({
 async function fixture(t) {
   const workspaceRoot = await mkdtemp(path.join(os.tmpdir(), 'ant-wake-'));
   const prompts = [];
-  const controller = { accept: true, async prompt(value) { prompts.push(value); return { accepted: controller.accept }; } };
+  // Mirrors the Host: prompt(request, signal) dereferences the caller signal before admission.
+  const controller = { accept: true, async prompt(value, signal) { signal.throwIfAborted(); prompts.push(value); return { accepted: controller.accept }; } };
   const context = new Context();
   context.provide('sessionController', controller);
   const service = new AntService(context, { workspaceRoot, ownerId: 'wake-host' });

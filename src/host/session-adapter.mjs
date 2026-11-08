@@ -23,7 +23,9 @@ export class SessionAdapter {
 
   async prompt(request, signal) {
     invariant(this.#controller && typeof this.#controller.prompt === 'function', 'team/unavailable', 'Session controller is unavailable');
-    const result = await this.#controller.prompt(request, signal);
+    // The Host's prompt(request, signal) dereferences the caller signal before admitting the
+    // message, so a caller with no lifetime of its own must still hand it one.
+    const result = await this.#controller.prompt(request, signal ?? new AbortController().signal);
     invariant(result && result.accepted === true, 'team/unavailable', 'Session controller did not confirm inbox admission', { sessionId: request.sessionId, retryable: true });
     return result;
   }
