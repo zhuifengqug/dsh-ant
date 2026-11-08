@@ -69,5 +69,15 @@ export async function runSchedule({ service, teamId, settings, now = Date.now() 
     cursor = receipt.lastEventSeq;
     dispatched.push({ ...assign, requestId: receipt.requestId, firstEventSeq: receipt.firstEventSeq });
   }
-  return { ...plan, ...(released ? { released } : {}), dispatched };
+  const resumed = [];
+  for (const memberId of plan.wake) {
+    const stalled = view.attempts.find(item => item.memberId === memberId && item.state === 'paused');
+    if (!stalled) continue;
+    const receipt = await service.dispatch({ requestId: 'wake-' + teamId + '-' + (cursor + 1), teamId, action: 'attempt.resume', payload: { taskId: stalled.taskId, attemptId: stalled.attemptId } }, { actor: 'system', teamId });
+    cursor = receipt.lastEventSeq;
+    resumed.push({ taskId: stalled.taskId, memberId, attemptId: stalled.attemptId, requestId: receipt.requestId });
+  }
+  const assignments = [...dispatched, ...resumed];
+  const prompted = assignments.length ? await service.deliverWork?.({ teamId, assignments }) : undefined;
+  return { ...plan, ...(released ? { released } : {}), dispatched, ...(resumed.length ? { resumed } : {}), ...(prompted?.length ? { prompted } : {}) };
 }

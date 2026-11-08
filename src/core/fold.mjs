@@ -16,7 +16,7 @@ export function foldTeam(events) {
       view = {
         schemaVersion: 1, teamId: event.teamId, goal: payload.goal, workspaceRelativePath: payload.workspaceRelativePath, fingerprint: teamFingerprint(payload),
         lifecycle: payload.plan.mode === 'fast' ? 'planned' : 'staged', plan: payload.plan, planDigest: digest(payload.plan),
-        planConfirmed: payload.plan.mode === 'fast', members: payload.members.map(member => ({ ...member, origin: member.sessionId ? 'existing' : 'team-created', status: member.sessionId ? 'active' : 'requested' })),
+        planConfirmed: payload.plan.mode === 'fast', ...(payload.leadMemberId ? { leadMemberId: payload.leadMemberId } : {}), members: payload.members.map(member => ({ ...member, origin: member.sessionId ? 'existing' : 'team-created', status: member.sessionId ? 'active' : 'requested' })),
         tasks: payload.plan.tasks.map(task => ({ ...task, state: 'pending' })), attempts: [], invitations: [], mailbox: [], claims: [], batches: [], reviews: [], spend: [], interruptions: [], cursor: 0,
       };
     } else {

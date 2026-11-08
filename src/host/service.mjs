@@ -32,6 +32,25 @@ function isActionContext(value) {
   return value && typeof value === 'object' && typeof value.actor === 'string';
 }
 
+function workBrief({ teamId, member, task, attempt, plan }) {
+  const gates = (plan?.qualityGates ?? []).filter(gate => gate.taskId === task.taskId);
+  return [
+    '【玄驹派工】队 ' + teamId + ' 把「' + task.title + '」(' + task.taskId + ') 派给成员 ' + member.memberId + '。',
+    '目标：' + task.objective,
+    '范围：' + ((task.inScope ?? []).join('、') || '不限') + '；不做：' + ((task.outOfScope ?? []).join('、') || '无'),
+    '验收：' + ((task.acceptance ?? []).join('；') || '按目标'),
+    ...(task.verify?.length ? ['验证命令：' + task.verify.join('；')] : []),
+    ...(gates.length ? ['质量门：' + gates.map(gate => gate.gateId + '(' + gate.kind + ')').join('、')] : []),
+    'attempt：' + attempt.attemptId,
+    '回报：用 ant_team_dispatch 发 task.complete，payload { taskId, attemptId, summary, evidence }。',
+    ...(task.verify?.length
+      ? ['命令类证据的 locator 必须就是上面的验证命令原文，否则完成会被拒。']
+      : ['至少给一条证据，locator 指向你改的文件。']),
+    '审查不要自己做：交回队里，由没干过这个任务的成员发 quality.review。',
+    ...(member.executionPrompt ? [member.executionPrompt] : []),
+  ].join('\n');
+}
+
 async function dispatchThroughService(receiver, input, context, signal) {
   abortIfRequested(signal);
   const service = await receiver.ready();
@@ -169,8 +188,9 @@ export class AntService extends TypertRemoteService {
 
   /** Batch release stays owner-authorised in the WAL; membership is what the tool boundary checks. */
   async releaseAsAgent(input, agent, signal) {
-    const { actionService } = await this.resolveMember(agent, input?.teamId, signal);
-    return releaseBatch({ service: actionService, teamId: input.teamId, taskIds: input.taskIds ?? [], settings: stateOf(this).settings.read() });
+    const { member, view } = await this.resolveMember(agent, input?.teamId, signal);
+    invariant(view.leadMemberId && view.leadMemberId === member.memberId, 'team/forbidden', 'Release is reserved to the colony lead', { retryable: false, teamId: input.teamId, memberId: member.memberId });
+    return releaseBatch({ service: this, teamId: input.teamId, taskIds: input.taskIds ?? [], settings: stateOf(this).settings.read() });
   }
 
   async get(input, signal) {
@@ -198,6 +218,43 @@ export class AntService extends TypertRemoteService {
     const adapter = stateOf(this).sessionAdapter;
     invariant(adapter, 'team/unavailable', 'Session controller is unavailable');
     return adapter.create(request);
+  }
+
+  /**
+   * The WAL records the dispatch; waking the Session that must do the work is the Host's job.
+   * A refused prompt pauses the attempt so the next tick can resume and retry it.
+   */
+  async deliverWork({ teamId, assignments = [] }) {
+    const adapter = stateOf(this).sessionAdapter;
+    if (!adapter || !assignments.length) return [];
+    const service = await this.ready();
+    const view = await service.get({ teamId });
+    const delivered = [];
+    for (const item of assignments) {
+      const attempt = view.attempts.find(candidate => candidate.attemptId === item.attemptId)
+        ?? view.attempts.filter(candidate => candidate.taskId === item.taskId && candidate.memberId === item.memberId).at(-1);
+      const task = view.tasks.find(candidate => candidate.taskId === item.taskId);
+      const member = view.members.find(candidate => candidate.memberId === item.memberId);
+      if (!attempt || !task || !member?.sessionId) continue;
+      delivered.push(await this.#deliverAttempt({ adapter, service, teamId, view, task, member, attempt }));
+    }
+    return delivered;
+  }
+
+  async #deliverAttempt({ adapter, service, teamId, view, task, member, attempt }) {
+    const request = {
+      requestId: 'work-' + teamId + '-' + attempt.attemptId,
+      sessionId: member.sessionId,
+      mode: 'queue',
+      content: [{ type: 'text', text: workBrief({ teamId, member, task, attempt, plan: view.plan }) }],
+    };
+    try {
+      await adapter.prompt(request);
+      return { taskId: task.taskId, attemptId: attempt.attemptId, memberId: member.memberId, delivered: true };
+    } catch (error) {
+      await service.dispatch({ requestId: 'stall-' + teamId + '-' + attempt.attemptId, teamId, action: 'attempt.pause', payload: { taskId: task.taskId, attemptId: attempt.attemptId } }, { actor: 'system', teamId }).catch(() => undefined);
+      return { taskId: task.taskId, attemptId: attempt.attemptId, memberId: member.memberId, delivered: false, reason: error?.message };
+    }
   }
 
   async prompt(request, signal) {

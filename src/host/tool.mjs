@@ -106,7 +106,7 @@ export function createAntTools(service) {
     },
     {
       name: 'ant_team_release',
-      description: 'Release a batch of reviewed tasks as the owner, then dispatch whatever the release unblocked.',
+      description: 'Release a batch of reviewed tasks as the colony lead, then dispatch whatever the release unblocked.',
       parameters: { teamId: teamIdParameter, taskIds: { type: 'array', items: { type: 'string' }, description: 'Task identities to release.', required: true } },
       output: ANT_RESULT_OUTPUT,
       async execute(args, exec) {
