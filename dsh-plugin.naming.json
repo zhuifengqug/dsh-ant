@@ -8,11 +8,26 @@
     "packageName": "@zhuifengqug/dsh-ant"
   },
   "names": {
-    "pluginNames": ["ant"],
-    "loaderIds": ["zhuifengqug-ant"],
-    "services": ["ant"],
-    "tools": ["ant_team_dispatch"],
-    "commands": ["ant"],
+    "pluginNames": [
+      "ant"
+    ],
+    "loaderIds": [
+      "zhuifengqug-ant"
+    ],
+    "services": [
+      "ant"
+    ],
+    "tools": [
+      "ant_team_dispatch",
+      "ant_team_get",
+      "ant_team_list",
+      "ant_team_release",
+      "ant_team_schedule",
+      "ant_team_spend"
+    ],
+    "commands": [
+      "ant"
+    ],
     "skills": [],
     "skillProviders": [],
     "events": [],
