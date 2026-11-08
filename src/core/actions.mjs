@@ -4,6 +4,7 @@ import { TeamError, invariant } from './errors.mjs';
 import { parseGet, parseList, parseRequest } from './codec.mjs';
 import { goalTeamId, requestDigest, stableTeamId, teamFingerprint } from './canonical.mjs';
 import { foldTeam } from './fold.mjs';
+import { withGateQueues } from './gate.mjs';
 import { authorize, decideAction } from './decide.mjs';
 import { TeamWal } from './wal.mjs';
 import { TeamWriterLease } from './writer-lease.mjs';
@@ -174,7 +175,7 @@ export class TeamActionService {
     if (request.atLeastEventSeq !== undefined && history.cursor < request.atLeastEventSeq) {
       throw new TeamError('team/unavailable', 'Requested cursor is not available yet', { teamId: request.teamId, eventSeq: history.cursor, retryable: true });
     }
-    return { ...view, cursor: history.cursor, walDigest: history.walDigest };
+    return withGateQueues({ ...view, cursor: history.cursor, walDigest: history.walDigest });
   }
 
   async admitMail(input) {

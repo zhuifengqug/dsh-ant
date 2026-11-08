@@ -42,7 +42,7 @@ export const payloadSchemas = {
   'quality.report': object({ ...attempt, verdict: choice('pass', 'fail'), summary: text, evidence: array(evidence) }),
   'task.claim': object({ taskId: id, memberId: id }),
   'task.complete': object({ ...attempt, summary: text, evidence: array(evidence) }),
-  'quality.review': object({ ...attempt, reviewerMemberId: id, verdict: choice('pass', 'fail'), criteria: strings, summary: text }),
+  'quality.review': object({ ...attempt, reviewerMemberId: id, verdict: choice('pass', 'fail'), criteria: strings, summary: text, gateId: optional(id) }),
   'batch.release': object({ batchId: id, taskIds: { type: 'array', items: id, maxItems: 256 } }),
   'attempt.select': object({ ...attempt, variant: { type: 'integer', minimum: 1, maximum: 3 } }),
   'spend.record': object({ ...attempt, tokensIn: optional({ type: 'integer', minimum: 0 }), tokensOut: optional({ type: 'integer', minimum: 0 }), costMicros: optional({ type: 'integer', minimum: 0 }), model: optional(text), source: optional(text) }),

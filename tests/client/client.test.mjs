@@ -406,6 +406,7 @@ test('the gate releases the pending batch from the keyboard', async () => {
     members: [{ memberId: 'member-1', status: 'active', sessionId: 's1' }],
     attempts: [],
     tasks: [{ taskId: 'task-2', state: 'reviewed' }, { taskId: 'task-6', state: 'reviewed' }],
+    releaseQueue: [{ taskId: 'task-2' }, { taskId: 'task-6' }],
     plan: { dependencies: [] },
   };
   const { props, plan, calls, runtime, cleanup } = await mountWithView(view);
@@ -455,6 +456,7 @@ test('the sidebar badge counts the same pending release as the gate hall', async
     members: [{ memberId: 'member-1', status: 'active', sessionId: 's1' }],
     attempts: [],
     tasks: [{ taskId: 'task-1', state: 'reviewed' }, { taskId: 'task-2', state: 'reviewed' }, { taskId: 'task-3', state: 'pending' }],
+    releaseQueue: [{ taskId: 'task-1' }, { taskId: 'task-2' }],
     plan: { dependencies: [] },
   };
   const remoteTeam = {

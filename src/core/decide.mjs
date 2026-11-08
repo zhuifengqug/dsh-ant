@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { invariant } from './errors.mjs';
 import { readyTasks, validatePlan } from './plan.mjs';
 import { autonomyPolicy, capacityOf, candidatesAllowed } from './autonomy.mjs';
+import { gateStatus } from './gate.mjs';
 
 const userOnly = new Set(['team.create', 'plan.confirm', 'attempt.takeover', 'attempt.terminate', 'member.invite', 'member.remove', 'member.changeModel', 'batch.release', 'attempt.select', 'team.archive', 'team.restore', 'team.delete']);
 const scheduled = new Set(['attempt.dispatch', 'attempt.pause', 'attempt.resume', 'attempt.retry', 'task.claim', 'run.interrupted', 'spend.record']);
@@ -9,6 +10,15 @@ const systemOnly = new Set(['attempt.dispatch', 'attempt.pause', 'attempt.resume
 const active = attempt => ['queued', 'running', 'paused'].includes(attempt.state);
 const change = (type, payload, attemptId) => ({ type, payload, ...(attemptId ? { attemptId } : {}) });
 const requireState = (condition, message) => invariant(condition, 'team/invalid-state', message);
+
+/** verify[] is a promise: every command must appear as a command evidence line before completion. */
+function uncoveredVerify(task, evidence) {
+  const commands = evidence.filter(item => item.kind === 'command').map(item => String(item.locator ?? '').trim());
+  return (task.verify ?? []).filter(command => {
+    const needle = String(command).trim();
+    return needle.length > 0 && !commands.some(locator => locator === needle || locator.startsWith(needle + ' '));
+  });
+}
 
 /** Validate trusted caller independently of JSON payload. Host adapters construct this context. */
 export function authorize(request, context, view) {
@@ -165,22 +175,35 @@ export function decideAction(view, request, context) {
     const selected = attempt(payload.taskId, payload.attemptId);
     requireState(selected.state === 'running', 'Completion requires the current admitted attempt');
     requireState(payload.evidence.length > 0, 'Completion requires evidence');
+    const uncovered = uncoveredVerify(task(payload.taskId), payload.evidence);
+    requireState(uncovered.length === 0, 'Completion is missing verify evidence: ' + uncovered.join(' | '));
     return [change('task.completed', payload, payload.attemptId)];
   }
   if (action === 'quality.review') {
     const selected = attempt(payload.taskId, payload.attemptId);
-    requireState(selected.state === 'running', 'Review requires the current admitted attempt');
+    requireState(['running', 'reviewed'].includes(selected.state), 'Review requires the current admitted attempt');
     requireState(task(payload.taskId).selfCompleted === true, 'Review requires the executor self-completion');
+    requireState(!['released', 'archived'].includes(task(payload.taskId).state), 'Review is closed for a released task');
     member(payload.reviewerMemberId);
     requireState(!view.attempts.some(item => item.taskId === payload.taskId && item.memberId === payload.reviewerMemberId), 'Reviewer must not be a claimant of the task');
     requireState(payload.criteria.length > 0, 'Review requires explicit criteria');
+    const declared = (view.plan?.qualityGates ?? []).filter(item => item.taskId === payload.taskId && item.kind === 'review');
+    requireState(declared.length <= 1 || payload.gateId !== undefined, 'Review must name its gate when the task declares several');
+    if (payload.gateId !== undefined) {
+      const gate = (view.plan?.qualityGates ?? []).find(item => item.gateId === payload.gateId);
+      requireState(gate !== undefined && gate.taskId === payload.taskId && gate.kind === 'review', 'Review gate does not belong to this task');
+    }
     return [change('quality.reviewed', payload, payload.attemptId)];
   }
   if (action === 'batch.release') {
     requireState(payload.taskIds.length > 0, 'Batch release requires at least one task');
     const policy = autonomyPolicy(context.settings);
     requireState(!policy.releaseCap || payload.taskIds.length <= policy.releaseCap, `${policy.autonomy} releases one task at a time`);
-    for (const taskId of payload.taskIds) requireState(task(taskId).state === 'reviewed', 'Task is not awaiting release');
+    for (const taskId of payload.taskIds) {
+      requireState(task(taskId).state === 'reviewed', 'Task is not awaiting release');
+      const blocking = gateStatus(view, view.plan, taskId).gates.filter(gate => !gate.satisfied && gate.kind !== 'integration').map(gate => gate.gateId);
+      requireState(blocking.length === 0, 'Release is blocked by open gates: ' + blocking.join(' | '));
+    }
     return [change('batch.released', payload)];
   }
   if (action === 'attempt.select') {

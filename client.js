@@ -320,7 +320,7 @@ const CSS = `
     const CHAMBER_CENTERS = { nursery: [17, 26], corridor: [50, 50], pantry: [83, 26], refuse: [17, 74], gate: [83, 74] };
 
     /** One task lives in exactly one chamber; the five chambers partition the view. */
-    function pendingReleaseTasks(view) { return (view?.tasks ?? []).filter(task => task.state === 'reviewed'); }
+    function pendingReleaseTasks(view) { return view?.releaseQueue ?? []; }
     function activitySummary(view) {
       const holding = (view?.attempts ?? []).filter(item => ACTIVE_ATTEMPT.includes(item.state));
       const busy = new Set(holding.map(item => item.memberId));
