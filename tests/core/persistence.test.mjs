@@ -82,6 +82,23 @@ test('lease port override is rejected at the canonical owner', () => {
   assert.throws(() => new TeamWriterLease({ port: 49321 }), { code: 'team/invalid-action' });
 });
 
+test('a port that frees up inside the retry window stops reading as busy', async t => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'ant-lease-retry-'));
+  const first = new TeamWriterLease();
+  const token = await first.acquire(root, 'first-host');
+  const second = new TeamWriterLease();
+  let acquired;
+  t.after(async () => {
+    if (acquired) await second.release(acquired.ownerId, acquired.epoch, acquired.fencingToken).catch(() => {});
+    await first.release(token.ownerId, token.epoch, token.fencingToken).catch(() => {});
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 20 });
+  });
+  const pending = second.acquire(root, 'second-host');
+  setTimeout(() => { void first.release(token.ownerId, token.epoch, token.fencingToken); }, 250);
+  acquired = await pending;
+  assert.equal(acquired.epoch, token.epoch + 1);
+});
+
 test('corrupt writer metadata maps to stable lease-lost', async t => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'ant-lease-meta-'));
   t.after(() => rm(root, { recursive: true, force: true }));

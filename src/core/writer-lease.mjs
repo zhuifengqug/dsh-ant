@@ -5,6 +5,9 @@ import { randomUUID } from 'node:crypto';
 import { digest } from './canonical.mjs';
 import { TeamError, invariant } from './errors.mjs';
 
+const LEASE_LISTEN_ATTEMPTS = 4;
+const LEASE_LISTEN_DELAY = 80;
+
 export async function syncDirectory(directory) {
   if (process.platform === 'win32') return;
   const handle = await open(directory, 'r');
@@ -66,12 +69,7 @@ export class TeamWriterLease {
       invariant(!/^\\\\/.test(this.#root), 'team/unavailable', 'UNC roots are unsupported');
       this.#identity = process.platform === 'win32' ? this.#root.toLowerCase() : this.#root;
       this.#port = 20000 + Number.parseInt(digest(this.#identity).slice(0, 8), 16) % 40000;
-      server = net.createServer(socket => socket.destroy());
-      await new Promise((resolve, reject) => {
-        const fail = error => reject(new TeamError('team/lease-conflict', `Writer port ${this.#port} is unavailable`, { retryable: true }, { cause: error }));
-        server.once('error', fail);
-        server.listen({ host: '127.0.0.1', port: this.#port, exclusive: true }, () => { server.off('error', fail); resolve(); });
-      });
+      server = await this.#listen();
       this.#server = server;
       server.on('error', () => { this.#active = false; });
       server.on('close', () => { this.#active = false; });
@@ -103,6 +101,24 @@ export class TeamWriterLease {
     try { current = JSON.parse(await readFile(path.join(this.#root, '.writer.json'), 'utf8')); }
     catch (cause) { throw new TeamError('team/lease-lost', 'Writer metadata is unavailable', {}, { cause }); }
     invariant(current?.ownerId === token.ownerId && current.epoch === token.epoch && current.fencingToken === token.fencingToken, 'team/lease-lost', 'Writer fencing changed');
+  }
+  /** A port left in TIME_WAIT by a crashed Host is not ownership; probe briefly before calling the team busy. */
+  async #listen() {
+    for (let attempt = 1; ; attempt += 1) {
+      const server = net.createServer(socket => socket.destroy());
+      try {
+        await new Promise((resolve, reject) => {
+          const fail = error => reject(new TeamError('team/lease-conflict', `Writer port ${this.#port} is unavailable`, { retryable: true }, { cause: error }));
+          server.once('error', fail);
+          server.listen({ host: '127.0.0.1', port: this.#port, exclusive: true }, () => { server.off('error', fail); resolve(); });
+        });
+        return server;
+      } catch (error) {
+        await new Promise(resolve => server.close(() => resolve()));
+        if (attempt >= LEASE_LISTEN_ATTEMPTS) throw error;
+        await new Promise(resolve => setTimeout(resolve, LEASE_LISTEN_DELAY * attempt));
+      }
+    }
   }
   #matches(token) {
     return this.#token && token && token.ownerId === this.#token.ownerId && token.epoch === this.#token.epoch && token.fencingToken === this.#token.fencingToken;
