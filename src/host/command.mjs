@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { TeamError } from '../core/errors.mjs';
 import { serializeError } from './context.mjs';
+import { describeProfile } from '../core/profiles.mjs';
 
 const USAGE = [
   'Usage:',
@@ -9,6 +10,8 @@ const USAGE = [
   '  /ant plan [teamId]        the confirmed plan and every task state',
   '  /ant release [teamId]     release everything waiting in the gate hall',
   '  /ant audit [teamId]       re-hash every recorded deliverable',
+  '  /ant profiles             list the templates in .ant/profiles',
+  '  /ant create <profile> <goal>   start a team from one template',
   '  /ant <JSON request>       dispatch any Team action verbatim',
 ].join('\n');
 
@@ -82,6 +85,20 @@ async function releasePending(service, teamId, signal) {
   return `released ${plural(pending.length, 'task')}: ${pending.join(', ')} · seq ${receipt.lastEventSeq}`;
 }
 
+async function listProfiles(service) {
+  if (typeof service.profiles !== 'function') throw new TeamError('team/unavailable', 'This Host cannot read team profiles');
+  const { dir, profiles } = await service.profiles();
+  if (profiles.length === 0) return `No profile in ${dir}. Add <name>.json with plan.tasks and members.`;
+  return profiles.map(profile => '· ' + describeProfile(profile)).join('\n');
+}
+
+async function createFromProfile(service, name, goal, signal) {
+  if (!name) throw new TeamError('team/invalid-action', 'Name a profile: /ant create <profile> <goal>');
+  if (typeof service.createFromProfile !== 'function') throw new TeamError('team/unavailable', 'This Host cannot create teams from profiles');
+  const receipt = await service.createFromProfile({ name, goal, requestId: `command-${randomUUID()}` }, signal);
+  return `created ${receipt.teamId} from ${name} · seq ${receipt.lastEventSeq}`;
+}
+
 function formatAudit(report) {
   const findings = report.findings ?? [];
   if (report.ok) return `Every recorded file still matches its digest (${plural(findings.length, 'claim')}).`;
@@ -115,7 +132,13 @@ export function createAntCommand(service) {
         }
         const [verb, ...rest] = rawInput.split(/\s+/).filter(Boolean);
         if (!verb) return { kind: 'success', text: USAGE };
-        if (!['status', 'plan', 'release', 'audit'].includes(verb)) throw new TeamError('team/invalid-action', USAGE);
+        if (!['status', 'plan', 'release', 'audit'].includes(verb) && verb !== 'profiles' && verb !== 'create') throw new TeamError('team/invalid-action', USAGE);
+        if (verb === 'profiles') return { kind: 'success', text: await listProfiles(service) };
+        if (verb === 'create') {
+          const [name, ...words] = rest;
+          const text = await createFromProfile(service, name, words.join(' '), invocation.signal);
+          return { kind: 'success', text };
+        }
         const teamId = await resolveTeamId(service, rest[0], invocation.signal);
         if (verb === 'release') {
           const text = await releasePending(service, teamId, invocation.signal);

@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { readdir, readFile } from 'node:fs/promises';
 import { symbols } from '@deepseek-ai/cordis';
 import { TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol';
 import { createTeamActionService } from '../core/actions.mjs';
@@ -9,6 +10,7 @@ import { SessionAdapter } from './session-adapter.mjs';
 import { MailDeliveryService } from './mail-delivery.mjs';
 import { createSettingsStore } from './settings.mjs';
 import { auditEvidence, sealEvidence } from './artifact-audit.mjs';
+import { expandProfile, readProfile } from '../core/profiles.mjs';
 
 const DEFAULT_OWNER_ID = 'ant-host';
 const serviceStates = new WeakMap();
@@ -259,6 +261,31 @@ export class AntService extends TypertRemoteService {
       (item.completion?.evidence ?? []).map(entry => ({ ...entry, taskId: item.taskId, attemptId: item.attemptId })));
     return { teamId, root, ...(await auditEvidence({ root, entries })) };
   }
+  /** Named templates live beside the scaffold's seeds: <workspace>/.ant/profiles/<name>.json. */
+  async profiles() {
+    const dir = path.join(stateOf(this).config.workspaceRoot, '.ant', 'profiles');
+    let files;
+    try { files = (await readdir(dir)).filter(file => file.endsWith('.json')).sort(); }
+    catch (error) { if (error?.code === 'ENOENT') return { dir, profiles: [] }; throw error; }
+    const profiles = [];
+    for (const file of files) {
+      let parsed;
+      try { parsed = JSON.parse(await readFile(path.join(dir, file), 'utf8')); }
+      catch (cause) { throw new TeamError('team/invalid-action', `Profile ${file} is not readable JSON: ${cause.message}`); }
+      profiles.push(readProfile(file.replace(/\.json$/, ''), parsed));
+    }
+    return { dir, profiles };
+  }
+
+  /** Expand one template into team.create and dispatch it as the owner. */
+  async createFromProfile({ name, goal, requestId, workspaceRelativePath }, signal) {
+    const { profiles } = await this.profiles();
+    const profile = profiles.find(item => item.name === name);
+    invariant(profile, 'team/not-found', 'Unknown profile: ' + name, { retryable: false });
+    const payload = expandProfile(profile, { goal, workspaceRelativePath });
+    return this.dispatchAsOwner({ requestId, action: 'team.create', payload }, signal);
+  }
+
   async hatchMembers({ teamId }) {
     const state = stateOf(this);
     const adapter = state.sessionAdapter;

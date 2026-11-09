@@ -129,3 +129,49 @@ test('a JSON body still dispatches verbatim', async () => {
   assert.equal(JSON.parse(result.text).outcome, 'committed');
   assert.equal(service.calls[0][1].action, 'team.halt');
 });
+
+test('/ant profiles lists the templates and where they live', async () => {
+  const service = stubService({
+    async profiles() {
+      return { dir: '.ant/profiles', profiles: [
+        { name: 'panel', description: 'Ship a panel', plan: { tasks: [{}] }, members: [{}] },
+        { name: 'docs', description: '', plan: { tasks: [] }, members: [] },
+      ] };
+    },
+  });
+  const command = createAntCommand(service);
+  const result = await command.handler({ rawInput: 'profiles' });
+  assert.equal(result.kind, 'success');
+  assert.equal(result.text, '· panel — Ship a panel (1 task · 1 member)\n· docs (0 tasks · 0 members)');
+});
+
+test('/ant profiles says where the first template goes', async () => {
+  const service = stubService({ async profiles() { return { dir: '.ant/profiles', profiles: [] }; } });
+  const result = await createAntCommand(service).handler({ rawInput: 'profiles' });
+  assert.match(result.text, /No profile in \.ant\/profiles\. Add <name>\.json with plan\.tasks and members\./);
+});
+
+test('/ant create expands one profile and dispatches it as the owner', async () => {
+  const seen = [];
+  const service = stubService({
+    async createFromProfile(request) {
+      seen.push(request);
+      return { outcome: 'committed', teamId: 'team-9', lastEventSeq: 12 };
+    },
+  });
+  const result = await createAntCommand(service).handler({ rawInput: 'create panel Ship the colony panel' });
+  assert.equal(result.kind, 'success');
+  assert.equal(result.text, 'created team-9 from panel · seq 12');
+  assert.equal(seen.length, 1);
+  assert.equal(seen[0].name, 'panel');
+  assert.equal(seen[0].goal, 'Ship the colony panel');
+  assert.match(seen[0].requestId, /^command-/);
+});
+
+test('/ant create refuses to guess which template to use', async () => {
+  const result = await createAntCommand(stubService()).handler({ rawInput: 'create' });
+  assert.equal(result.kind, 'error');
+  const error = JSON.parse(result.text);
+  assert.equal(error.code, 'team/invalid-action');
+  assert.match(error.message, /Name a profile: \/ant create <profile> <goal>/);
+});
