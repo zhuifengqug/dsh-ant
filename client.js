@@ -5,6 +5,12 @@ window.__ModuleLoader__.load({
     const zodModule = require('zod');
     const z = zodModule.z ?? zodModule;
     const h = React.createElement;
+    /** Set window.__ANT_DEBUG__ = true to see how far the client gets. */
+    const DEBUG = typeof window !== 'undefined' && window.__ANT_DEBUG__ === true;
+    function trace(stage, detail) {
+      if (!DEBUG) return;
+      try { console.debug('[ant]', stage, detail === undefined ? '' : String(detail.stack ?? detail).slice(0, 700)); } catch { /* tracing never breaks the panel */ }
+    }
     const PACKAGE = '@zhuifengqug/dsh-ant';
     const REMOTE_SERVICE = 'ant';
     const LOCALE_NS = 'ant';
@@ -153,6 +159,7 @@ window.__ModuleLoader__.load({
         },
       },
     }, z);
+    trace('remote-built');
 
     const DICT = {
       en: {
@@ -322,6 +329,10 @@ const CSS = `
       .ant-settings .ant-field select,.ant-settings .ant-field input{min-height:32px;padding:0 8px;border:1px solid var(--dsw-alias-border-l1);border-radius:2px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit}
       .ant-settings .ant-warn{padding:9px 10px;border-left:3px solid var(--dsw-alias-state-warn-primary);background:var(--dsw-alias-bg-layer-2);font-size:12px}
       .ant-settings .ant-row{display:flex;gap:8px}
+      .ant-launcher{position:fixed;right:18px;bottom:18px;z-index:60;display:flex;align-items:center;justify-content:center;width:42px;height:42px;padding:0;border:1px solid #16d9ed;border-radius:12px;background:#050911;color:#16d9ed;cursor:pointer;box-shadow:0 10px 26px rgba(0,0,0,.45),0 0 0 1px rgba(22,217,237,.16);transition:transform .16s ease,box-shadow .16s ease}
+      .ant-launcher:hover,.ant-launcher:focus-visible{transform:translateY(-1px);box-shadow:0 14px 30px rgba(0,0,0,.5),0 0 12px rgba(22,217,237,.45);outline:none}
+      .ant-launcher svg{display:block}
+      @supports (color:light-dark(#000,#fff)){.ant-launcher{color:light-dark(#0a7d92,#16d9ed);border-color:light-dark(rgba(10,125,146,.55),rgba(22,217,237,.6));background:light-dark(rgba(255,255,255,.94),rgba(5,9,17,.92))}}
       @keyframes ant-flow{to{stroke-dashoffset:-24}}
       @media(prefers-reduced-motion:reduce){.ant-conduit-core{animation:none}.ant-chamber{transition:none}}
       @media(max-width:1024px){.ant-body{grid-template-columns:minmax(0,1fr)}.ant-nest-plan{min-height:0}.ant-rail{border-top:1px solid var(--dsw-alias-border-l1);border-left:0}}
@@ -909,6 +920,27 @@ const CSS = `
     }
 
     /** Layer zero: the sidebar entry that selects the colony main panel. */
+    const LAUNCHER_SVG = '<svg viewBox="-14 -9 28 18" width="22" height="14" aria-hidden="true" focusable="false"><g fill="currentColor"><ellipse cx="9.9" cy="-1.1" rx="3.2" ry="2.9"/><ellipse cx="4.1" cy="0.2" rx="3.5" ry="2.5"/><ellipse cx="-0.5" cy="0.5" rx="1.15" ry="1.05"/><ellipse cx="-7.2" cy="1.3" rx="6" ry="4.2"/></g><g fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M10.9 -3.4 L12.2 -6.6 L15.6 -6.2"/><path d="M6.2 0.6 L10.4 -3.6 L13.6 2.6"/><path d="M3.8 0.8 L4.6 -3.8 L3.2 5.6"/><path d="M1 1 L-2.4 -2.8 L-6.6 2.8"/></g></svg>';
+
+    function mountLauncher(layout) {
+      if (typeof document === 'undefined' || !document.body) return () => {};
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'ant-launcher';
+      button.title = DICT.zh.panel;
+      button.setAttribute('aria-label', DICT.zh.panel);
+      button.setAttribute('data-ant-launcher', '');
+      button.innerHTML = LAUNCHER_SVG;
+      button.addEventListener('click', () => {
+        try {
+          if (layout && typeof layout.selectPanel === 'function') layout.selectPanel(PANEL_ID);
+        } catch (error) { trace('launcher-failed', error); }
+      });
+      document.body.appendChild(button);
+      trace('launcher-mounted');
+      return () => { try { button.remove(); } catch (error) { /* already gone */ } };
+    }
+
     function SidebarGlyph({ size, active }) {
       return h(AntShape, { size: size ?? 15, className: 'ant-side', 'data-state': active ? 'active' : '' });
     }
@@ -917,12 +949,17 @@ const CSS = `
     function registerSurfaces(ctx, model, locale) {
       const disposers = [];
       const bind = (slot, options, component) => {
-        disposers.push(ctx.slots.inject(slot, () => ctx.slots.register({ name: slot, locale: LOCALE_NS, ...options, inject: options.inject ?? (() => ({ model, locale })) }, component)));
+        try {
+          disposers.push(ctx.slots.inject(slot, () => ctx.slots.register({ name: slot, locale: LOCALE_NS, ...options, inject: options.inject ?? (() => ({ model, locale })) }, component)));
+          trace('bind:' + slot);
+        } catch (error) {
+          trace('bind-failed:' + slot, error);
+        }
       };
       bind('main', { key: PANEL_ID }, MainPanel);
       bind('sidebar.panellist', { id: PANEL_ID, order: 60, label: () => locale.t('panel') }, SidebarGlyph);
       bind('conversation.session.header.actions', { id: PANEL_ID, order: 40, inject: () => ({ model, locale, layout: layoutOf(ctx) }) }, HeaderAction);
-      bind('conversation.composer.bar', { id: PANEL_ID, order: 40 }, ComposerStrip);
+      bind('conversation.input.dock', { id: PANEL_ID, order: 40 }, ComposerStrip);
       bind('settings.section', { id: PANEL_ID, order: 70, inject: () => ({ locale, remote: ctx.remote.team, model }) }, SettingsSection);
       const team = ctx.remote.team;
       const cardScope = ctx.inject(['uiConversation', 'layout'], conversationCtx => {
@@ -937,21 +974,57 @@ const CSS = `
     }
 
     async function apply(ctx) {
-      const remoteDisposer = await ctx.remote.$mount(TEAM_REMOTE);
+      trace('apply-enter', Object.keys(ctx.remote ?? {}).join(','));
+      let remoteDisposer;
+      try {
+        remoteDisposer = await ctx.remote.$mount(TEAM_REMOTE);
+      } catch (error) {
+        trace('mount-failed', error);
+        throw error;
+      }
+      trace('mounted');
       let follow;
       try {
         follow = ctx.inject(['remote.team'], remoteCtx => {
-          const locale = createLocale(remoteCtx);
-          const model = createController(remoteCtx.remote.team);
-          remoteCtx.effect(() => remoteCtx.locale.register(LOCALE_NS, DICT), 'ant: locale');
-          remoteCtx.effect(() => locale.dispose, 'ant: locale subscription');
-          remoteCtx.effect(() => model.dispose, 'ant: model');
-          for (const dispose of registerSurfaces(remoteCtx, model, locale)) remoteCtx.effect(() => dispose, 'ant: surface');
+          trace('inject-fired');
+          let locale;
+          let model;
+          try {
+            locale = createLocale(remoteCtx);
+            trace('locale-created');
+            model = createController(remoteCtx.remote.team);
+            trace('model-created');
+            remoteCtx.effect(() => remoteCtx.locale.register(LOCALE_NS, DICT), 'ant: locale');
+            trace('locale-registered');
+            remoteCtx.effect(() => locale.dispose, 'ant: locale subscription');
+            remoteCtx.effect(() => model.dispose, 'ant: model');
+            for (const dispose of registerSurfaces(remoteCtx, model, locale)) remoteCtx.effect(() => dispose, 'ant: surface');
+            trace('surfaces-registered');
+            remoteCtx.effect(() => mountLauncher(layoutOf(remoteCtx)), 'ant: launcher');
+            if (DEBUG) setTimeout(() => {
+              try {
+                const count = selector => document.querySelectorAll(selector).length;
+                trace('dom-probe', JSON.stringify({
+                  shell: count('.ant-shell'),
+                  anchor: count('.ant-anchor'),
+                  strip: count('.ant-strip'),
+                  side: count('.ant-side'),
+                  card: count('.ant-card'),
+                  launcher: count('.ant-launcher'),
+                }));
+              } catch (error) { trace('dom-probe-failed', error); }
+            }, 2500);
+          } catch (error) {
+            trace('inject-body-failed', error);
+            throw error;
+          }
         });
       } catch (error) {
+        trace('inject-failed', error);
         await remoteDisposer();
         throw error;
       }
+      trace('follow-created');
       return async () => {
         await follow.dispose();
         await remoteDisposer();

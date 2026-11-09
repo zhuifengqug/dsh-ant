@@ -31,7 +31,7 @@ function createFakeReact() {
 }
 function fakeReact() { return createFakeReact(); }
 
-async function loadClient(react = fakeReact()) {
+async function loadClient(react = fakeReact(), extra = {}) {
   const source = await readFile(clientPath, 'utf8');
   let registration;
   const window = {
@@ -47,6 +47,7 @@ async function loadClient(react = fakeReact()) {
     Math,
     console,
     window,
+    ...extra,
   }, { filename: clientPath });
   assert.equal(registration?.id, '@zhuifengqug/dsh-ant');
   const plugin = registration.factory(specifier => {
@@ -143,6 +144,7 @@ function createClientContext(remoteTeam) {
     const childEffects = [];
     const child = makeContext({ team: remoteTeam }, childEffects);
     child.inject = cardInject;
+    child.layout = layout;
     callback(child);
     return {
       async dispose() {
@@ -255,7 +257,7 @@ test('client apply mounts every surface, reloads after a receipt, and disposes i
     ['main', 'ant'],
     ['sidebar.panellist', 'ant'],
     ['conversation.session.header.actions', 'ant'],
-    ['conversation.composer.bar', 'ant'],
+    ['conversation.input.dock', 'ant'],
     ['settings.section', 'ant'],
     ['conversation.chat.node', 'ant-team'],
   ]);
@@ -684,6 +686,38 @@ test('the sidebar entry and the team card both open the colony', async () => {
 
   await cleanup();
   await runtime.disposeEffects();
+});
+
+test('a launcher button is on screen without any slot rendering', async () => {
+  const appended = [];
+  const document = {
+    body: { appendChild(node) { appended.push(node); } },
+    createElement(tag) {
+      const listeners = {};
+      return {
+        tagName: tag,
+        className: '',
+        title: '',
+        innerHTML: '',
+        attributes: {},
+        setAttribute(name, value) { this.attributes[name] = value; },
+        addEventListener(name, listener) { listeners[name] = listener; },
+        remove() { this.removed = true; },
+        fire(name) { listeners[name]({ type: name }); },
+      };
+    },
+  };
+  const { plugin } = await loadClient(fakeReact(), { document });
+  const harness = createClientContext({ teamId: 'team-1', members: [], tasks: [] });
+  await plugin.apply(harness.ctx);
+  assert.equal(appended.length, 1, 'one launcher is appended to the body');
+  const launcher = appended[0];
+  assert.equal(launcher.tagName, 'button');
+  assert.equal(launcher.className, 'ant-launcher');
+  assert.equal(launcher.attributes['data-ant-launcher'], '');
+  assert.match(launcher.title, /玄驹|Ant/);
+  launcher.fire('click');
+  assert.deepEqual(Array.from(harness.layout.selected), ['ant'], 'clicking the launcher opens the colony');
 });
 
 test('unread mail reaches the header and the panel without a pending release', async () => {
