@@ -52,7 +52,7 @@ export const payloadSchemas = {
   'batch.release': object({ batchId: id, taskIds: { type: 'array', items: id, maxItems: 256 } }),
   'attempt.select': object({ ...attempt, variant: { type: 'integer', minimum: 1, maximum: 3 } }),
   'spend.record': object({ ...attempt, tokensIn: optional({ type: 'integer', minimum: 0 }), tokensOut: optional({ type: 'integer', minimum: 0 }), costMicros: optional({ type: 'integer', minimum: 0 }), model: optional(text), source: optional(text) }),
-  'run.interrupted': object({ reason: text, taskId: optional(id), attemptId: optional(id) }),
+  'run.interrupted': object({ reason: text, kind: optional(choice('aborted', 'output-limit', 'error', 'timeout')), taskId: optional(id), attemptId: optional(id) }),
   'team.archive': object({}),
   'team.restore': object({}),
   'team.halt': object({ reason: optional(text) }),

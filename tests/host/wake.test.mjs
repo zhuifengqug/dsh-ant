@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { Context } from '@deepseek-ai/cordis';
 import { AntService } from '../../src/host/service.mjs';
 import { createAntTools } from '../../src/host/tool.mjs';
@@ -45,6 +45,8 @@ async function fixture(t) {
   const created = await dispatch.execute({ request: request() }, asAgent('session-queen'));
   const view = await service.get({ teamId: created.teamId });
   await service.dispatchAsOwner({ requestId: 'confirm', teamId: created.teamId, action: 'plan.confirm', payload: { planDigest: view.planDigest }, expectedEventSeq: view.cursor });
+  await mkdir(path.join(workspaceRoot, 'src'), { recursive: true });
+  await writeFile(path.join(workspaceRoot, 'src', 'core.mjs'), 'export const core = 1;\n', 'utf8');
   return { service, dispatch, schedule, release, asAgent, controller, prompts, teamId: created.teamId };
 }
 

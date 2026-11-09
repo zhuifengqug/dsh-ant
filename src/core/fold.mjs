@@ -164,8 +164,17 @@ export function foldTeam(events) {
         }
         case 'attempt.selected':
           attempt().selectedVariant = payload.variant; task().selectedAttemptId = payload.attemptId; break;
-        case 'run.interrupted':
-          view.interruptions.push({ ...payload, eventSeq: event.eventSeq }); view.lifecycle = 'interrupted'; break;
+        case 'run.interrupted': {
+          view.interruptions.push({ ...payload, eventSeq: event.eventSeq });
+          view.lifecycle = 'interrupted';
+          if (payload.attemptId) {
+            const stopped = attempt();
+            stopped.state = payload.kind === 'aborted' ? 'terminated' : 'failed';
+            const host = task();
+            if (!['released', 'reviewed'].includes(host.state)) host.state = stopped.state;
+          }
+          break;
+        }
         case 'spend.recorded': {
           const entry = { ...payload, eventSeq: event.eventSeq };
           view.spend.push(entry);

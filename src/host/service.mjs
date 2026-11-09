@@ -8,6 +8,7 @@ import { agentContext, creatorContext, ownerContext, remoteContext } from './con
 import { SessionAdapter } from './session-adapter.mjs';
 import { MailDeliveryService } from './mail-delivery.mjs';
 import { createSettingsStore } from './settings.mjs';
+import { auditEvidence, sealEvidence } from './artifact-audit.mjs';
 
 const DEFAULT_OWNER_ID = 'ant-host';
 const serviceStates = new WeakMap();
@@ -52,11 +53,22 @@ function workBrief({ teamId, member, task, attempt, plan }) {
   ].join('\n');
 }
 
+function workspaceRootOf(state, view) {
+  return path.resolve(state.config.workspaceRoot, view.workspaceRelativePath ?? '.');
+}
+
+/** Completion claims become content digests before the WAL records them. */
+async function sealRequest(state, service, input) {
+  if (input?.action !== 'task.complete' || !Array.isArray(input.payload?.evidence)) return input;
+  const view = await service.get({ teamId: input.teamId });
+  const evidence = await sealEvidence({ root: workspaceRootOf(state, view), evidence: input.payload.evidence });
+  return { ...input, payload: { ...input.payload, evidence } };
+}
 async function dispatchThroughService(receiver, input, context, signal) {
   abortIfRequested(signal);
   const service = await receiver.ready();
   abortIfRequested(signal);
-  const receipt = await service.dispatch(input, context);
+  const receipt = await service.dispatch(await sealRequest(stateOf(receiver), service, input), context);
   if (input?.action === 'mail.send') {
     const view = await service.get({ teamId: receipt.teamId });
     const mail = view.mailbox.find(item => item.messageId === input.payload?.messageId);
@@ -227,6 +239,25 @@ export class AntService extends TypertRemoteService {
    * intent, the Host owns Session creation, and the binding lands in the WAL as member.hatched.
    * One hatch per team runs at a time, and a failed hatch leaves the member unhatched for retry.
    */
+  /** A run the Session layer could not finish: the attempt stops so the lead can retry or reassign it. */
+  async interruptRun({ teamId, taskId, attemptId, kind = 'output-limit', reason = 'Run stopped before it finished' } = {}, signal) {
+    abortIfRequested(signal);
+    return dispatchThroughService(this, {
+      requestId: 'interrupt-' + (attemptId ?? taskId ?? teamId),
+      teamId,
+      action: 'run.interrupted',
+      payload: { reason, kind, ...(taskId ? { taskId } : {}), ...(attemptId ? { attemptId } : {}) },
+    }, { actor: 'system', teamId }, signal);
+  }
+  /** Recompute every recorded file digest; drift is visible even when size and mtime are not. */
+  async auditArtifacts({ teamId }) {
+    const service = await this.ready();
+    const view = await service.get({ teamId });
+    const root = workspaceRootOf(stateOf(this), view);
+    const entries = (view.attempts ?? []).flatMap(item =>
+      (item.completion?.evidence ?? []).map(entry => ({ ...entry, taskId: item.taskId, attemptId: item.attemptId })));
+    return { teamId, root, ...(await auditEvidence({ root, entries })) };
+  }
   async hatchMembers({ teamId }) {
     const state = stateOf(this);
     const adapter = state.sessionAdapter;
