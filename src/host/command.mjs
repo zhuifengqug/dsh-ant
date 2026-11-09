@@ -8,6 +8,7 @@ const USAGE = [
   '  /ant status [teamId]      where the colony is now',
   '  /ant plan [teamId]        the confirmed plan and every task state',
   '  /ant release [teamId]     release everything waiting in the gate hall',
+  '  /ant audit [teamId]       re-hash every recorded deliverable',
   '  /ant <JSON request>       dispatch any Team action verbatim',
 ].join('\n');
 
@@ -81,6 +82,20 @@ async function releasePending(service, teamId, signal) {
   return `released ${plural(pending.length, 'task')}: ${pending.join(', ')} · seq ${receipt.lastEventSeq}`;
 }
 
+function formatAudit(report) {
+  const findings = report.findings ?? [];
+  if (report.ok) return `Every recorded file still matches its digest (${plural(findings.length, 'claim')}).`;
+  const open = findings.filter(item => item.status !== 'match' && item.status !== 'outside' && item.status !== 'unstamped');
+  const lines = [`${plural(open.length, 'claim')} no longer match · ${plural(findings.length - open.length, 'claim')} unchanged`];
+  for (const item of open) lines.push(`· ${item.locator} ${item.status} (${item.taskId})`);
+  return lines.join('\n');
+}
+
+async function auditDeliverables(service, teamId) {
+  if (typeof service.auditArtifacts !== 'function') throw new TeamError('team/unavailable', 'This Host cannot audit deliverables');
+  return formatAudit(await service.auditArtifacts({ teamId }));
+}
+
 function formatResult(receipt) {
   return JSON.stringify(receipt);
 }
@@ -100,12 +115,13 @@ export function createAntCommand(service) {
         }
         const [verb, ...rest] = rawInput.split(/\s+/).filter(Boolean);
         if (!verb) return { kind: 'success', text: USAGE };
-        if (!['status', 'plan', 'release'].includes(verb)) throw new TeamError('team/invalid-action', USAGE);
+        if (!['status', 'plan', 'release', 'audit'].includes(verb)) throw new TeamError('team/invalid-action', USAGE);
         const teamId = await resolveTeamId(service, rest[0], invocation.signal);
         if (verb === 'release') {
           const text = await releasePending(service, teamId, invocation.signal);
           return { kind: 'success', text };
         }
+        if (verb === 'audit') return { kind: 'success', text: await auditDeliverables(service, teamId) };
         const view = await service.get({ teamId }, invocation.signal);
         return { kind: 'success', text: verb === 'status' ? formatStatus(view) : formatPlan(view), sourceEventSeq: view.cursor };
       } catch (error) {

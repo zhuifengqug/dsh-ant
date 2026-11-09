@@ -95,6 +95,32 @@ test('/ant names the ambiguity instead of guessing between two teams', async () 
   assert.match(error.message, /team-1, team-2/);
 });
 
+test('/ant audit re-hashes the recorded deliverables and names the drift', async () => {
+  const command = createAntCommand(stubService({
+    async auditArtifacts(request) {
+      assert.equal(request.teamId, 'team-1');
+      return { teamId: 'team-1', ok: false, findings: [
+        { taskId: 'task-a', attemptId: 'attempt-1', locator: 'src/api.mjs', expected: 'aa', actual: 'bb', status: 'drift' },
+        { taskId: 'task-b', attemptId: 'attempt-2', locator: 'docs/panel.md', expected: 'cc', actual: 'cc', status: 'match' },
+      ], drifted: [{ locator: 'src/api.mjs' }], missing: [] };
+    },
+  }));
+  const result = await command.handler({ rawInput: 'audit' });
+  assert.equal(result.kind, 'success');
+  assert.match(result.text, /1 claim no longer match · 1 claim unchanged/);
+  assert.match(result.text, /· src\/api\.mjs drift \(task-a\)/);
+});
+
+test('/ant audit says nothing when every digest still matches', async () => {
+  const command = createAntCommand(stubService({
+    async auditArtifacts() {
+      return { ok: true, findings: [{ locator: 'a.mjs', status: 'match' }], drifted: [], missing: [] };
+    },
+  }));
+  const result = await command.handler({ rawInput: 'audit team-1' });
+  assert.equal(result.text, 'Every recorded file still matches its digest (1 claim).');
+});
+
 test('a JSON body still dispatches verbatim', async () => {
   const service = stubService();
   const command = createAntCommand(service);
