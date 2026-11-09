@@ -172,7 +172,7 @@ window.__ModuleLoader__.load({
         autonomy: 'Autonomy', batchWindow: 'Batch window (minutes)', maxActive: 'Concurrent attempts', defaultVariants: 'Candidates per task',
         variantWrite: 'Allow parallel candidates on write tasks', settings: 'Amber Ant settings', save: 'Save settings', saved: 'Saved. The next action already uses it.',
         confirmL3: 'L3 releases batches by itself once the window closes. Switch anyway?', confirm: 'Switch to L3', cancel: 'Cancel',
-        settingsHint: 'The panel and the Host share one settings file.', pendingBadge: 'pending release', openNest: 'Open colony', unread: 'unread',
+        settingsHint: 'The panel and the Host share one settings file.', pendingBadge: 'pending release', openNest: 'Open colony', unread: 'unread', takeover: 'Take over',
       },
       zh: {
         panel: '玄驹', title: '虫珀·玄驹', subtitle: '多会话协作持久事实面', refresh: '刷新', loading: '正在读取团队事实', refreshing: '正在刷新',
@@ -187,7 +187,7 @@ window.__ModuleLoader__.load({
         autonomy: '自主级别', batchWindow: '批窗口（分钟）', maxActive: '并发上限', defaultVariants: '每任务候选数',
         variantWrite: '允许写任务并行候选', settings: '玄驹设置', save: '保存设置', saved: '已保存，下一次动作即生效。',
         confirmL3: 'L3 会在窗口到期后自动放行，仍要切换吗？', confirm: '切到 L3', cancel: '取消',
-        settingsHint: '面板与 Host 共用同一份设置文件。', pendingBadge: '待放行', openNest: '进入蚁巢', unread: '未读',
+        settingsHint: '面板与 Host 共用同一份设置文件。', pendingBadge: '待放行', openNest: '进入蚁巢', unread: '未读', takeover: '接管',
        
       },
     };
@@ -237,11 +237,15 @@ const CSS = `
       .ant-chamber[data-stage=pantry]{border:1px solid var(--dsw-alias-border-l1);border-left:2px solid var(--ant-ok)}
       .ant-chamber[data-stage=refuse]{border:1px dashed var(--dsw-alias-border-l2);border-left:2px solid var(--ant-bad)}
       .ant-chamber[aria-pressed=true]{box-shadow:inset 0 0 0 1px var(--ant-neon)}
+      .ant-chamber{transition:opacity .18s ease}
+      .ant-nest-plan[data-focus] .ant-chamber:not([aria-pressed=true]){opacity:.3}
       .ant-chamber-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;width:100%;padding:0;border:0;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;text-align:left;cursor:pointer}
       .ant-chamber-name{font-size:12px;font-weight:650;letter-spacing:.1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
       .ant-chamber-count{color:var(--ant-neon);font-size:11px;font-variant-numeric:tabular-nums;letter-spacing:.08em}
       .ant-ants{display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-height:10px}
       .ant-ant{display:block;flex:none;width:auto;height:auto;color:var(--dsw-alias-label-secondary)}
+      button.ant-ant{display:flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:2px;background:transparent;line-height:0;cursor:pointer}
+      button.ant-ant:hover,button.ant-ant:focus-visible{outline:1px solid var(--ant-neon);outline-offset:1px;color:var(--ant-neon)}
       .ant-ant[data-state=active]{color:var(--ant-neon)}
       .ant-more{color:var(--dsw-alias-label-secondary);font-size:10px}
       .ant-rows{display:grid;gap:2px;min-height:0;overflow:hidden}
@@ -319,7 +323,7 @@ const CSS = `
       .ant-settings .ant-warn{padding:9px 10px;border-left:3px solid var(--dsw-alias-state-warn-primary);background:var(--dsw-alias-bg-layer-2);font-size:12px}
       .ant-settings .ant-row{display:flex;gap:8px}
       @keyframes ant-flow{to{stroke-dashoffset:-24}}
-      @media(prefers-reduced-motion:reduce){.ant-conduit-core{animation:none}}
+      @media(prefers-reduced-motion:reduce){.ant-conduit-core{animation:none}.ant-chamber{transition:none}}
       @media(max-width:1024px){.ant-body{grid-template-columns:minmax(0,1fr)}.ant-nest-plan{min-height:0}.ant-rail{border-top:1px solid var(--dsw-alias-border-l1);border-left:0}}
       @media(max-width:768px){.ant-header{grid-template-columns:1fr auto}.ant-header .ant-meta{display:none}.ant-nest-plan{min-height:320px}.ant-pop{right:auto;left:0}}
     `;
@@ -554,7 +558,7 @@ const CSS = `
         h('g', { className: 'ant-tunnels' }, (tunnels || []).map(tunnel => h('path', { key: tunnel.key, className: 'ant-tunnel', d: tunnel.path }))));
     }
 
-    function chamber({ stage, tasks, members, count, state, locale, pending, dispatch, onSelectStage, onSelectTask }) {
+    function chamber({ stage, tasks, members, count, state, locale, pending, dispatch, onSelectStage, onSelectTask, onSelectMember }) {
       const box = CHAMBER_BOX[stage];
       const shown = members.slice(0, 8);
       const hidden = members.length - shown.length;
@@ -568,8 +572,12 @@ const CSS = `
         h('button', { type: 'button', className: 'ant-chamber-head', onClick: () => onSelectStage(current ? undefined : stage) },
           h('span', { className: 'ant-chamber-name' }, locale.t(stage)),
           h('span', { className: 'ant-chamber-count' }, String(count))),
-        h('div', { className: 'ant-ants', 'aria-hidden': 'true' },
-          shown.map(member => h(AntShape, { key: member.memberId, className: 'ant-ant', size: 11, 'data-state': member.status ?? 'active' })),
+        h('div', { className: 'ant-ants' },
+          shown.map(member => h('button', {
+            key: member.memberId, type: 'button', className: 'ant-ant', 'data-state': member.status ?? 'active',
+            'aria-label': member.name ?? shortId(member.memberId),
+            onClick: () => onSelectMember(member.memberId),
+          }, h(AntShape, { size: 11 }))),
           hidden > 0 ? h('span', { className: 'ant-more' }, '+' + hidden) : null),
         h('div', { className: 'ant-rows' }, tasks.slice(0, 6).map(task => h('button', {
           key: task.taskId, type: 'button', className: 'ant-row', 'data-state': task.state ?? '',
@@ -584,7 +592,7 @@ const CSS = `
         }, h('span', null, locale.t('gateOpen')), h('span', null, locale.t('pendingBatch') + ' ' + pending.length)) : null);
     }
 
-    function Nest({ state, locale, dispatch, onSelectStage, onSelectTask }) {
+    function Nest({ state, locale, dispatch, onSelectStage, onSelectTask, onSelectMember }) {
       const view = state.view ?? {};
       const attempts = view.attempts ?? [];
       const tasks = view.tasks ?? [];
@@ -614,12 +622,12 @@ const CSS = `
         }
         if (event.key === 'Escape') onSelectStage(undefined);
       };
-      return h('div', { className: 'ant-nest-plan', role: 'group', 'aria-label': locale.t('nest'), onKeyDown },
+      return h('div', { className: 'ant-nest-plan', role: 'group', 'aria-label': locale.t('nest'), 'data-focus': state.selectedStage ? '' : undefined, onKeyDown },
         blueprint(tunnels),
         STAGES.map(stage => chamber({
           stage, count: counts[stage], tasks: byStage(stage),
           members: members.filter(member => heldStage(member, attempts, tasks) === stage),
-          state, locale, pending, dispatch, onSelectStage, onSelectTask,
+          state, locale, pending, dispatch, onSelectStage, onSelectTask, onSelectMember,
         })));
     }
 
@@ -637,6 +645,16 @@ const CSS = `
         if (attempt?.state === 'paused') actions.push(['attempt.resume', { taskId: task.taskId, attemptId: attempt.attemptId }, locale.t('resume')]);
         if (attempt && ['running', 'paused', 'taken-over'].includes(attempt.state)) actions.push(['attempt.terminate', { taskId: task.taskId, attemptId: attempt.attemptId }, locale.t('terminate')]);
         if (!attempt && task.state === 'pending') actions.push(['task.claim', { taskId: task.taskId, memberId: view.leadMemberId ?? '' }, locale.t('claim')]);
+      }
+      if (member && !task) {
+        const held = attempts.filter(item => item.memberId === member.memberId && ['running', 'paused', 'taken-over'].includes(item.state)).at(-1);
+        if (held) {
+          const target = { taskId: held.taskId, attemptId: held.attemptId };
+          if (held.state === 'running') actions.push(['attempt.pause', target, locale.t('pause')]);
+          if (held.state === 'paused') actions.push(['attempt.resume', target, locale.t('resume')]);
+          actions.push(['attempt.takeover', target, locale.t('takeover')]);
+          actions.push(['attempt.terminate', target, locale.t('terminate')]);
+        }
       }
       if (!view.planConfirmed && view.planDigest) actions.push(['plan.confirm', { planDigest: view.planDigest }, locale.t('confirmPlan')]);
       if (['planned', 'completed'].includes(view.lifecycle)) actions.push(['team.archive', {}, locale.t('archive')]);
@@ -785,7 +803,7 @@ const CSS = `
           : state.status === 'empty' ? h('div', { className: 'ant-empty', role: 'status' }, h('div', null, h('strong', null, t.t('empty')), h('span', null, t.t('emptyHint'))))
           : h('div', { className: 'ant-main', style: { display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 } },
             h('div', { className: 'ant-body' },
-              h('section', { className: 'ant-nest', 'aria-label': t.t('nest') }, h(Nest, { state, locale: t, dispatch: model.dispatch, onSelectStage: model.selectStage, onSelectTask: taskId => model.selectNode('task', taskId) })),
+              h('section', { className: 'ant-nest', 'aria-label': t.t('nest') }, h(Nest, { state, locale: t, dispatch: model.dispatch, onSelectStage: model.selectStage, onSelectTask: taskId => model.selectNode('task', taskId), onSelectMember: memberId => model.selectNode('member', memberId) })),
               h(Rail, { state, locale: t, dispatch: model.dispatch, onSelectMember: selectMember })),
             h(ActivityStream, { state, locale: t })));
     }

@@ -373,6 +373,22 @@ function textOf(node) {
   return (node.children ?? []).map(textOf).join('');
 }
 
+function renderDeep(node) {
+  if (Array.isArray(node)) return node.map(renderDeep);
+  if (!node || typeof node !== 'object') return node;
+  if (typeof node.type === 'function') return renderDeep(node.type(node.props));
+  return { ...node, children: (node.children ?? []).map(renderDeep) };
+}
+
+function planOf(tree) {
+  const nest = findByClass(tree, 'ant-nest');
+  assert.equal(nest.props['aria-label'], 'Colony section');
+  const nestElement = nest.children.find(child => typeof child.type === 'function');
+  const plan = nestElement.type(nestElement.props);
+  assert.equal(plan.props.className, 'ant-nest-plan');
+  return plan;
+}
+
 async function mountWithView(view) {
   const calls = [];
   const remoteTeam = {
@@ -388,12 +404,8 @@ async function mountWithView(view) {
   main.component(props);
   await new Promise(resolve => setImmediate(resolve));
   const tree = main.component(props);
-  const nest = findByClass(tree, 'ant-nest');
-  assert.equal(nest.props['aria-label'], 'Colony section');
-  const nestElement = nest.children.find(child => typeof child.type === 'function');
-  const plan = nestElement.type(nestElement.props);
-  assert.equal(plan.props.className, 'ant-nest-plan');
-  return { props, plan, calls, runtime, cleanup, tree };
+  const plan = planOf(tree);
+  return { main, props, plan, calls, runtime, cleanup, tree };
 }
 
 test('colony section counts every task in exactly one of the five chambers', async () => {
@@ -709,4 +721,52 @@ test('unread mail reaches the header and the panel without a pending release', a
   const metas = findAllByClass(panel.component(panelProps), 'ant-meta').map(textOf);
   assert.ok(metas.some(text => /unread|未读/i.test(text) && /3/.test(text)), 'the panel names the unread backlog: ' + metas.join(' | '));
   await cleanup();
+});
+
+test('clicking an ant hands that member to the inspection desk', async () => {
+  const view = {
+    lifecycle: 'running',
+    cursor: 4,
+    members: [{ memberId: 'member-1', name: 'worker-1', status: 'active', sessionId: 's1', model: 'fixture-model' }],
+    attempts: [{ attemptId: 'attempt-1', taskId: 'task-3', memberId: 'member-1', state: 'running', generation: 1 }],
+    tasks: [{ taskId: 'task-3', title: 'Ship the panel', state: 'running' }],
+    plan: { dependencies: [] },
+  };
+  const { main, props, plan, runtime, cleanup } = await mountWithView(view);
+  const ants = findAllByClass(plan, 'ant-ant');
+  assert.equal(ants.length, 1);
+  assert.equal(ants[0].props['aria-label'], 'worker-1');
+  ants[0].props.onClick();
+  assert.equal(props.model.getSnapshot().selectedMemberId, 'member-1');
+
+  const rail = findByClass(renderDeep(main.component(props)), 'ant-inspector ant-rail');
+  assert.match(textOf(rail), /worker-1/);
+  const labels = findAllByClass(rail, 'ant-button').map(textOf);
+  assert.ok(labels.includes('Pause attempt'), 'a running attempt can be paused: ' + labels.join(' | '));
+  assert.ok(labels.includes('Take over'), 'a running attempt can be taken over: ' + labels.join(' | '));
+  assert.ok(labels.includes('Terminate attempt'), 'a running attempt can be terminated: ' + labels.join(' | '));
+  await cleanup();
+  await runtime.disposeEffects();
+});
+
+test('focusing a chamber steps the other chambers back', async () => {
+  const view = {
+    lifecycle: 'running',
+    cursor: 4,
+    members: [],
+    attempts: [],
+    tasks: [{ taskId: 'task-1', state: 'pending' }],
+    plan: { dependencies: [] },
+  };
+  const { main, props, plan, runtime, cleanup } = await mountWithView(view);
+  const nursery = findAllByClass(plan, 'ant-chamber').find(chamber => chamber.props['data-stage'] === 'nursery');
+  nursery.children[0].props.onClick();
+  assert.equal(props.model.getSnapshot().selectedStage, 'nursery');
+  assert.equal(planOf(main.component(props)).props['data-focus'], '');
+
+  plan.props.onKeyDown({ key: 'Escape', currentTarget: { querySelector: () => null } });
+  assert.equal(props.model.getSnapshot().selectedStage, undefined);
+  assert.equal(planOf(main.component(props)).props['data-focus'], undefined);
+  await cleanup();
+  await runtime.disposeEffects();
 });
