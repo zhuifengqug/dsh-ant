@@ -287,15 +287,17 @@ export function decideAction(view, request, context) {
     const selected = attempt(payload.taskId, payload.attemptId);
     requireState(['running', 'reviewed'].includes(selected.state), 'Review requires the current admitted attempt');
     requireState(task(payload.taskId).selfCompleted === true, 'Review requires the executor self-completion');
-    requireState(!['released', 'archived'].includes(task(payload.taskId).state), 'Review is closed for a released task');
+    const named = payload.gateId === undefined ? undefined : (view.plan?.qualityGates ?? []).find(item => item.gateId === payload.gateId);
+    // Integration is the one verdict a released task can still receive: it records shipping, not work.
+    const integrating = named?.kind === 'integration' && named.taskId === payload.taskId && task(payload.taskId).state === 'released';
+    requireState(integrating || !['released', 'archived'].includes(task(payload.taskId).state), 'Review is closed for a released task');
     member(payload.reviewerMemberId);
     requireState(!view.attempts.some(item => item.taskId === payload.taskId && item.memberId === payload.reviewerMemberId), 'Reviewer must not be a claimant of the task');
     requireState(payload.criteria.length > 0, 'Review requires explicit criteria');
     const declared = (view.plan?.qualityGates ?? []).filter(item => item.taskId === payload.taskId && item.kind === 'review');
     requireState(declared.length <= 1 || payload.gateId !== undefined, 'Review must name its gate when the task declares several');
     if (payload.gateId !== undefined) {
-      const gate = (view.plan?.qualityGates ?? []).find(item => item.gateId === payload.gateId);
-      requireState(gate !== undefined && gate.taskId === payload.taskId && gate.kind === 'review', 'Review gate does not belong to this task');
+      requireState(named !== undefined && named.taskId === payload.taskId && named.kind === (integrating ? 'integration' : 'review'), 'Review gate does not belong to this task');
     }
     return [change('quality.reviewed', payload, payload.attemptId)];
   }

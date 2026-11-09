@@ -24,7 +24,7 @@ export function foldTeam(events) {
       const attempt = () => find(view.attempts, 'attemptId', event.attemptId ?? payload.attemptId);
       const task = () => find(view.tasks, 'taskId', payload.taskId ?? attempt().taskId);
       switch (event.type) {
-        case 'plan.confirmed': view.planConfirmed = true; view.planState = 'confirmed'; view.lifecycle = 'planned'; break;
+        case 'plan.confirmed': view.planConfirmed = true; view.planState = 'confirmed'; view.planConfirmedAt = event.eventSeq; view.lifecycle = 'planned'; break;
         case 'plan.amended': {
           view.plan = payload.plan;
           view.planDigest = digest(payload.plan);
@@ -154,7 +154,7 @@ export function foldTeam(events) {
           if (payload.verdict === 'fail') {
             reviewed.repairRounds = (reviewed.repairRounds ?? 0) + 1;
             reviewed.state = reviewed.repairRounds >= 2 ? 'anomalous' : 'failed';
-          } else if (reviewed.selfCompleted) reviewed.state = 'reviewed';
+          } else if (reviewed.selfCompleted && reviewed.state !== 'released') reviewed.state = 'reviewed';
           break;
         }
         case 'batch.released': {

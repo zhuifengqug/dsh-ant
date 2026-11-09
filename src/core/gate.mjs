@@ -25,14 +25,18 @@ export function gateStatus(view, plan, taskId) {
   const passes = (view.reviews ?? []).filter(review => review.taskId === taskId && review.verdict === 'pass');
   const declared = (plan?.qualityGates ?? []).filter(gate => gate.taskId === taskId);
   const single = declared.filter(gate => gate.kind === 'review').length === 1;
-  const gates = declared
-    .map(gate => ({
-      gateId: gate.gateId,
-      kind: gate.kind,
-      satisfied: gate.kind === 'verification'
-        ? task?.selfCompleted === true
-        : passes.some(review => (review.gateId ? review.gateId === gate.gateId : single && gate.kind === 'review')),
-    }));
+  const approvedAt = view.planConfirmedAt ?? 0;
+  // A requirement gate stands for the contract a human approved: confirming the plan satisfies it,
+  // and any later edit to this task reopens it.
+  const revisedAfterApproval = (view.taskRevisions ?? []).some(entry => entry.taskId === taskId && entry.eventSeq > approvedAt);
+  const judged = gate => {
+    if (gate.kind === 'requirement') return view.planConfirmed === true && !revisedAfterApproval;
+    if (gate.kind === 'implementation') return view.attempts.some(item => item.taskId === taskId && item.completion !== undefined);
+    if (gate.kind === 'verification') return task?.selfCompleted === true;
+    if (gate.kind === 'integration') return passes.some(review => review.gateId === gate.gateId);
+    return passes.some(review => (review.gateId ? review.gateId === gate.gateId : single));
+  };
+  const gates = declared.map(gate => ({ gateId: gate.gateId, kind: gate.kind, satisfied: judged(gate) }));
   return { gates, pending: gates.filter(gate => !gate.satisfied).map(gate => gate.gateId) };
 }
 
