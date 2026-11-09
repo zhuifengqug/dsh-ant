@@ -5,8 +5,8 @@ import { autonomyPolicy, capacityOf, candidatesAllowed } from './autonomy.mjs';
 import { gateStatus } from './gate.mjs';
 
 const userOnly = new Set(['plan.confirm', 'attempt.takeover', 'attempt.terminate', 'member.invite', 'member.remove', 'member.changeModel', 'batch.release', 'attempt.select', 'team.archive', 'team.restore', 'team.delete']);
-const scheduled = new Set(['attempt.dispatch', 'attempt.pause', 'attempt.resume', 'attempt.retry', 'task.claim', 'run.interrupted', 'spend.record', 'member.hatch']);
-const systemOnly = new Set(['attempt.dispatch', 'attempt.pause', 'attempt.resume', 'attempt.retry', 'run.interrupted', 'spend.record', 'member.hatch']);
+const scheduled = new Set(['attempt.dispatch', 'attempt.pause', 'attempt.resume', 'attempt.retry', 'attempt.fallback', 'task.claim', 'run.interrupted', 'spend.record', 'member.hatch']);
+const systemOnly = new Set(['attempt.dispatch', 'attempt.pause', 'attempt.resume', 'attempt.retry', 'attempt.fallback', 'run.interrupted', 'spend.record', 'member.hatch']);
 const active = attempt => ['queued', 'running', 'paused'].includes(attempt.state);
 const change = (type, payload, attemptId) => ({ type, payload, ...(attemptId ? { attemptId } : {}) });
 const requireState = (condition, message) => invariant(condition, 'team/invalid-state', message);
@@ -64,7 +64,7 @@ export function authorize(request, context, view) {
     const attempt = view.attempts.find(item => item.attemptId === request.payload.attemptId);
     invariant(attempt?.memberId === member.memberId, 'team/forbidden', 'Quality report is restricted to the assigned attempt');
   }
-  invariant(['member.accept', 'mail.send', 'mail.read', 'mail.consume', 'quality.report', 'task.claim', 'task.complete', 'quality.review', 'task.create', 'task.amend', 'task.reassign', 'plan.amend', 'team.halt', 'team.resume'].includes(request.action), 'team/forbidden', 'Action unavailable to member');
+  invariant(['member.accept', 'mail.send', 'mail.read', 'mail.consume', 'quality.report', 'task.claim', 'task.complete', 'quality.review', 'task.create', 'task.amend', 'task.reassign', 'plan.amend', 'team.halt', 'team.resume', 'attempt.fallback'].includes(request.action), 'team/forbidden', 'Action unavailable to member');
   if (request.action === 'task.claim') invariant(request.payload.memberId === member.memberId, 'team/forbidden', 'Claim must name the calling member');
   if (request.action === 'task.complete') { const target = view.attempts.find(item => item.attemptId === request.payload.attemptId); invariant(target?.memberId === member.memberId, 'team/forbidden', 'Completion is restricted to the assigned attempt'); }
   if (request.action === 'quality.review') invariant(request.payload.reviewerMemberId === member.memberId, 'team/forbidden', 'Review must name the calling member');
@@ -169,6 +169,23 @@ export function decideAction(view, request, context) {
     const attemptId = `attempt-${randomUUID()}`;
     const generation = view.attempts.filter(item => item.taskId === payload.taskId).length + 1;
     return [change('attempt.dispatched', { taskId: payload.taskId, memberId: payload.memberId, attemptId, generation, ...(payload.variants ? { variants: payload.variants, variant: generation } : {}) }, attemptId)];
+  }
+  if (action === 'attempt.fallback') {
+    requireState(view.planConfirmed, 'Plan requires confirmation');
+    requireState(view.halted !== true, 'Team is halted');
+    const selected = task(payload.taskId); const executor = member(payload.memberId);
+    const previous = attempt(payload.taskId, payload.previousAttemptId);
+    requireState(previous.state === 'failed', 'Previous attempt is not retryable');
+    requireState(previous.interruption?.kind === 'error', 'Only a failed provider run falls back');
+    requireState(executor.fallback !== undefined, 'Member declares no fallback model');
+    requireState(executor.fallback.model !== (previous.model ?? executor.model), 'Fallback model repeats the failed one');
+    requireState(!view.attempts.some(item => active(item) && item.memberId === payload.memberId), 'Member already has active work');
+    requireState(view.attempts.filter(active).length < capacityOf(view, autonomyPolicy(context.settings)), 'Active attempt limit reached');
+    requireState(!selected.ownerMemberId || selected.ownerMemberId === payload.memberId, 'Task ownership conflicts with dispatch');
+    const attemptId = `attempt-${randomUUID()}`;
+    const generation = view.attempts.filter(item => item.taskId === payload.taskId).length + 1;
+    const { provider, model, reasoningEffort } = executor.fallback;
+    return [change('attempt.dispatched', { taskId: payload.taskId, memberId: payload.memberId, attemptId, generation, provider, model, ...(reasoningEffort === undefined ? {} : { reasoningEffort }), fallbackOf: previous.attemptId }, attemptId)];
   }
   if (['attempt.pause', 'attempt.resume', 'attempt.takeover', 'attempt.terminate'].includes(action)) {
     const selected = attempt(payload.taskId, payload.attemptId);

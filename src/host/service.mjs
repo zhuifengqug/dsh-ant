@@ -43,6 +43,7 @@ function workBrief({ teamId, member, task, attempt, plan }) {
     '验收：' + ((task.acceptance ?? []).join('；') || '按目标'),
     ...(task.verify?.length ? ['验证命令：' + task.verify.join('；')] : []),
     ...(gates.length ? ['质量门：' + gates.map(gate => gate.gateId + '(' + gate.kind + ')').join('、')] : []),
+    ...(attempt.fallbackOf === undefined ? [] : ['模型：' + attempt.provider + '/' + attempt.model + '（' + attempt.fallbackOf + ' 失败后的回退）']),
     'attempt：' + attempt.attemptId,
     '回报：用 ant_team_dispatch 发 task.complete，payload { taskId, attemptId, summary, evidence }。',
     ...(task.verify?.length
@@ -323,8 +324,18 @@ export class AntService extends TypertRemoteService {
       content: [{ type: 'text', text: workBrief({ teamId, member, task, attempt, plan: view.plan }) }],
     };
     try {
+      // A fallback attempt runs on the member's spare model, so the Session must be switched
+      // before the brief lands in its inbox.
+      if (attempt.provider !== undefined && attempt.model !== undefined) {
+        await adapter.selectModel({
+          sessionId: member.sessionId,
+          provider: attempt.provider,
+          model: attempt.model,
+          ...(attempt.reasoningEffort === undefined ? {} : { reasoningEffort: attempt.reasoningEffort }),
+        });
+      }
       await adapter.prompt(request);
-      return { taskId: task.taskId, attemptId: attempt.attemptId, memberId: member.memberId, delivered: true };
+      return { taskId: task.taskId, attemptId: attempt.attemptId, memberId: member.memberId, delivered: true, ...(attempt.fallbackOf === undefined ? {} : { model: attempt.provider + '/' + attempt.model }) };
     } catch (error) {
       await service.dispatch({ requestId: 'stall-' + teamId + '-' + attempt.attemptId, teamId, action: 'attempt.pause', payload: { taskId: task.taskId, attemptId: attempt.attemptId } }, { actor: 'system', teamId }).catch(() => undefined);
       return { taskId: task.taskId, attemptId: attempt.attemptId, memberId: member.memberId, delivered: false, reason: error?.message };

@@ -19,7 +19,7 @@ const task = object({ taskId: id, title: text, objective: text, inScope: strings
 const dependency = object({ taskId: id, blockedByTaskId: id });
 const qualityGate = object({ gateId: id, taskId: id, kind: choice('verification', 'review', 'integration'), acceptance: strings });
 const plan = object({ planId: id, mode: choice('normal', 'fast'), tasks: array(task), dependencies: array(dependency), qualityGates: array(qualityGate), maxActiveAttempts: { type: 'integer', minimum: 1, maximum: 8 }, memberDelegation: optional({ type: 'boolean' }) });
-const member = object({ memberId: id, role: text, sessionMode: choice('persistent', 'ephemeral'), sessionId: optional(id), ...modelFields, inScope: strings, outOfScope: strings, executionPrompt: optional(text) });
+const member = object({ memberId: id, role: text, sessionMode: choice('persistent', 'ephemeral'), sessionId: optional(id), ...modelFields, fallback: optional(object(modelFields)), inScope: strings, outOfScope: strings, executionPrompt: optional(text) });
 const evidence = object({ kind: choice('file', 'command', 'session', 'event'), locator: text, digest: optional(text), note: optional(text) });
 const attempt = { taskId: id, attemptId: id };
 const taskPatch = object({ title: optional(text), objective: optional(text), inScope: optional(strings), outOfScope: optional(strings), acceptance: optional(strings), verify: optional(strings), ownerMemberId: optional(id), readOnly: optional({ type: 'boolean' }) });
@@ -34,6 +34,7 @@ export const payloadSchemas = {
   'attempt.takeover': object(attempt),
   'attempt.terminate': object({ ...attempt, reason: optional(text) }),
   'attempt.retry': object({ taskId: id, previousAttemptId: id, memberId: id }),
+  'attempt.fallback': object({ taskId: id, previousAttemptId: id, memberId: id }),
   'member.invite': object({ sessionId: id, role: text, parentMemberId: optional(id) }),
   'member.hatch': object({ memberId: id, sessionId: id }),
   'member.accept': object({ invitationId: id }),

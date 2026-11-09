@@ -169,6 +169,7 @@ export function foldTeam(events) {
           view.lifecycle = 'interrupted';
           if (payload.attemptId) {
             const stopped = attempt();
+            stopped.interruption = { ...payload, eventSeq: event.eventSeq };
             stopped.state = payload.kind === 'aborted' ? 'terminated' : 'failed';
             const host = task();
             if (!['released', 'reviewed'].includes(host.state)) host.state = stopped.state;
