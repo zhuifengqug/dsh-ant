@@ -191,41 +191,123 @@ window.__ModuleLoader__.load({
       },
     };
 
+
+    Object.assign(DICT.en, {
+      releaseTask: 'Release task', claim: 'Claim task', gates: 'Quality gates', evidence: 'Evidence',
+      gatePass: 'passed', gateRunning: 'running', gateOpenState: 'open',
+      requirement: 'Requirement', implementation: 'Implementation', verification: 'Verification', review: 'Review', integration: 'Integration',
+    });
+    Object.assign(DICT.zh, {
+      releaseTask: '放行任务', claim: '认领任务', gates: '五道门', evidence: '证据',
+      gatePass: '通过', gateRunning: '在跑', gateOpenState: '未开始',
+      requirement: '需求', implementation: '实现', verification: '验证', review: '审查', integration: '集成',
+    });
+
 const CSS = `
-      .ant-shell{box-sizing:border-box;display:flex;flex-direction:column;height:100%;min-height:100%;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-base);font:inherit}
-      .ant-shell *{box-sizing:border-box}.ant-header{display:grid;grid-template-columns:minmax(200px,1fr) auto auto auto;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--dsw-alias-border-l1)}
-      .ant-title{margin:0;font-size:18px;line-height:1.25;font-weight:700}.ant-subtitle{margin:4px 0 0;color:var(--dsw-alias-label-secondary);font-size:12px}
-      .ant-meta,.ant-select-label{display:flex;flex-direction:column;gap:4px;color:var(--dsw-alias-label-secondary);font-size:11px}.ant-select,.ant-button{min-height:34px;border:1px solid var(--dsw-alias-border-l1);border-radius:6px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit}.ant-select{min-width:180px;padding:0 10px}.ant-button{padding:0 12px;cursor:pointer}.ant-button:hover{border-color:var(--dsw-alias-brand-primary)}
-      .ant-button:focus-visible,.ant-select:focus-visible,.ant-chamber-head:focus-visible,.ant-gate:focus-visible,.ant-team-row:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:2px}.ant-button[disabled]{cursor:wait;opacity:.55}
-      .ant-body{display:grid;grid-template-columns:minmax(176px,220px) minmax(360px,1fr) minmax(250px,320px);min-height:0;flex:1}.ant-index,.ant-inspector{min-width:0;overflow:auto;padding:16px;background:var(--dsw-alias-bg-layer-1)}.ant-index{border-right:1px solid var(--dsw-alias-border-l1)}.ant-inspector{border-left:1px solid var(--dsw-alias-border-l1)}
-      .ant-section-title{margin:0 0 10px;font-size:12px;font-weight:700;color:var(--dsw-alias-label-secondary);text-transform:uppercase}.ant-team-row{display:block;width:100%;padding:10px;margin:0 0 6px;border:1px solid transparent;border-radius:6px;background:transparent;color:inherit;text-align:left;cursor:pointer}.ant-team-row:hover{background:var(--dsw-alias-bg-layer-2)}.ant-team-row[aria-current=true]{border-color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-bg-layer-2)}
-      .ant-team-id{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:650}.ant-team-goal{display:block;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-secondary);font-size:11px}.ant-team-state{display:flex;justify-content:space-between;gap:8px;margin-top:7px;color:var(--dsw-alias-label-secondary);font-size:10px}
-      .ant-nest{min-width:0;overflow:auto;padding:16px;background:var(--dsw-alias-bg-base)}.ant-nest-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}.ant-counts{display:flex;flex-wrap:wrap;gap:6px}.ant-chip{display:inline-flex;align-items:center;min-height:24px;padding:0 8px;border:1px solid var(--dsw-alias-border-l1);border-radius:999px;color:var(--dsw-alias-label-secondary);font-size:11px;white-space:nowrap}
-      .ant-nest-plan{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.24fr) minmax(0,1fr);grid-template-rows:minmax(120px,1fr) minmax(120px,1fr);gap:12px;min-height:420px}
-      .ant-tunnels{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.ant-tunnel{fill:none;stroke:var(--dsw-alias-border-l2);stroke-width:.8;stroke-dasharray:2 2;opacity:.9}.ant-tunnel-label{fill:var(--dsw-alias-label-secondary);font-size:3.4px}
-      .ant-chamber{position:relative;display:flex;flex-direction:column;gap:6px;min-width:0;min-height:0;padding:8px 10px;background:var(--dsw-alias-bg-layer-1);overflow:hidden}
-      .ant-chamber[data-stage=nursery]{grid-area:1/1;border:1px solid var(--dsw-alias-border-l1);border-radius:20px}
-      .ant-chamber[data-stage=corridor]{grid-area:1/2/3/3;border:1px solid var(--dsw-alias-border-l1);border-radius:3px}
-      .ant-chamber[data-stage=pantry]{grid-area:1/3;border:1px solid var(--dsw-alias-border-l1);border-radius:3px 3px 3px 20px}
-      .ant-chamber[data-stage=refuse]{grid-area:2/1;border:1px dashed var(--dsw-alias-border-l2);border-radius:4px 18px 4px 4px}
-      .ant-chamber[data-stage=gate]{grid-area:2/3;border:3px double var(--dsw-alias-border-l1);border-radius:8px 8px 22px 22px}
-      .ant-chamber[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--dsw-alias-label-secondary)}
+      .ant-shell{box-sizing:border-box;display:flex;flex-direction:column;height:100%;min-height:100%;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-base);font:inherit;--ant-neon:#16d9ed;--ant-neon-2:#f04bd7;--ant-ok:#46d9aa;--ant-bad:#ff6179;--ant-grid:rgba(127,160,190,.16);--ant-cell:rgba(9,17,29,.86);--ant-row-hover:rgba(22,217,237,.09);--ant-mono:"Cascadia Mono",Consolas,ui-monospace,monospace}
+      @supports (color:light-dark(#000,#fff)){.ant-shell{--ant-neon:light-dark(#008fa9,#16d9ed);--ant-neon-2:light-dark(#b0249f,#f04bd7);--ant-ok:light-dark(#0b8a63,#46d9aa);--ant-bad:light-dark(#c33b4f,#ff6179);--ant-grid:light-dark(rgba(40,70,95,.13),rgba(127,160,190,.16));--ant-cell:light-dark(rgba(255,255,255,.94),rgba(9,17,29,.86));--ant-row-hover:light-dark(rgba(0,143,169,.09),rgba(22,217,237,.09))}}
+      .ant-shell *{box-sizing:border-box}
+      .ant-header{display:grid;grid-template-columns:minmax(180px,1fr) auto auto auto auto;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--dsw-alias-border-l1)}
+      .ant-title{margin:0;font-size:17px;line-height:1.25;font-weight:700;letter-spacing:.02em}
+      .ant-subtitle{margin:4px 0 0;color:var(--dsw-alias-label-secondary);font-size:11px}
+      .ant-meta{display:flex;flex-direction:column;gap:3px;color:var(--dsw-alias-label-secondary);font-size:10.5px;letter-spacing:.06em}
+      .ant-meta strong{color:var(--dsw-alias-label-primary);font-size:12px;letter-spacing:0;font-variant-numeric:tabular-nums}
+      .ant-select,.ant-button{min-height:32px;border:1px solid var(--dsw-alias-border-l1);border-radius:2px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px}
+      .ant-select{min-width:168px;padding:0 10px}.ant-button{padding:0 12px;cursor:pointer}
+      .ant-button:hover{border-color:var(--ant-neon);color:var(--ant-neon)}
+      .ant-button:focus-visible,.ant-select:focus-visible,.ant-chamber-head:focus-visible,.ant-gate:focus-visible,.ant-row:focus-visible,.ant-glyph:focus-visible{outline:2px solid var(--ant-neon);outline-offset:2px}
+      .ant-button[disabled]{cursor:wait;opacity:.5}
+      .ant-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,282px);min-height:0;flex:1}
+      .ant-nest{position:relative;min-width:0;min-height:0;overflow:hidden;padding:0;background:var(--dsw-alias-bg-base)}
+      .ant-nest::before{content:'';position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(var(--ant-grid) 1px,transparent 1px),linear-gradient(90deg,var(--ant-grid) 1px,transparent 1px);background-size:34px 34px;opacity:.5}
+      .ant-nest-plan{position:absolute;inset:0}
+      .ant-blueprint{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+      .ant-tunnels{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+      .ant-tunnel{fill:none;stroke:var(--ant-neon-2);stroke-width:1.2;stroke-dasharray:3 5;opacity:.55}
+      .ant-conduit{fill:none;stroke:var(--dsw-alias-border-l2);stroke-width:9;opacity:.5;stroke-linejoin:round}
+      .ant-conduit-core{fill:none;stroke:var(--ant-neon);stroke-width:1.6;opacity:.8;stroke-dasharray:2 10;animation:ant-flow 2.6s linear infinite}
+      .ant-circuit{fill:none;stroke:var(--dsw-alias-border-l1);stroke-width:1;opacity:.55}
+      .ant-node{fill:var(--dsw-alias-bg-base);stroke:var(--ant-neon);stroke-width:1.2}
+      .ant-chamber{position:absolute;display:flex;flex-direction:column;gap:5px;min-width:0;padding:9px 11px;background:var(--ant-cell);clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px))}
+      .ant-chamber[data-stage=nursery]{border:1px solid var(--dsw-alias-border-l1);border-left:2px solid var(--ant-neon)}
+      .ant-chamber[data-stage=gate]{border:1px solid var(--ant-neon-2);border-left:2px solid var(--ant-neon-2)}
+      .ant-chamber[data-stage=corridor]{border:1px solid var(--dsw-alias-border-l2);border-left:2px solid var(--ant-neon)}
+      .ant-chamber[data-stage=pantry]{border:1px solid var(--dsw-alias-border-l1);border-left:2px solid var(--ant-ok)}
+      .ant-chamber[data-stage=refuse]{border:1px dashed var(--dsw-alias-border-l2);border-left:2px solid var(--ant-bad)}
+      .ant-chamber[aria-pressed=true]{box-shadow:inset 0 0 0 1px var(--ant-neon)}
       .ant-chamber-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;width:100%;padding:0;border:0;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;text-align:left;cursor:pointer}
-      .ant-chamber-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ant-chamber-count{color:var(--dsw-alias-label-primary);font-size:20px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
-      .ant-ants{display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-height:12px}.ant-ant{display:block;width:8px;height:5px;border-radius:50% 45% 45% 50%;background:var(--dsw-alias-label-secondary)}.ant-ant[data-state=active]{background:var(--dsw-alias-label-primary)}.ant-more{color:var(--dsw-alias-label-secondary);font-size:10px}
-      .ant-queen{margin-top:auto;color:var(--dsw-alias-label-secondary);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
-      .ant-gate{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto;min-height:32px;padding:0 10px;border:1px solid var(--dsw-alias-label-primary);border-radius:6px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;cursor:pointer}.ant-gate[disabled]{cursor:default;opacity:.5}
-      .ant-nest-hint{margin:10px 0 0;color:var(--dsw-alias-label-secondary);font-size:11px}
-      .ant-facts{display:grid;gap:8px;margin:0 0 16px}.ant-fact{display:grid;grid-template-columns:minmax(80px,auto) 1fr;gap:8px;border-bottom:1px solid var(--dsw-alias-border-l1);padding-bottom:7px;font-size:12px}.ant-fact dt{color:var(--dsw-alias-label-secondary)}.ant-fact dd{margin:0;overflow-wrap:anywhere}.ant-actions{display:grid;gap:8px;margin-top:14px}.ant-actions .ant-button{width:100%;text-align:left}.ant-status{margin:0 0 12px;padding:9px 10px;border-left:3px solid var(--dsw-alias-state-idle-primary);background:var(--dsw-alias-bg-layer-2);font-size:12px}.ant-status.error{border-left-color:var(--dsw-alias-state-error-primary)}.ant-status.success{border-left-color:var(--dsw-alias-state-success-primary)}.ant-status.warn{border-left-color:var(--dsw-alias-state-warn-primary)}.ant-empty,.ant-loading{display:grid;place-items:center;min-height:220px;padding:24px;color:var(--dsw-alias-label-secondary);text-align:center}.ant-empty strong{display:block;margin-bottom:6px;color:var(--dsw-alias-label-primary)}.ant-member-list{display:grid;gap:6px;margin-top:12px}.ant-member{padding:8px;border-left:2px solid var(--dsw-alias-state-idle-primary);background:var(--dsw-alias-bg-layer-2)}.ant-member strong{display:block;font-size:12px}.ant-member small,.ant-note{color:var(--dsw-alias-label-secondary);font-size:11px}
-      .ant-main{display:flex;flex-direction:column;min-height:0;flex:1}.ant-stream{margin:0;border-top:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1)}.ant-stream summary{padding:9px 16px;cursor:pointer;color:var(--dsw-alias-label-secondary);font-size:11px;font-variant-numeric:tabular-nums}.ant-stream ul{display:grid;gap:4px;margin:0;padding:0 16px 14px;list-style:none}.ant-stream li{display:flex;gap:8px;align-items:baseline;padding:5px 8px;border-left:2px solid var(--dsw-alias-state-idle-primary);background:var(--dsw-alias-bg-base);font-size:11px}.ant-stream li[data-kind=help]{border-left-color:var(--dsw-alias-state-error-primary)}.ant-stream li strong{min-width:78px;font-weight:650}.ant-stream p{margin:0 0 12px;padding:0 16px}
-      .ant-glyph{position:relative;display:inline-flex}.ant-badge{position:absolute;top:-3px;right:-5px;min-width:13px;height:13px;padding:0 3px;border-radius:999px;background:var(--dsw-alias-state-error-primary);color:#fff;font-size:9px;line-height:13px;text-align:center;font-variant-numeric:tabular-nums}
-      .ant-settings{display:grid;gap:12px;max-width:560px}.ant-settings h2{margin:0;font-size:14px}.ant-settings .ant-field{display:grid;grid-template-columns:minmax(180px,1fr) minmax(120px,180px);gap:10px;align-items:center;font-size:12px}.ant-settings .ant-field select,.ant-settings .ant-field input{min-height:32px;padding:0 8px;border:1px solid var(--dsw-alias-border-l1);border-radius:6px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit}.ant-settings .ant-warn{padding:9px 10px;border-left:3px solid var(--dsw-alias-state-warn-primary);background:var(--dsw-alias-bg-layer-2);font-size:12px}.ant-settings .ant-row{display:flex;gap:8px}
-      @media(prefers-reduced-motion:no-preference){.ant-ant[data-state=active]{animation:ant-crawl 3s ease-in-out infinite alternate}}
-      @media(prefers-reduced-motion:reduce){.ant-ant,.ant-gate,.ant-chamber{animation:none!important;transition:none!important}}
-      @keyframes ant-crawl{from{transform:translateX(0)}to{transform:translateX(5px)}}
-      @media(max-width:1024px){.ant-body{grid-template-columns:minmax(160px,190px) minmax(320px,1fr)}.ant-inspector{grid-column:1/-1;border-top:1px solid var(--dsw-alias-border-l1);border-left:0}.ant-nest-plan{min-height:380px}}
-      @media(max-width:768px){.ant-header{grid-template-columns:1fr auto}.ant-header .ant-meta{display:none}.ant-body{display:flex;flex-direction:column}.ant-index{border-right:0;border-bottom:1px solid var(--dsw-alias-border-l1);max-height:190px}.ant-nest{order:2}.ant-inspector{order:3;border-top:1px solid var(--dsw-alias-border-l1)}.ant-nest-plan{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto auto auto;min-height:0}.ant-chamber[data-stage=corridor]{grid-area:1/1/2/3;min-height:150px}.ant-chamber[data-stage=nursery]{grid-area:2/1}.ant-chamber[data-stage=gate]{grid-area:2/2}.ant-chamber[data-stage=pantry]{grid-area:3/1}.ant-chamber[data-stage=refuse]{grid-area:3/2}}
-      @media(max-width:420px){.ant-header{padding:12px;gap:8px}.ant-header .ant-select-label{grid-column:1/-1}.ant-nest,.ant-index,.ant-inspector{padding:12px}.ant-nest-plan{grid-template-columns:minmax(0,1fr);grid-template-rows:auto}.ant-chamber[data-stage=corridor]{grid-area:1/1}.ant-chamber[data-stage=nursery]{grid-area:2/1}.ant-chamber[data-stage=gate]{grid-area:3/1}.ant-chamber[data-stage=pantry]{grid-area:4/1}.ant-chamber[data-stage=refuse]{grid-area:5/1}}
+      .ant-chamber-name{font-size:12px;font-weight:650;letter-spacing:.1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .ant-chamber-count{color:var(--ant-neon);font-size:11px;font-variant-numeric:tabular-nums;letter-spacing:.08em}
+      .ant-ants{display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-height:10px}
+      .ant-ant{display:block;flex:none;width:auto;height:auto;color:var(--dsw-alias-label-secondary)}
+      .ant-ant[data-state=active]{color:var(--ant-neon)}
+      .ant-more{color:var(--dsw-alias-label-secondary);font-size:10px}
+      .ant-rows{display:grid;gap:2px;min-height:0;overflow:hidden}
+      .ant-row{display:flex;align-items:center;gap:7px;width:100%;padding:2px 4px;border:0;border-radius:2px;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:11.5px;text-align:left;cursor:pointer}
+      .ant-row:hover,.ant-row[aria-current=true]{background:var(--ant-row-hover);color:var(--ant-neon)}
+      .ant-row::before{content:'';flex:none;width:5px;height:5px;border-radius:50%;background:var(--dsw-alias-border-l2)}
+      .ant-row[data-state=reviewed]::before{background:var(--ant-neon-2);box-shadow:0 0 6px var(--ant-neon-2)}
+      .ant-row[data-state=running]::before{background:var(--ant-neon);box-shadow:0 0 6px var(--ant-neon)}
+      .ant-row[data-state=pending]::before{background:transparent;box-shadow:inset 0 0 0 1px var(--dsw-alias-border-l2)}
+      .ant-row[data-state=released]::before{background:var(--ant-ok)}
+      .ant-row[data-state=failed]::before{background:var(--ant-bad)}
+      .ant-gate{display:flex;align-items:center;justify-content:space-between;gap:10px;align-self:flex-end;margin-top:auto;min-height:28px;min-width:136px;padding:0 11px;border:1px solid var(--ant-neon-2);border-radius:2px;background:var(--ant-neon-2);color:#04121a;font:inherit;font-size:11px;font-weight:650;cursor:pointer}
+      .ant-gate[disabled]{cursor:default;opacity:.45}
+      .ant-rail{min-width:0;overflow:auto;padding:20px 18px;border-left:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1)}
+      .ant-rail h2{margin:0 0 4px;font-size:17px;line-height:1.25;font-weight:650;letter-spacing:.01em}
+      .ant-rail-state{display:flex;align-items:center;gap:7px;color:var(--dsw-alias-label-secondary);font-size:11.5px}
+      .ant-rail-state i{width:6px;height:6px;border-radius:50%;background:var(--dsw-alias-border-l2)}
+      .ant-rail-state i[data-state=reviewed]{background:var(--ant-neon-2)}.ant-rail-state i[data-state=running]{background:var(--ant-neon)}
+      .ant-rail-state i[data-state=released]{background:var(--ant-ok)}.ant-rail-state i[data-state=failed]{background:var(--ant-bad)}
+      .ant-cmd{margin:10px 0 0;padding:8px 9px;border:1px solid var(--dsw-alias-border-l1);border-radius:2px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-secondary);font:10.5px/1.6 var(--ant-mono);overflow-wrap:anywhere}
+      .ant-actions{display:grid;gap:6px;margin:12px 0 0}
+      .ant-actions .ant-button{justify-content:flex-start;text-align:left}
+      .ant-rail-rule{height:1px;margin:14px 0;background:linear-gradient(90deg,var(--ant-neon),var(--dsw-alias-border-l1) 40%,transparent)}
+      .ant-cap{margin:0 0 6px;color:var(--dsw-alias-label-secondary);font-size:10.5px;letter-spacing:.1em}
+      .ant-gates{display:grid;gap:4px;margin:0;padding:0;list-style:none}
+      .ant-gates li{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--dsw-alias-label-secondary)}
+      .ant-gates b{min-width:30px;font-weight:650;color:var(--dsw-alias-label-primary)}
+      .ant-gates i{width:6px;height:6px;border-radius:50%;background:var(--dsw-alias-border-l2)}
+      .ant-gates i[data-state=pass]{background:var(--ant-ok)}.ant-gates i[data-state=run]{background:var(--ant-neon)}.ant-gates i[data-state=open]{background:transparent;box-shadow:inset 0 0 0 1px var(--dsw-alias-border-l2)}
+      .ant-facts{display:grid;gap:7px;margin:12px 0 0}.ant-fact{display:grid;grid-template-columns:minmax(72px,auto) 1fr;gap:8px;padding-bottom:6px;border-bottom:1px solid var(--dsw-alias-border-l1);font-size:11.5px}
+      .ant-fact dt{color:var(--dsw-alias-label-secondary)}.ant-fact dd{margin:0;overflow-wrap:anywhere}
+      .ant-status{margin:0;padding:8px 16px;border-left:2px solid var(--dsw-alias-state-idle-primary);background:var(--dsw-alias-bg-layer-2);font-size:11.5px}
+      .ant-status.error{border-left-color:var(--dsw-alias-state-error-primary)}.ant-status.success{border-left-color:var(--dsw-alias-state-success-primary)}.ant-status.warn{border-left-color:var(--dsw-alias-state-warn-primary)}
+      .ant-empty,.ant-loading{display:grid;place-items:center;min-height:220px;padding:24px;color:var(--dsw-alias-label-secondary);text-align:center;font-size:12px}
+      .ant-empty strong{display:block;margin-bottom:6px;color:var(--dsw-alias-label-primary)}
+      .ant-stream{margin:0;border-top:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1)}
+      .ant-stream summary{padding:8px 16px;cursor:pointer;color:var(--dsw-alias-label-secondary);font-size:11px;font-variant-numeric:tabular-nums}
+      .ant-stream ul{display:grid;gap:4px;margin:0;padding:0 16px 12px;list-style:none}
+      .ant-stream li{display:flex;gap:8px;align-items:baseline;padding:5px 8px;border-left:2px solid var(--dsw-alias-state-idle-primary);background:var(--dsw-alias-bg-base);font-size:11px}
+      .ant-stream li[data-kind=help]{border-left-color:var(--dsw-alias-state-error-primary)}
+      .ant-stream li strong{min-width:78px;font-weight:650}.ant-stream p{margin:0 0 10px;padding:0 16px}
+      .ant-note{color:var(--dsw-alias-label-secondary);font-size:11px}
+      .ant-glyph{position:relative;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;border:1px solid transparent;border-radius:2px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}
+      .ant-glyph:hover,.ant-glyph[aria-expanded=true]{border-color:var(--ant-neon);color:var(--ant-neon);background:var(--dsw-alias-bg-layer-2)}
+      .ant-badge{position:absolute;top:-4px;right:-5px;min-width:14px;height:14px;padding:0 3px;border-radius:999px;background:var(--ant-neon-2);color:#04121a;font-size:9px;line-height:14px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+      .ant-anchor{position:relative;display:inline-flex}
+      .ant-pop{position:absolute;top:34px;right:0;z-index:40;width:298px;border:1px solid var(--ant-neon);background:var(--dsw-alias-bg-layer-1);box-shadow:0 18px 42px rgb(0 0 0 / 24%);clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px))}
+      .ant-pop-top{display:flex;align-items:baseline;gap:8px;padding:11px 13px 7px;border-bottom:1px solid var(--dsw-alias-border-l1)}
+      .ant-pop-top strong{font-size:12.5px;font-weight:650}.ant-pop-top span{margin-left:auto;color:var(--ant-neon-2);font-size:11px;font-variant-numeric:tabular-nums}
+      .ant-roster{margin:0;padding:6px 6px 8px;list-style:none}
+      .ant-roster li{display:flex;align-items:center;gap:8px;padding:4px 7px;font-size:11.5px}
+      .ant-roster li:hover{background:var(--dsw-alias-bg-layer-2)}
+      .ant-roster em{margin-left:auto;color:var(--dsw-alias-label-secondary);font:10px var(--ant-mono);white-space:nowrap}
+      .ant-pop-bot{display:flex;align-items:center;gap:8px;padding:9px 13px;border-top:1px solid var(--dsw-alias-border-l1)}
+      .ant-pop-bot .ant-button{height:26px;min-height:26px;font-size:11px}
+      .ant-pop-bot span{color:var(--dsw-alias-label-secondary);font-size:10.5px}
+      .ant-strip{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--dsw-alias-border-l1);border-radius:2px;background:var(--dsw-alias-bg-layer-1);font-size:11.5px}
+      .ant-strip-name{font-weight:650}.ant-strip-chip{padding:1px 6px;border:1px solid var(--ant-neon-2);border-radius:2px;color:var(--ant-neon-2);font-size:10.5px}
+      .ant-strip .ant-button{height:24px;min-height:24px;margin-left:auto;font-size:11px}
+      .ant-settings{display:grid;gap:12px;max-width:560px}.ant-settings h2{margin:0;font-size:14px}
+      .ant-settings .ant-field{display:grid;grid-template-columns:minmax(180px,1fr) minmax(120px,180px);gap:10px;align-items:center;font-size:12px}
+      .ant-settings .ant-field select,.ant-settings .ant-field input{min-height:32px;padding:0 8px;border:1px solid var(--dsw-alias-border-l1);border-radius:2px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit}
+      .ant-settings .ant-warn{padding:9px 10px;border-left:3px solid var(--dsw-alias-state-warn-primary);background:var(--dsw-alias-bg-layer-2);font-size:12px}
+      .ant-settings .ant-row{display:flex;gap:8px}
+      @keyframes ant-flow{to{stroke-dashoffset:-24}}
+      @media(prefers-reduced-motion:reduce){.ant-conduit-core{animation:none}}
+      @media(max-width:1024px){.ant-body{grid-template-columns:minmax(0,1fr)}.ant-nest-plan{min-height:0}.ant-rail{border-top:1px solid var(--dsw-alias-border-l1);border-left:0}}
+      @media(max-width:768px){.ant-header{grid-template-columns:1fr auto}.ant-header .ant-meta{display:none}.ant-nest-plan{min-height:320px}.ant-pop{right:auto;left:0}}
     `;
 
     function createLocale(ctx) {
@@ -308,13 +390,6 @@ const CSS = `
 
     function useModel(model) { return React.useSyncExternalStore(model.subscribe, model.getSnapshot, model.getSnapshot); }
     function useLocale(locale) { React.useSyncExternalStore(locale.subscribe, locale.snapshot, locale.snapshot); return locale; }
-    function statusText(state, locale) {
-      if (state.request) return h('p', { className: 'ant-status warn', role: 'status' }, `${locale.t('dispatching')} · ${state.request.action}`);
-      if (state.error) { const message = state.status === 'stale-cursor' ? locale.t('stale') : state.status === 'lease' ? locale.t('lease') : state.status === 'rebuild-required' ? locale.t('rebuild') : state.status === 'persistence-failed' ? locale.t('persistence') : state.status === 'not-found' ? locale.t('notFound') : locale.t('unavailable'); return h('p', { className: 'ant-status error', role: 'alert' }, `${message} (${state.error.code})`); }
-      if (state.receipt) return h('p', { className: 'ant-status success', role: 'status' }, `${state.receipt.outcome === 'duplicate' ? locale.t('duplicate') : locale.t('committed')} · ${state.receipt.requestId ?? locale.t('unknown')}`);
-      return state.status === 'refreshing' ? h('p', { className: 'ant-status', role: 'status' }, locale.t('refreshing')) : null;
-    }
-
     const STAGES = ['nursery', 'gate', 'corridor', 'pantry', 'refuse'];
     const ACTIVE_ATTEMPT = ['queued', 'running', 'paused'];
     const CHAMBER_CENTERS = { nursery: [17, 26], corridor: [50, 50], pantry: [83, 26], refuse: [17, 74], gate: [83, 74] };
@@ -349,21 +424,93 @@ const CSS = `
       return task ? chamberOf(task, attempts) : 'nursery';
     }
 
-    function Nest({ state, locale, dispatch, onSelectStage }) {
+
+    const ANTS_VIEWBOX = '0 0 1100 760';
+    const CHAMBER_BOX = {
+      nursery: { left: '9.1%', top: '23.7%', width: '29.1%', height: '21.1%' },
+      gate: { left: '62.7%', top: '14.5%', width: '28.2%', height: '19.8%' },
+      corridor: { left: '42.0%', top: '41.1%', width: '16.2%', height: '22.1%' },
+      pantry: { left: '62.7%', top: '63.8%', width: '28.2%', height: '20.4%' },
+      refuse: { left: '10.0%', top: '67.1%', width: '25.5%', height: '17.1%' },
+    };
+    const CONDUITS = [
+      'M550 58 V146 L536 160 V236 L550 250 V366 L536 380 V436 L550 450 V576 L536 590 V700',
+      'M550 160 H620 L690 185',
+      'M540 250 H474 L420 260',
+      'M550 450 H610 L690 562',
+      'M550 590 H468 L390 575',
+    ];
+    const JUNCTIONS = [[550, 160], [540, 250], [550, 450], [550, 590], [690, 185], [420, 260], [690, 562], [390, 575], [550, 58]];
+
+    /** One solid silhouette, currentColor, no outline — the same ant used at every size. */
+    function AntShape({ size = 12, className }) {
+      const width = size * 1.55;
+      return h('svg', { className, viewBox: '-20 -11 38 20', width, height: size, 'aria-hidden': 'true', focusable: 'false' },
+        h('ellipse', { cx: 9.9, cy: -1.1, rx: 3.2, ry: 2.9, fill: 'currentColor' }),
+        h('path', { d: 'M10.9 -3.4 L12.2 -6.2 L15.4 -5.8', fill: 'none', stroke: 'currentColor', strokeWidth: 1.2, strokeLinecap: 'round' }),
+        h('ellipse', { cx: 4.1, cy: 0.2, rx: 3.5, ry: 2.5, fill: 'currentColor', transform: 'rotate(-8 4.1 .2)' }),
+        h('ellipse', { cx: -0.5, cy: 0.5, rx: 1.15, ry: 1.05, fill: 'currentColor' }),
+        h('ellipse', { cx: -7.2, cy: 1.3, rx: 6, ry: 4.2, fill: 'currentColor', transform: 'rotate(-10 -7.2 1.3)' }),
+        h('path', { d: 'M6.2 0.6 L10.4 -3.2 L13.4 2.2 M3.8 0.8 L4.6 -3.4 L3.2 5.2 M1 1 L-2.4 -2.6 L-6.4 2.6', fill: 'none', stroke: 'currentColor', strokeWidth: 1.2, strokeLinecap: 'round', strokeLinejoin: 'round' }));
+    }
+
+    function blueprint(tunnels) {
+      return h('svg', { className: 'ant-blueprint', viewBox: ANTS_VIEWBOX, preserveAspectRatio: 'none', 'aria-hidden': 'true', focusable: 'false' },
+        h('g', { className: 'ant-circuit' },
+          h('path', { d: 'M60 70 H150 M60 70 V150' }), h('path', { d: 'M1040 70 H950 M1040 70 V150' }),
+          h('path', { d: 'M60 690 H150 M60 690 V610' }), h('path', { d: 'M1040 690 H950 M1040 690 V610' }),
+          h('path', { d: 'M380 70 H470 M420 70 V120' }), h('path', { d: 'M720 700 H820 M780 700 V660' })),
+        h('g', null, CONDUITS.map((d, index) => h('path', { key: 'c' + index, className: 'ant-conduit', d }))),
+        h('g', null, CONDUITS.map((d, index) => h('path', { key: 'k' + index, className: 'ant-conduit-core', d, style: { animationDelay: (index * 0.4) + 's' } }))),
+        h('g', null, JUNCTIONS.map(([cx, cy]) => h('circle', { key: 'j' + cx + '-' + cy, className: 'ant-node', cx, cy, r: 4 }))),
+        h('g', { className: 'ant-tunnels' }, (tunnels || []).map(tunnel => h('path', { key: tunnel.key, className: 'ant-tunnel', d: tunnel.path }))));
+    }
+
+    function chamber({ stage, tasks, members, count, state, locale, pending, dispatch, onSelectStage, onSelectTask }) {
+      const box = CHAMBER_BOX[stage];
+      const shown = members.slice(0, 8);
+      const hidden = members.length - shown.length;
+      const isGate = stage === 'gate';
+      const current = state.selectedStage === stage;
+      return h('section', {
+        key: stage, className: 'ant-chamber', 'data-stage': stage,
+        style: { left: box.left, top: box.top, width: box.width, height: box.height },
+        'aria-pressed': current === true ? 'true' : 'false', 'aria-label': locale.t(stage) + ' ' + count,
+      },
+        h('button', { type: 'button', className: 'ant-chamber-head', onClick: () => onSelectStage(current ? undefined : stage) },
+          h('span', { className: 'ant-chamber-name' }, locale.t(stage)),
+          h('span', { className: 'ant-chamber-count' }, String(count))),
+        h('div', { className: 'ant-ants', 'aria-hidden': 'true' },
+          shown.map(member => h(AntShape, { key: member.memberId, className: 'ant-ant', size: 11, 'data-state': member.status ?? 'active' })),
+          hidden > 0 ? h('span', { className: 'ant-more' }, '+' + hidden) : null),
+        h('div', { className: 'ant-rows' }, tasks.slice(0, 6).map(task => h('button', {
+          key: task.taskId, type: 'button', className: 'ant-row', 'data-state': task.state ?? '',
+          'aria-current': state.selectedTaskId === task.taskId ? 'true' : undefined,
+          onClick: () => onSelectTask(task.taskId),
+        }, h('span', null, task.title ?? task.taskId)))),
+        isGate ? h('button', {
+          type: 'button', className: 'ant-gate', 'data-gate': '',
+          disabled: Boolean(state.request) || !pending.length,
+          onClick: () => dispatch('batch.release', { batchId: 'batch-' + ((state.view?.cursor ?? 0) + 1), taskIds: pending.map(task => task.taskId) }),
+          'aria-label': locale.t('releaseNow') + ' ' + pending.length,
+        }, h('span', null, locale.t('gateOpen')), h('span', null, locale.t('pendingBatch') + ' ' + pending.length)) : null);
+    }
+
+    function Nest({ state, locale, dispatch, onSelectStage, onSelectTask }) {
       const view = state.view ?? {};
       const attempts = view.attempts ?? [];
       const tasks = view.tasks ?? [];
       const members = (view.members ?? []).filter(item => item.status === 'active');
       const counts = chamberCounts(view);
       const pending = pendingReleaseTasks(view);
+      const byStage = stage => tasks.filter(task => chamberOf(task, attempts) === stage);
       const tunnels = (view.plan?.dependencies ?? []).map(edge => {
         const blocker = tasks.find(item => item.taskId === edge.blockedByTaskId);
         const blocked = tasks.find(item => item.taskId === edge.taskId);
         if (!blocker || !blocked) return undefined;
         const from = CHAMBER_CENTERS[chamberOf(blocker, attempts)];
         const to = CHAMBER_CENTERS[chamberOf(blocked, attempts)];
-        const mid = (from[0] + to[0]) / 2;
-        return { key: `${edge.blockedByTaskId}-${edge.taskId}`, path: `M${from[0]} ${from[1]} Q${mid} ${(from[1] + to[1]) / 2} ${to[0]} ${to[1]}` };
+        return { key: edge.blockedByTaskId + '-' + edge.taskId, path: 'M' + from[0] + ' ' + from[1] + ' L' + to[0] + ' ' + to[1] };
       }).filter(Boolean);
       const onKeyDown = event => {
         const index = ['1', '2', '3', '4', '5'].indexOf(event.key);
@@ -371,30 +518,89 @@ const CSS = `
           const stage = STAGES[index];
           event.preventDefault();
           onSelectStage(stage);
-          if (stage === 'gate') { const gate = event.currentTarget.querySelector('[data-gate]'); if (gate) gate.focus(); }
+          if (stage === 'gate') {
+            const gate = event.currentTarget.querySelector('[data-gate]');
+            if (gate) gate.focus();
+          }
           return;
         }
         if (event.key === 'Escape') onSelectStage(undefined);
       };
-      const chamber = stage => {
-        const ants = members.filter(member => heldStage(member, attempts, tasks) === stage);
-        const shown = ants.slice(0, 8);
-        const hidden = ants.length - shown.length;
-        const isGate = stage === 'gate';
-        return h('section', { key: stage, className: 'ant-chamber', 'data-stage': stage, 'aria-pressed': state.selectedStage === stage, 'aria-label': `${locale.t(stage)} ${counts[stage]}` },
-          h('button', { type: 'button', className: 'ant-chamber-head', onClick: () => onSelectStage(state.selectedStage === stage ? undefined : stage) },
-            h('span', { className: 'ant-chamber-name' }, locale.t(stage)),
-            h('span', { className: 'ant-chamber-count' }, String(counts[stage]))),
-          h('div', { className: 'ant-ants', 'aria-hidden': 'true' }, shown.map(member => h('i', { key: member.memberId, className: 'ant-ant', 'data-state': member.status ?? 'active' })), hidden > 0 ? h('span', { className: 'ant-more' }, `+${hidden}`) : null),
-          stage === 'corridor' ? h('p', { className: 'ant-queen' }, locale.t('queen')) : null,
-          isGate ? h('button', { type: 'button', className: 'ant-gate', 'data-gate': '', disabled: Boolean(state.request) || !pending.length, onClick: () => dispatch('batch.release', { batchId: `batch-${(view.cursor ?? 0) + 1}`, taskIds: pending.map(task => task.taskId) }), 'aria-label': `${locale.t('releaseNow')} ${pending.length}` }, h('span', null, locale.t('gateOpen')), h('span', null, `${locale.t('pendingBatch')} ${pending.length}`)) : null);
-      };
       return h('div', { className: 'ant-nest-plan', role: 'group', 'aria-label': locale.t('nest'), onKeyDown },
-        h('svg', { className: 'ant-tunnels', viewBox: '0 0 100 100', 'aria-hidden': 'true', preserveAspectRatio: 'none' }, tunnels.map(tunnel => h('path', { key: tunnel.key, className: 'ant-tunnel', d: tunnel.path }))),
-        STAGES.map(stage => chamber(stage)));
+        blueprint(tunnels),
+        STAGES.map(stage => chamber({
+          stage, count: counts[stage], tasks: byStage(stage),
+          members: members.filter(member => heldStage(member, attempts, tasks) === stage),
+          state, locale, pending, dispatch, onSelectStage, onSelectTask,
+        })));
     }
 
+    function Rail({ state, locale, dispatch, onSelectMember }) {
+      const view = state.view ?? {};
+      const tasks = view.tasks ?? [];
+      const attempts = view.attempts ?? [];
+      const task = tasks.find(item => item.taskId === state.selectedTaskId);
+      const member = (view.members ?? []).find(item => item.memberId === state.selectedMemberId);
+      const attempt = task ? attempts.filter(item => item.taskId === task.taskId).at(-1) : undefined;
+      const actions = [];
+      if (task) {
+        if (task.state === 'reviewed') actions.push(['batch.release', { batchId: 'batch-' + ((view.cursor ?? 0) + 1), taskIds: [task.taskId] }, locale.t('releaseTask')]);
+        if (attempt?.state === 'running') actions.push(['attempt.pause', { taskId: task.taskId, attemptId: attempt.attemptId }, locale.t('pause')]);
+        if (attempt?.state === 'paused') actions.push(['attempt.resume', { taskId: task.taskId, attemptId: attempt.attemptId }, locale.t('resume')]);
+        if (attempt && ['running', 'paused', 'taken-over'].includes(attempt.state)) actions.push(['attempt.terminate', { taskId: task.taskId, attemptId: attempt.attemptId }, locale.t('terminate')]);
+        if (!attempt && task.state === 'pending') actions.push(['task.claim', { taskId: task.taskId, memberId: view.leadMemberId ?? '' }, locale.t('claim')]);
+      }
+      if (!view.planConfirmed && view.planDigest) actions.push(['plan.confirm', { planDigest: view.planDigest }, locale.t('confirmPlan')]);
+      if (['planned', 'completed'].includes(view.lifecycle)) actions.push(['team.archive', {}, locale.t('archive')]);
+      if (view.lifecycle === 'archived') actions.push(['team.restore', {}, locale.t('restore')]);
+      const title = task ? (task.title ?? task.taskId) : member ? (member.name ?? shortId(member.memberId)) : locale.t('inspector');
+      const stateWord = task ? (TASK_WORD[task.state] ?? locale.t('unknown')) : member ? (member.status ?? locale.t('unknown')) : '—';
+      const stateKey = task ? task.state : member ? member.status : undefined;
+      const verify = task?.verify ?? [];
+      return h('aside', { className: 'ant-inspector ant-rail', 'aria-label': locale.t('inspector') },
+        h('h2', { id: 'ant-title' }, title),
+        h('div', { className: 'ant-rail-state' }, h('i', { 'data-state': stateKey ?? '' }), locale.t(state === undefined ? 'inspector' : 'state'), ': ' + stateWord),
+        verify.length ? h('p', { className: 'ant-cmd' }, verify.join('\n')) : null,
+        member ? h('div', { className: 'ant-actions' },
+          h('button', { type: 'button', className: 'ant-button', disabled: Boolean(state.request), onClick: () => dispatch('member.changeModel', { memberId: member.memberId, provider: member.provider, model: member.model }) }, locale.t('model') + ': ' + (member.model ?? member.provider ?? '—'))) : null,
+        task ? h('dl', { className: 'ant-facts' },
+          h('div', { className: 'ant-fact' }, h('dt', null, locale.t('owner')), h('dd', null, task.ownerMemberId ?? attempt?.memberId ?? '—')),
+          h('div', { className: 'ant-fact' }, h('dt', null, locale.t('state')), h('dd', null, stateWord)),
+          h('div', { className: 'ant-fact' }, h('dt', null, locale.t('quality')), h('dd', null, task.quality?.verdict ?? '—')),
+          h('div', { className: 'ant-fact' }, h('dt', null, locale.t('evidence')), h('dd', null, String(attempt?.evidence?.length ?? 0)))) : null,
+        h('div', { className: 'ant-rail-rule' }),
+        h('p', { className: 'ant-cap' }, locale.t('gates')),
+        h('ul', { className: 'ant-gates' }, GATES.map(gate => h('li', { key: gate[0] },
+          h('i', { 'data-state': gateStateFor(task, gate[0]) }),
+          h('b', null, locale.t(gate[0])),
+          h('span', null, gateWord(task, gate[0], locale))))),
+        actions.length ? h('div', { className: 'ant-actions' }, actions.map(([action, payload, label]) => h('button', {
+          key: action, type: 'button', className: 'ant-button', disabled: Boolean(state.request),
+          onClick: () => dispatch(action, payload),
+        }, label))) : null,
+        h('div', { className: 'ant-rail-rule' }),
+        h('p', { className: 'ant-cap' }, locale.t('members')),
+        h('ul', { className: 'ant-roster' }, (view.members ?? []).filter(item => item.status !== 'removed').map(item => h('li', { key: item.memberId },
+          h(AntShape, { size: 10, className: 'ant-ant', 'data-state': item.status === 'active' ? 'active' : '' }),
+          h('button', { type: 'button', className: 'ant-button', style: { border: 0, padding: 0, minHeight: 0, background: 'transparent', fontSize: 'inherit' }, onClick: () => onSelectMember(item.memberId) }, item.name ?? shortId(item.memberId)),
+          h('em', null, item.model ?? item.provider ?? '—')))));
+    }
 
+    const GATES = [['requirement', 'requirement'], ['implementation', 'implementation'], ['verification', 'verification'], ['review', 'review'], ['integration', 'integration']];
+    const TASK_WORD = { pending: 'nursery', running: 'corridor', reviewed: 'gate', completed: 'pantry', released: 'pantry', failed: 'refuse', anomalous: 'refuse' };
+    function gateStateFor(task, key) {
+      if (!task) return 'open';
+      const quality = task.quality ?? {};
+      if (key === 'requirement') return task.title ? 'pass' : 'open';
+      if (key === 'implementation') return ['running', 'reviewed', 'completed', 'released'].includes(task.state) ? 'pass' : 'open';
+      if (key === 'verification') return task.state === 'running' ? 'run' : (task.verify ?? []).length ? 'pass' : 'open';
+      if (key === 'review') return quality.verdict === 'pass' ? 'pass' : task.state === 'reviewed' ? 'run' : 'open';
+      return task.state === 'released' ? 'pass' : 'open';
+    }
+    function gateWord(task, key, locale) {
+      const state = gateStateFor(task, key);
+      return locale.t(state === 'pass' ? 'gatePass' : state === 'run' ? 'gateRunning' : 'gateOpenState');
+    }
 
     function ActivityStream({ state, locale }) {
       const view = state.view ?? {};
@@ -422,6 +628,7 @@ const CSS = `
         h('summary', null, locale.t('stream') + ' · ' + locale.t('streamRunning') + ' ' + summary.running + ' · ' + locale.t('streamIdle') + ' ' + summary.idle + ' · ' + locale.t('streamHelp') + ' ' + summary.needsHelp),
         rows.length ? h('ul', null, rows.map(row => h('li', { key: row.key, className: 'ant-row', 'data-kind': row.kind }, h('strong', null, row.label), h('span', null, row.detail)))) : h('p', { className: 'ant-note' }, locale.t('noActivity')));
     }
+
 
     const LEVELS = ['L1', 'L2', 'L3'];
     const NUMBER_FIELDS = [['batchWindowMinutes', 'batchWindow', 1, 240], ['maxActiveAttempts', 'maxActive', 1, 8], ['defaultVariants', 'defaultVariants', 1, 3]];
@@ -456,25 +663,15 @@ const CSS = `
         h('p', { className: 'ant-note', role: status?.ok ? 'status' : undefined }, note));
     }
 
-    function Index({ state, locale, onSelect }) {
-      return h('aside', { className: 'ant-index', 'aria-label': locale.t('team') }, h('h2', { className: 'ant-section-title' }, locale.t('team')), state.teams.length ? state.teams.map(team => h('button', { key: team.teamId, type: 'button', className: 'ant-team-row', 'aria-current': state.selectedTeamId === team.teamId ? 'true' : undefined, onClick: () => onSelect(team.teamId) }, h('strong', { className: 'ant-team-id' }, shortId(team.teamId)), h('span', { className: 'ant-team-goal' }, team.goal ?? locale.t('unknown')), h('span', { className: 'ant-team-state' }, h('span', null, team.lifecycle ?? locale.t('unknown')), h('span', null, `${locale.t('cursor')} ${team.cursor ?? '?'}`)))) : h('p', { className: 'ant-note' }, locale.t('empty')), state.view?.members?.length ? h('div', { className: 'ant-member-list' }, state.view.members.filter(member => member.status !== 'removed').map(member => h('div', { className: 'ant-member', key: member.memberId }, h('strong', null, shortId(member.memberId)), h('small', null, `${member.role ?? locale.t('unknown')} · ${member.model ?? member.provider ?? locale.t('unknown')}`)))) : null);
-    }
 
-    function Inspector({ state, locale, dispatch }) {
-      const view = state.view ?? {};
-      const task = (view.tasks ?? []).find(item => item.taskId === state.selectedTaskId);
-      const attempt = (view.attempts ?? []).find(item => item.attemptId === state.selectedAttemptId) ?? (task && (view.attempts ?? []).find(item => item.taskId === task.taskId));
-      const member = (view.members ?? []).find(item => item.memberId === state.selectedMemberId) ?? (task && (view.members ?? []).find(item => item.memberId === task.ownerMemberId));
-      const chosen = task ?? attempt ?? member;
-      const rows = [[locale.t('lifecycle'), view.lifecycle], [locale.t('cursor'), view.cursor], [locale.t('owner'), chosen?.ownerMemberId ?? member?.memberId], [locale.t('model'), member?.model ?? member?.provider], [locale.t('state'), chosen?.state], [locale.t('dependencies'), task ? (view.plan?.dependencies ?? []).filter(item => item.taskId === task.taskId).map(item => item.blockedByTaskId).join(', ') || '—' : undefined], [locale.t('quality'), task?.quality?.verdict ?? attempt?.quality?.verdict]];
-      const actions = [];
-      if (!view.planConfirmed && view.planDigest) actions.push(['plan.confirm', { planDigest: view.planDigest }, locale.t('confirmPlan')]);
-      if (attempt?.state === 'running') actions.push(['attempt.pause', { taskId: attempt.taskId, attemptId: attempt.attemptId }, locale.t('pause')]);
-      if (attempt?.state === 'paused') actions.push(['attempt.resume', { taskId: attempt.taskId, attemptId: attempt.attemptId }, locale.t('resume')]);
-      if (attempt && ['running', 'paused', 'taken-over'].includes(attempt.state)) actions.push(['attempt.terminate', { taskId: attempt.taskId, attemptId: attempt.attemptId }, locale.t('terminate')]);
-      if (['planned', 'completed'].includes(view.lifecycle)) actions.push(['team.archive', {}, locale.t('archive')]);
-      if (view.lifecycle === 'archived') actions.push(['team.restore', {}, locale.t('restore')]);
-      return h('aside', { className: 'ant-inspector', 'aria-label': locale.t('inspector') }, h('h2', { className: 'ant-section-title' }, locale.t('inspector')), h('dl', { className: 'ant-facts' }, rows.map(([label, value]) => h('div', { className: 'ant-fact', key: label }, h('dt', null, label), h('dd', null, value ?? locale.t('unknown'))))), h('p', { className: 'ant-note' }, chosen?.title ?? attempt?.attemptId ?? member?.role ?? locale.t('noSelection')), actions.length ? h('div', { className: 'ant-actions' }, actions.map(([action, payload, label]) => h('button', { key: action, type: 'button', className: 'ant-button', disabled: Boolean(state.request), onClick: () => dispatch(action, payload) }, label))) : null);
+    function statusText(state, locale) {
+      if (state.request) return h('p', { className: 'ant-status warn', role: 'status' }, locale.t('dispatching') + ' ' + state.request.action);
+      if (state.error) {
+        const message = state.status === 'stale-cursor' ? locale.t('stale') : state.status === 'lease' ? locale.t('lease') : state.status === 'rebuild-required' ? locale.t('rebuild') : state.status === 'persistence-failed' ? locale.t('persistence') : state.status === 'not-found' ? locale.t('notFound') : locale.t('unavailable');
+        return h('p', { className: 'ant-status error', role: 'alert' }, message + ' (' + state.error.code + ')');
+      }
+      if (state.receipt) return h('p', { className: 'ant-status success', role: 'status' }, (state.receipt.outcome === 'duplicate' ? locale.t('duplicate') : locale.t('committed')) + ' ' + (state.receipt.requestId ?? locale.t('unknown')));
+      return state.status === 'refreshing' ? h('p', { className: 'ant-status', role: 'status' }, locale.t('refreshing')) : null;
     }
 
     function MainPanel({ model, locale }) {
@@ -482,37 +679,90 @@ const CSS = `
       const t = useLocale(locale);
       React.useEffect(() => { model.loadList(); }, [model]);
       const loading = state.status === 'loading' && !state.view && !state.teams.length;
-      const counts = chamberCounts(state.view);
+      const selectMember = memberId => model.selectNode('member', memberId);
       return h('main', { className: 'ant-shell', 'aria-labelledby': 'ant-title' }, h(StyleSheet),
         h('header', { className: 'ant-header' },
-          h('div', null, h('h1', { className: 'ant-title', id: 'ant-title' }, t.t('title')), h('p', { className: 'ant-subtitle' }, t.t('subtitle'))),
-          h('label', { className: 'ant-select-label' }, t.t('team'), h('select', { className: 'ant-select', value: state.selectedTeamId ?? '', onChange: event => model.selectTeam(event.target.value), disabled: !state.teams.length }, [h('option', { value: '', key: 'empty' }, t.t('team')), ...state.teams.map(team => h('option', { value: team.teamId, key: team.teamId }, team.goal ?? team.teamId))])),
-          h('div', { className: 'ant-meta' }, h('span', null, t.t('lifecycle')), h('strong', null, state.view?.lifecycle ?? t.t('unknown'))),
-          h('div', { className: 'ant-meta' }, h('span', null, t.t('cursor')), h('strong', null, state.view?.cursor ?? '—')),
+          h('div', null,
+            h('h1', { className: 'ant-title', id: 'ant-title' }, t.t('title')),
+            h('p', { className: 'ant-subtitle' }, t.t('subtitle'))),
+          h('label', { className: 'ant-meta' }, t.t('team'),
+            h('select', { className: 'ant-select', value: state.selectedTeamId ?? '', disabled: !state.teams.length, onChange: event => model.selectTeam(event.target.value) },
+              [h('option', { value: '', key: 'empty' }, t.t('team'))].concat(state.teams.map(team => h('option', { value: team.teamId, key: team.teamId }, team.goal ?? shortId(team.teamId)))))),
+          h('div', { className: 'ant-meta' }, t.t('lifecycle'), h('strong', null, state.view?.lifecycle ?? t.t('unknown'))),
+          h('div', { className: 'ant-meta' }, t.t('cursor'), h('strong', null, String(state.view?.cursor ?? '—'))),
           h('button', { type: 'button', className: 'ant-button', onClick: model.loadList, disabled: Boolean(state.request), 'aria-label': t.t('refresh') }, t.t('refresh'))),
         statusText(state, t),
         loading ? h('div', { className: 'ant-loading', role: 'status', 'aria-busy': 'true' }, t.t('loading'))
           : state.status === 'empty' ? h('div', { className: 'ant-empty', role: 'status' }, h('div', null, h('strong', null, t.t('empty')), h('span', null, t.t('emptyHint'))))
-          : h('div', { className: 'ant-main' }, h('div', { className: 'ant-body' },
-            h(Index, { state, locale: t, onSelect: model.selectTeam }),
-            h('section', { className: 'ant-nest', 'aria-label': t.t('nest') },
-              h('div', { className: 'ant-nest-header' },
-                h('h2', { className: 'ant-section-title' }, t.t('nest')),
-                h('div', { className: 'ant-counts' }, STAGES.map(stage => h('span', { className: 'ant-chip', key: stage }, `${t.t(stage)} ${counts[stage]}`)))),
-              h(Nest, { state, locale: t, dispatch: model.dispatch, onSelectStage: model.selectStage }),
-              h('p', { className: 'ant-nest-hint' }, t.t('stageHint'))),
-            h(Inspector, { state, locale: t, dispatch: model.dispatch })), h(ActivityStream, { state, locale: t })));
+          : h('div', { className: 'ant-main', style: { display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 } },
+            h('div', { className: 'ant-body' },
+              h('section', { className: 'ant-nest', 'aria-label': t.t('nest') }, h(Nest, { state, locale: t, dispatch: model.dispatch, onSelectStage: model.selectStage, onSelectTask: taskId => model.selectNode('task', taskId) })),
+              h(Rail, { state, locale: t, dispatch: model.dispatch, onSelectMember: selectMember })),
+            h(ActivityStream, { state, locale: t })));
     }
 
-    function Sidebar({ model, locale }) {
-      const t = useLocale(locale);
+    function HeaderAction({ model, locale }) {
       const state = useModel(model);
+      const t = useLocale(locale);
+      const [open, setOpen] = React.useState(false);
       React.useEffect(() => { model.ensureLoaded(); }, [model]);
-      const pending = pendingReleaseTasks(state.view).length;
-      const label = pending ? `${t.t('panel')} · ${pending} ${t.t('pendingBadge')}` : t.t('panel');
-      return h('span', { className: 'ant-glyph', title: label, 'aria-label': label, role: 'img', 'data-ant-icon': '', 'data-pending': pending || undefined }, h('svg', { viewBox: '0 0 16 16', width: 16, height: 16, fill: 'none', stroke: 'currentColor', strokeWidth: 1.4, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true' }, h('circle', { cx: 8, cy: 4, r: 1.5 }), h('circle', { cx: 8, cy: 8, r: 1.2 }), h('ellipse', { cx: 8, cy: 12, rx: 1.7, ry: 2.2 }), h('path', { d: 'M7 3 6 1.6' }), h('path', { d: 'M9 3 10 1.6' }), h('path', { d: 'M6.9 7.4 4 6' }), h('path', { d: 'M6.9 8.2 3.6 8.8' }), h('path', { d: 'M6.9 9 4.2 11' }), h('path', { d: 'M9.1 7.4 12 6' }), h('path', { d: 'M9.1 8.2 12.4 8.8' }), h('path', { d: 'M9.1 9 11.8 11' })), pending ? h('span', { className: 'ant-badge', 'aria-hidden': 'true' }, String(pending)) : null);
+      const view = state.view ?? {};
+      const pending = pendingReleaseTasks(view);
+      const members = (view.members ?? []).filter(member => member.status !== 'removed');
+      const label = pending.length ? t.t('panel') + ' ' + pending.length + ' ' + t.t('pendingBadge') : t.t('panel');
+      return h('div', { className: 'ant-anchor' },
+        h('button', {
+          type: 'button', className: 'ant-glyph', 'data-ant-icon': '', 'data-pending': pending.length || undefined,
+          'aria-expanded': open === true ? 'true' : 'false', 'aria-label': label, title: label,
+          onClick: () => setOpen(!open), onKeyDown: event => { if (event.key === 'Escape') setOpen(false); },
+        },
+          h(AntShape, { size: 14 }),
+          pending.length ? h('span', { className: 'ant-badge', 'aria-hidden': 'true' }, String(pending.length)) : null),
+        open ? h('div', { className: 'ant-pop', role: 'dialog', 'aria-label': t.t('panel') },
+          h('div', { className: 'ant-pop-top' }, h('strong', null, view.goal ?? t.t('panel')), h('span', null, pending.length + ' ' + t.t('pendingBadge'))),
+          h('ul', { className: 'ant-roster' }, members.length ? members.map(member => h('li', { key: member.memberId },
+            h(AntShape, { size: 11, className: 'ant-ant', 'data-state': member.status === 'active' ? 'active' : '' }),
+            h('span', null, member.name ?? shortId(member.memberId)),
+            h('em', null, member.model ?? member.provider ?? '—'))) : [h('li', { key: 'none' }, t.t('empty'))]),
+          h('div', { className: 'ant-pop-bot' },
+            h('button', {
+              type: 'button', className: 'ant-button', disabled: Boolean(state.request) || !pending.length,
+              onClick: () => model.dispatch('batch.release', { batchId: 'batch-' + ((view.cursor ?? 0) + 1), taskIds: pending.map(task => task.taskId) }),
+            }, t.t('releaseNow') + ' ' + pending.length),
+            h('span', null, members.length + ' ' + t.t('members')))) : null);
     }
+
+    function ComposerStrip({ model, locale }) {
+      const state = useModel(model);
+      const t = useLocale(locale);
+      React.useEffect(() => { model.ensureLoaded(); }, [model]);
+      const view = state.view ?? {};
+      const pending = pendingReleaseTasks(view);
+      if (!state.selectedTeamId) return null;
+      return h('div', { className: 'ant-strip' },
+        h(AntShape, { size: 12, className: 'ant-ant', 'data-state': 'active' }),
+        h('span', { className: 'ant-strip-name' }, view.goal ?? shortId(state.selectedTeamId)),
+        pending.slice(0, 3).map(task => h('span', { key: task.taskId, className: 'ant-strip-chip' }, task.title ?? task.taskId)),
+        pending.length > 3 ? h('span', { className: 'ant-note' }, '+' + (pending.length - 3)) : null,
+        h('button', {
+          type: 'button', className: 'ant-button', disabled: Boolean(state.request) || !pending.length,
+          onClick: () => model.dispatch('batch.release', { batchId: 'batch-' + ((view.cursor ?? 0) + 1), taskIds: pending.map(task => task.taskId) }),
+        }, t.t('releaseNow') + ' ' + pending.length));
+    }
+
     function StyleSheet() { return h('style', { 'data-ant': 'styles' }, CSS); }
+
+    function registerSurfaces(ctx, model, locale) {
+      const disposers = [];
+      const bind = (slot, options, component) => {
+        disposers.push(ctx.slots.inject(slot, () => ctx.slots.register({ name: slot, locale: LOCALE_NS, ...options, inject: options.inject ?? (() => ({ model, locale })) }, component)));
+      };
+      bind('main', { key: PANEL_ID }, MainPanel);
+      bind('conversation.session.header.actions', { id: PANEL_ID, order: 40 }, HeaderAction);
+      bind('conversation.composer.bar', { id: PANEL_ID, order: 40 }, ComposerStrip);
+      bind('settings.section', { id: PANEL_ID, order: 70, inject: () => ({ locale, remote: ctx.remote.team, model }) }, SettingsSection);
+      return disposers;
+    }
 
     async function apply(ctx) {
       const remoteDisposer = await ctx.remote.$mount(TEAM_REMOTE);
@@ -524,12 +774,7 @@ const CSS = `
           remoteCtx.effect(() => remoteCtx.locale.register(LOCALE_NS, DICT), 'ant: locale');
           remoteCtx.effect(() => locale.dispose, 'ant: locale subscription');
           remoteCtx.effect(() => model.dispose, 'ant: model');
-          const mainDisposer = remoteCtx.slots.inject('main', () => remoteCtx.slots.register({ name: 'main', key: PANEL_ID, locale: LOCALE_NS, inject: () => ({ model, locale }) }, MainPanel));
-          remoteCtx.effect(() => mainDisposer, 'ant: main slot');
-          const sidebarDisposer = remoteCtx.slots.inject('sidebar.panellist', () => remoteCtx.slots.register({ name: 'sidebar.panellist', id: PANEL_ID, order: 25, locale: LOCALE_NS, label: () => locale.t('panel'), inject: () => ({ model, locale }) }, Sidebar));
-          remoteCtx.effect(() => sidebarDisposer, 'ant: sidebar slot');
-          const settingsDisposer = remoteCtx.slots.inject('settings.section', () => remoteCtx.slots.register({ name: 'settings.section', id: PANEL_ID, order: 70, locale: LOCALE_NS, label: () => locale.t('settings'), inject: () => ({ locale, remote: remoteCtx.remote.team }) }, SettingsSection));
-          remoteCtx.effect(() => settingsDisposer, 'ant: settings slot');
+          for (const dispose of registerSurfaces(remoteCtx, model, locale)) remoteCtx.effect(() => dispose, 'ant: surface');
         });
       } catch (error) {
         await remoteDisposer();
@@ -542,5 +787,6 @@ const CSS = `
     }
 
     return { inject: ['remote', 'slots', 'locale'], apply };
+
   },
 });

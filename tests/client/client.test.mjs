@@ -195,7 +195,7 @@ test('client RemoteInfo uses strict named input and the Host implementation wire
   await runtime.disposeEffects();
 });
 
-test('client apply mounts both slots, reloads after a receipt, and disposes in reverse order', async () => {
+test('client apply mounts every surface, reloads after a receipt, and disposes in reverse order', async () => {
   const calls = [];
   let failList = false;
   const remoteTeam = {
@@ -231,7 +231,8 @@ test('client apply mounts both slots, reloads after a receipt, and disposes in r
   assert.equal(runtime.remote.mounted.package, '@zhuifengqug/dsh-ant');
   assert.deepEqual(runtime.registrations.map(item => [item.options.name, item.options.key ?? item.options.id]), [
     ['main', 'ant'],
-    ['sidebar.panellist', 'ant'],
+    ['conversation.session.header.actions', 'ant'],
+    ['conversation.composer.bar', 'ant'],
     ['settings.section', 'ant'],
   ]);
   assert.equal(runtime.localeRegistrations, 1);
@@ -258,8 +259,8 @@ test('client apply mounts both slots, reloads after a receipt, and disposes in r
   assert.equal(props.model.getSnapshot().error.code, 'team/stale-cursor');
 
   await cleanup();
-  assert.deepEqual(runtime.disposeOrder.slice(0, 7), [
-    'ant', 'ant', 'ant', 'locale-subscription', 'locale', 'follow', 'remote',
+  assert.deepEqual(runtime.disposeOrder.slice(0, 8), [
+    'ant', 'ant', 'ant', 'ant', 'locale-subscription', 'locale', 'follow', 'remote',
   ]);
   await runtime.disposeEffects();
   assert.equal(runtime.remoteUnmounts, 1);
@@ -450,7 +451,7 @@ function renderChild(tree, className) {
   return child.type(child.props);
 }
 
-test('the sidebar badge counts the same pending release as the gate hall', async () => {
+test('the header action badge counts the same pending release as the gate hall', async () => {
   const view = {
     lifecycle: 'running', cursor: 4,
     members: [{ memberId: 'member-1', status: 'active', sessionId: 's1' }],
@@ -467,11 +468,11 @@ test('the sidebar badge counts the same pending release as the gate hall', async
   const runtime = createClientContext(remoteTeam);
   const { plugin } = await loadClient();
   const cleanup = await plugin.apply(runtime.ctx);
-  const sidebar = runtime.registrations.find(item => item.options.name === 'sidebar.panellist');
-  const props = sidebar.options.inject();
-  sidebar.component(props);
+  const surface = runtime.registrations.find(item => item.options.name === 'conversation.session.header.actions');
+  const props = surface.options.inject();
+  surface.component(props);
   await new Promise(resolve => setImmediate(resolve));
-  const tree = sidebar.component(props);
+  const tree = surface.component(props);
   assert.ok(tree, 'the glyph renders with the locale');
   const glyph = findByClass(tree, 'ant-glyph');
   assert.equal(glyph.props['data-pending'], 2);
