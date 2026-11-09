@@ -9,6 +9,7 @@ window.__ModuleLoader__.load({
     const REMOTE_SERVICE = 'ant';
     const LOCALE_NS = 'ant';
     const PANEL_ID = 'ant';
+    const CARD_KIND = 'ant-team';
 
     function codec(typeSymbol, create, jsonSchema) {
       return { mode: 'strict', typeSymbol, create, jsonSchema };
@@ -171,7 +172,7 @@ window.__ModuleLoader__.load({
         autonomy: 'Autonomy', batchWindow: 'Batch window (minutes)', maxActive: 'Concurrent attempts', defaultVariants: 'Candidates per task',
         variantWrite: 'Allow parallel candidates on write tasks', settings: 'Amber Ant settings', save: 'Save settings', saved: 'Saved. The next action already uses it.',
         confirmL3: 'L3 releases batches by itself once the window closes. Switch anyway?', confirm: 'Switch to L3', cancel: 'Cancel',
-        settingsHint: 'The panel and the Host share one settings file.', pendingBadge: 'pending release',
+        settingsHint: 'The panel and the Host share one settings file.', pendingBadge: 'pending release', openNest: 'Open colony',
       },
       zh: {
         panel: '玄驹', title: '虫珀·玄驹', subtitle: '多会话协作持久事实面', refresh: '刷新', loading: '正在读取团队事实', refreshing: '正在刷新',
@@ -186,7 +187,7 @@ window.__ModuleLoader__.load({
         autonomy: '自主级别', batchWindow: '批窗口（分钟）', maxActive: '并发上限', defaultVariants: '每任务候选数',
         variantWrite: '允许写任务并行候选', settings: '玄驹设置', save: '保存设置', saved: '已保存，下一次动作即生效。',
         confirmL3: 'L3 会在窗口到期后自动放行，仍要切换吗？', confirm: '切到 L3', cancel: '取消',
-        settingsHint: '面板与 Host 共用同一份设置文件。', pendingBadge: '待放行',
+        settingsHint: '面板与 Host 共用同一份设置文件。', pendingBadge: '待放行', openNest: '进入蚁巢',
        
       },
     };
@@ -204,9 +205,10 @@ window.__ModuleLoader__.load({
     });
 
 const CSS = `
-      .ant-shell{box-sizing:border-box;display:flex;flex-direction:column;height:100%;min-height:100%;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-base);font:inherit;--ant-neon:#16d9ed;--ant-neon-2:#f04bd7;--ant-ok:#46d9aa;--ant-bad:#ff6179;--ant-grid:rgba(127,160,190,.16);--ant-cell:rgba(9,17,29,.86);--ant-row-hover:rgba(22,217,237,.09);--ant-mono:"Cascadia Mono",Consolas,ui-monospace,monospace}
-      @supports (color:light-dark(#000,#fff)){.ant-shell{--ant-neon:light-dark(#008fa9,#16d9ed);--ant-neon-2:light-dark(#b0249f,#f04bd7);--ant-ok:light-dark(#0b8a63,#46d9aa);--ant-bad:light-dark(#c33b4f,#ff6179);--ant-grid:light-dark(rgba(40,70,95,.13),rgba(127,160,190,.16));--ant-cell:light-dark(rgba(255,255,255,.94),rgba(9,17,29,.86));--ant-row-hover:light-dark(rgba(0,143,169,.09),rgba(22,217,237,.09))}}
-      .ant-shell *{box-sizing:border-box}
+      .ant-shell{box-sizing:border-box;display:flex;flex-direction:column;height:100%;min-height:100%;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-base);font:inherit;}
+      @supports (color:light-dark(#000,#fff)){.ant-shell,.ant-card{--ant-neon:light-dark(#008fa9,#16d9ed);--ant-neon-2:light-dark(#b0249f,#f04bd7);--ant-ok:light-dark(#0b8a63,#46d9aa);--ant-bad:light-dark(#c33b4f,#ff6179);--ant-grid:light-dark(rgba(40,70,95,.13),rgba(127,160,190,.16));--ant-cell:light-dark(rgba(255,255,255,.94),rgba(9,17,29,.86));--ant-row-hover:light-dark(rgba(0,143,169,.09),rgba(22,217,237,.09))}}
+      .ant-shell,.ant-card{--ant-neon:#16d9ed;--ant-neon-2:#f04bd7;--ant-ok:#46d9aa;--ant-bad:#ff6179;--ant-grid:rgba(127,160,190,.16);--ant-cell:rgba(9,17,29,.86);--ant-row-hover:rgba(22,217,237,.09);--ant-mono:"Cascadia Mono",Consolas,ui-monospace,monospace}
+      .ant-shell *,.ant-card *{box-sizing:border-box}
       .ant-header{display:grid;grid-template-columns:minmax(180px,1fr) auto auto auto auto;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--dsw-alias-border-l1)}
       .ant-title{margin:0;font-size:17px;line-height:1.25;font-weight:700;letter-spacing:.02em}
       .ant-subtitle{margin:4px 0 0;color:var(--dsw-alias-label-secondary);font-size:11px}
@@ -298,6 +300,16 @@ const CSS = `
       .ant-pop-bot span{color:var(--dsw-alias-label-secondary);font-size:10.5px}
       .ant-strip{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--dsw-alias-border-l1);border-radius:2px;background:var(--dsw-alias-bg-layer-1);font-size:11.5px}
       .ant-strip-name{font-weight:650}.ant-strip-chip{padding:1px 6px;border:1px solid var(--ant-neon-2);border-radius:2px;color:var(--ant-neon-2);font-size:10.5px}
+      .ant-card{display:grid;gap:7px;margin:10px 0;padding:11px 13px;border:1px solid var(--dsw-alias-border-l1);border-left:2px solid var(--ant-neon);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px))}
+      .ant-card-top{display:flex;align-items:center;gap:8px}
+      .ant-card-mark{flex:none;color:var(--ant-neon)}
+      .ant-card-goal{flex:1;min-width:0;font-size:13px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .ant-card-life{flex:none;color:var(--ant-neon);font:10px var(--ant-mono);letter-spacing:.08em;text-transform:uppercase}
+      .ant-card-facts{margin:0;color:var(--dsw-alias-label-secondary);font-size:11px;font-variant-numeric:tabular-nums}
+      .ant-card-bot{display:flex;align-items:center;justify-content:flex-end;gap:8px}
+      .ant-card-bot .ant-button{height:26px;min-height:26px;font-size:11px}
+      .ant-side{display:block;color:currentColor}
+  .ant-side[data-state="active"]{color:var(--ant-neon)}
       .ant-strip .ant-button{height:24px;min-height:24px;margin-left:auto;font-size:11px}
       .ant-settings{display:grid;gap:12px;max-width:560px}.ant-settings h2{margin:0;font-size:14px}
       .ant-settings .ant-field{display:grid;grid-template-columns:minmax(180px,1fr) minmax(120px,180px);gap:10px;align-items:center;font-size:12px}
@@ -443,9 +455,81 @@ const CSS = `
     const JUNCTIONS = [[550, 160], [540, 250], [550, 450], [550, 590], [690, 185], [420, 260], [690, 562], [390, 575], [550, 58]];
 
     /** One solid silhouette, currentColor, no outline — the same ant used at every size. */
-    function AntShape({ size = 12, className }) {
+    /** The card exists only because a team was created in this conversation. */
+    function parseTeamCreateArguments(raw) {
+      try {
+        const request = JSON.parse(raw)?.request;
+        if (request?.action !== 'team.create') return undefined;
+        const goal = typeof request.payload?.goal === 'string' ? request.payload.goal.trim() : '';
+        if (goal === '') return undefined;
+        return {
+          goal,
+          mode: request.payload?.plan?.mode ?? 'normal',
+          memberCount: Array.isArray(request.payload?.members) ? request.payload.members.length : 0,
+        };
+      } catch (error) { return undefined; }
+    }
+    /** The receipt is the only place the Host publishes the canonical team identity. */
+    function teamIdFromReceipt(text) {
+      try {
+        const receipt = JSON.parse(text);
+        return typeof receipt?.teamId === 'string' && receipt.teamId !== '' ? receipt.teamId : undefined;
+      } catch (error) { return undefined; }
+    }
+    function resultText(message) {
+      return (message?.content ?? [])
+        .filter(block => block?.type === 'text' && typeof block.text === 'string')
+        .map(block => block.text)
+        .join('\n');
+    }
+    function toolResultFailed(message) {
+      return message?.isError === true || (message?.content ?? []).some(block => block?.type === 'tool-result' && block.isError === true);
+    }
+    /** One durable Chat node per created team: the call starts it, the receipt names it. */
+    const ANT_CARD = {
+      kind: CARD_KIND,
+      target: 'chat',
+      match(event) {
+        if (event?.type === 'tool/call' && event.data?.name === 'ant_team_dispatch') {
+          return parseTeamCreateArguments(event.data.arguments) === undefined
+            ? null
+            : { id: String(event.data.callId), role: 'start' };
+        }
+        if (event?.type === 'tool/result' && event.data?.message?.source?.kind === 'tool') {
+          return { id: String(event.data.message.source.callId), role: 'update' };
+        }
+        return null;
+      },
+      start(_context, match) {
+        const parsed = parseTeamCreateArguments(match.event.data.arguments);
+        if (parsed === undefined) throw new Error('ant card start requires a team.create call');
+        return { ...parsed, teamId: undefined, accepted: false };
+      },
+      update(context, match) {
+        if (match.event.type !== 'tool/result') return context.state;
+        if (match.event.data.error !== undefined || toolResultFailed(match.event.data.message)) return context.state;
+        const teamId = teamIdFromReceipt(resultText(match.event.data.message));
+        return { ...context.state, accepted: true, ...(teamId === undefined ? {} : { teamId }) };
+      },
+      buildViewNode(context) {
+        const state = context.state;
+        if (state?.accepted !== true || state.teamId === undefined) return null;
+        return {
+          key: context.key,
+          kind: CARD_KIND,
+          id: context.id,
+          target: 'chat',
+          anchorSeq: context.start.event.seq,
+          location: context.start.location,
+          visibility: 'visible',
+          data: { teamId: state.teamId, goal: state.goal, mode: state.mode, memberCount: state.memberCount },
+        };
+      },
+    };
+
+    function AntShape({ size = 12, className, ...rest }) {
       const width = size * 1.55;
-      return h('svg', { className, viewBox: '-20 -11 38 20', width, height: size, 'aria-hidden': 'true', focusable: 'false' },
+      return h('svg', { className, viewBox: '-20 -11 38 20', width, height: size, 'aria-hidden': 'true', focusable: 'false', ...rest },
         h('ellipse', { cx: 9.9, cy: -1.1, rx: 3.2, ry: 2.9, fill: 'currentColor' }),
         h('path', { d: 'M10.9 -3.4 L12.2 -6.2 L15.4 -5.8', fill: 'none', stroke: 'currentColor', strokeWidth: 1.2, strokeLinecap: 'round' }),
         h('ellipse', { cx: 4.1, cy: 0.2, rx: 3.5, ry: 2.5, fill: 'currentColor', transform: 'rotate(-8 4.1 .2)' }),
@@ -701,7 +785,7 @@ const CSS = `
             h(ActivityStream, { state, locale: t })));
     }
 
-    function HeaderAction({ model, locale }) {
+    function HeaderAction({ model, locale, layout }) {
       const state = useModel(model);
       const t = useLocale(locale);
       const [open, setOpen] = React.useState(false);
@@ -729,6 +813,7 @@ const CSS = `
               type: 'button', className: 'ant-button', disabled: Boolean(state.request) || !pending.length,
               onClick: () => model.dispatch('batch.release', { batchId: 'batch-' + ((view.cursor ?? 0) + 1), taskIds: pending.map(task => task.taskId) }),
             }, t.t('releaseNow') + ' ' + pending.length),
+            h('button', { type: 'button', className: 'ant-button', onClick: () => openNest(layout) }, t.t('openNest')),
             h('span', null, members.length + ' ' + t.t('members')))) : null);
     }
 
@@ -750,6 +835,56 @@ const CSS = `
         }, t.t('releaseNow') + ' ' + pending.length));
     }
 
+    /** The layout service is optional: without it the card still shows facts. */
+    function openNest(layout) {
+      if (typeof layout?.selectPanel !== 'function') return false;
+      try { layout.selectPanel(PANEL_ID); return true; } catch (error) { return false; }
+    }
+    function layoutOf(context) {
+      try { return typeof context?.get === 'function' ? context.get('layout') : context?.layout; } catch (error) { return undefined; }
+    }
+
+    /** Layer two: the team card the conversation keeps after the team was created. */
+    function AntTeamCard({ node, locale, remote, model, layout }) {
+      const t = useLocale(locale);
+      const teamId = node?.data?.teamId;
+      const [snapshot, setSnapshot] = React.useState({ status: 'loading' });
+      React.useEffect(() => {
+        if (!teamId) { setSnapshot({ status: 'lost' }); return undefined; }
+        const controller = new AbortController();
+        let live = true;
+        (async () => {
+          try {
+            const view = unwrapRemoteResult(await remote.get({ teamId }, controller.signal));
+            if (live) setSnapshot({ status: 'ready', view });
+          } catch (error) { if (live) setSnapshot({ status: 'lost' }); }
+        })();
+        return () => { live = false; controller.abort(); };
+      }, [remote, teamId]);
+      const view = snapshot.view ?? {};
+      const members = (view.members ?? []).filter(member => member.status !== 'removed').length;
+      const running = (view.attempts ?? []).filter(item => ACTIVE_ATTEMPT.includes(item.state)).length;
+      const pending = pendingReleaseTasks(view).length;
+      const facts = snapshot.status === 'ready'
+        ? members + ' ' + t.t('members') + ' · ' + running + ' ' + t.t('streamRunning') + ' · ' + pending + ' ' + t.t('pendingBadge')
+        : snapshot.status === 'loading' ? t.t('loading') : t.t('unavailable');
+      return h('div', { className: 'ant-card', 'data-team': teamId ?? '' },
+        h('div', { className: 'ant-card-top' },
+          h(AntShape, { size: 13, className: 'ant-card-mark' }),
+          h('strong', { className: 'ant-card-goal' }, view.goal ?? node?.data?.goal ?? shortId(teamId)),
+          h('span', { className: 'ant-card-life' }, view.lifecycle ?? node?.data?.mode ?? '')),
+        h('p', { className: 'ant-card-facts' }, facts),
+        h('div', { className: 'ant-card-bot' },
+          h('button', {
+            type: 'button', className: 'ant-button',
+            onClick: () => { if (teamId) model.selectTeam(teamId); openNest(layout); },
+          }, t.t('openNest'))));
+    }
+
+    /** Layer zero: the sidebar entry that selects the colony main panel. */
+    function SidebarGlyph({ size, active }) {
+      return h(AntShape, { size: size ?? 15, className: 'ant-side', 'data-state': active ? 'active' : '' });
+    }
     function StyleSheet() { return h('style', { 'data-ant': 'styles' }, CSS); }
 
     function registerSurfaces(ctx, model, locale) {
@@ -758,9 +893,19 @@ const CSS = `
         disposers.push(ctx.slots.inject(slot, () => ctx.slots.register({ name: slot, locale: LOCALE_NS, ...options, inject: options.inject ?? (() => ({ model, locale })) }, component)));
       };
       bind('main', { key: PANEL_ID }, MainPanel);
-      bind('conversation.session.header.actions', { id: PANEL_ID, order: 40 }, HeaderAction);
+      bind('sidebar.panellist', { id: PANEL_ID, order: 60, label: () => locale.t('panel') }, SidebarGlyph);
+      bind('conversation.session.header.actions', { id: PANEL_ID, order: 40, inject: () => ({ model, locale, layout: layoutOf(ctx) }) }, HeaderAction);
       bind('conversation.composer.bar', { id: PANEL_ID, order: 40 }, ComposerStrip);
       bind('settings.section', { id: PANEL_ID, order: 70, inject: () => ({ locale, remote: ctx.remote.team, model }) }, SettingsSection);
+      const team = ctx.remote.team;
+      const cardScope = ctx.inject(['uiConversation', 'layout'], conversationCtx => {
+        conversationCtx.effect(() => conversationCtx.uiConversation.events.register(ANT_CARD), 'ant: card definition');
+        conversationCtx.slots.inject('conversation.chat.node', () => conversationCtx.slots.register({
+          name: 'conversation.chat.node', key: CARD_KIND, locale: LOCALE_NS,
+          inject: () => ({ locale, model, remote: team, layout: conversationCtx.layout }),
+        }, AntTeamCard));
+      });
+      ctx.effect(() => cardScope.dispose, 'ant: card scope');
       return disposers;
     }
 

@@ -118,11 +118,31 @@ function createClientContext(remoteTeam) {
       effectList.push({ cleanup: callback(), label });
     },
   });
+  const layout = { selected: [], selectPanel(panelId) { layout.selected.push(panelId); } };
+  const conversation = { events: { definitions: [], register(definition) { conversation.events.definitions.push(definition); return () => { definition.disposed = true; }; } } };
+  const cardInject = (keys, callback) => {
+    assert.equal(Array.from(keys).join(','), 'uiConversation,layout');
+    const cardEffects = [];
+    const card = makeContext({ team: remoteTeam }, cardEffects);
+    card.uiConversation = conversation;
+    card.layout = layout;
+    card.inject = cardInject;
+    callback(card);
+    return {
+      async dispose() {
+        for (const effect of [...cardEffects].reverse()) if (typeof effect.cleanup === 'function') await effect.cleanup();
+        disposeOrder.push('card');
+      },
+    };
+  };
   const ctx = makeContext(remote);
   ctx.inject = (keys, callback) => {
-    assert.equal(Array.from(keys).join(','), 'remote.team');
+    const names = Array.from(keys).join(',');
+    if (names === 'uiConversation,layout') return cardInject(keys, callback);
+    assert.equal(names, 'remote.team');
     const childEffects = [];
     const child = makeContext({ team: remoteTeam }, childEffects);
+    child.inject = cardInject;
     callback(child);
     return {
       async dispose() {
@@ -138,6 +158,8 @@ function createClientContext(remoteTeam) {
     ctx,
     effects,
     registrations,
+    layout,
+    conversation,
     disposeOrder,
     remote,
     get followDisposals() { return followDisposals; },
@@ -231,9 +253,11 @@ test('client apply mounts every surface, reloads after a receipt, and disposes i
   assert.equal(runtime.remote.mounted.package, '@zhuifengqug/dsh-ant');
   assert.deepEqual(runtime.registrations.map(item => [item.options.name, item.options.key ?? item.options.id]), [
     ['main', 'ant'],
+    ['sidebar.panellist', 'ant'],
     ['conversation.session.header.actions', 'ant'],
     ['conversation.composer.bar', 'ant'],
     ['settings.section', 'ant'],
+    ['conversation.chat.node', 'ant-team'],
   ]);
   assert.equal(runtime.localeRegistrations, 1);
   assert.equal(runtime.localeSubscriptions, 1);
@@ -259,8 +283,8 @@ test('client apply mounts every surface, reloads after a receipt, and disposes i
   assert.equal(props.model.getSnapshot().error.code, 'team/stale-cursor');
 
   await cleanup();
-  assert.deepEqual(runtime.disposeOrder.slice(0, 8), [
-    'ant', 'ant', 'ant', 'ant', 'locale-subscription', 'locale', 'follow', 'remote',
+  assert.deepEqual(runtime.disposeOrder.slice(0, 10), [
+    'ant', 'ant', 'ant', 'ant', 'ant', 'card', 'locale-subscription', 'locale', 'follow', 'remote',
   ]);
   await runtime.disposeEffects();
   assert.equal(runtime.remoteUnmounts, 1);
@@ -324,6 +348,7 @@ test('package manifest publishes the Client half and verified Host injects', asy
       '@deepseek-ai/dsh-client-ui-renderer',
       '@deepseek-ai/dsh-client-ui-layout',
       '@deepseek-ai/dsh-client-ui-sidebar',
+      '@deepseek-ai/dsh-client-ui-conversation',
     ],
   });
   assert.equal(manifest.dsh.client.external, undefined);
@@ -543,6 +568,108 @@ test('the settings section reads the shared file and arms L3 before saving', asy
   assert.deepEqual(writes.at(-1).autonomy, 'L3');
   react.reset();
   assert.match(textOf(findAllByClass(record.component(props), 'ant-note').at(-1)), /Saved/);
+  await cleanup();
+  await runtime.disposeEffects();
+});
+
+test('the conversation threads one card per created team, from call to receipt', async () => {
+  const runtime = createClientContext({ async get() { return { ok: false, error: new Error('unused') }; } });
+  const { plugin } = await loadClient();
+  const cleanup = await plugin.apply(runtime.ctx);
+  const definition = runtime.conversation.events.definitions[0];
+  assert.equal(definition.kind, 'ant-team');
+  assert.equal(definition.target, 'chat');
+
+  const args = JSON.stringify({ request: { action: 'team.create', payload: { goal: 'Ship the colony', plan: { mode: 'fast' }, members: [{ memberId: 'm1' }, { memberId: 'm2' }] } } });
+  const call = { type: 'tool/call', data: { name: 'ant_team_dispatch', callId: 'call-1', arguments: args } };
+  const started = definition.match(call);
+  assert.equal(started.id, 'call-1');
+  assert.equal(started.role, 'start');
+  assert.equal(definition.match({ type: 'tool/call', data: { name: 'ant_team_get', callId: 'call-2', arguments: '{}' } }), null);
+  assert.equal(definition.match({ type: 'tool/call', data: { name: 'ant_team_dispatch', callId: 'call-3', arguments: '{"request":{"action":"task.create"}}' } }), null);
+  assert.equal(definition.match({ type: 'tool/result', data: { message: { source: { kind: 'assistant' } } } }), null);
+
+  const context = { key: 'node-1', id: 'id-1', start: { event: { seq: 12 }, location: { turn: 1 } } };
+  context.state = definition.start(context, { event: call, id: 'call-1', role: 'start' });
+  assert.equal(definition.buildViewNode(context), null, 'the card waits for the receipt that names the team');
+
+  const receipt = { type: 'tool/result', data: { message: { source: { kind: 'tool', callId: 'call-1' }, content: [{ type: 'text', text: JSON.stringify({ teamId: 'team-9', firstEventSeq: 3 }) }] } } };
+  const updated = definition.match(receipt);
+  assert.equal(updated.id, 'call-1');
+  assert.equal(updated.role, 'update');
+  context.state = definition.update(context, { event: receipt, id: 'call-1', role: 'update' });
+  const node = definition.buildViewNode(context);
+  assert.equal(node.key, 'node-1');
+  assert.equal(node.kind, 'ant-team');
+  assert.equal(node.id, 'id-1');
+  assert.equal(node.target, 'chat');
+  assert.equal(node.anchorSeq, 12);
+  assert.equal(node.visibility, 'visible');
+  assert.equal(node.data.teamId, 'team-9');
+  assert.equal(node.data.goal, 'Ship the colony');
+  assert.equal(node.data.mode, 'fast');
+  assert.equal(node.data.memberCount, 2);
+
+  const failed = { type: 'tool/result', data: { error: { code: 'team/forbidden' }, message: { source: { kind: 'tool', callId: 'call-1' }, content: [] } } };
+  const rejected = { key: 'node-2', id: 'id-2', start: { event: { seq: 14 }, location: { turn: 1 } } };
+  rejected.state = definition.start(rejected, { event: call, id: 'call-1', role: 'start' });
+  rejected.state = definition.update(rejected, { event: failed, id: 'call-1', role: 'update' });
+  assert.equal(definition.buildViewNode(rejected), null);
+
+  await cleanup();
+  await runtime.disposeEffects();
+});
+
+test('the sidebar entry and the team card both open the colony', async () => {
+  const gets = [];
+  const remoteTeam = {
+    async list() { return { ok: true, value: { teams: [] } }; },
+    async get(request) {
+      gets.push(request.teamId);
+      return { ok: true, value: { teamId: request.teamId, goal: 'Ship the colony', lifecycle: 'running', cursor: 5, members: [{ memberId: 'm1', status: 'active' }], attempts: [{ attemptId: 'a1', taskId: 't1', state: 'running' }], tasks: [{ taskId: 't1', state: 'reviewed', selfCompleted: true }], releaseQueue: [{ taskId: 't1' }], plan: { dependencies: [] } } };
+    },
+    async dispatch() { return { ok: true, value: { outcome: 'committed' } }; },
+  };
+  const react = fakeReact();
+  const runtime = createClientContext(remoteTeam);
+  const { plugin, source } = await loadClient(react);
+  const cleanup = await plugin.apply(runtime.ctx);
+
+  const glyph = runtime.registrations.find(item => item.options.name === 'sidebar.panellist');
+  assert.equal(glyph.options.id, 'ant');
+  assert.equal(typeof glyph.options.label, 'function');
+  assert.equal(typeof glyph.options.label(), 'string');
+  const idle = glyph.component({ size: 15, active: false });
+  assert.equal(idle.type.name, 'AntShape');
+  assert.equal(idle.props.className, 'ant-side');
+  assert.equal(idle.props.size, 15);
+  assert.equal(idle.props['data-state'], '');
+  const active = glyph.component({ active: true });
+  assert.equal(active.props['data-state'], 'active');
+  assert.match(source, /focusable: 'false', \.\.\.rest/);
+
+  const card = runtime.registrations.find(item => item.options.name === 'conversation.chat.node');
+  assert.equal(card.options.key, 'ant-team');
+  const props = { ...card.options.inject(), node: { data: { teamId: 'team-1', goal: 'Ship the colony', mode: 'normal', memberCount: 2 } } };
+  react.reset();
+  assert.match(textOf(findByClass(card.component(props), 'ant-card-facts')), /Loading team facts/);
+  await new Promise(resolve => setImmediate(resolve));
+  react.reset();
+  const ready = card.component(props);
+  assert.equal(gets[0], 'team-1');
+  assert.ok(gets.every(id => id === 'team-1'));
+  const facts = textOf(findByClass(ready, 'ant-card-facts'));
+  assert.match(facts, /1 Members/);
+  assert.match(facts, /1 Running/);
+  assert.match(facts, /1 pending release/);
+  assert.match(textOf(findByClass(ready, 'ant-card-goal')), /Ship the colony/);
+  assert.match(textOf(findByClass(ready, 'ant-card-bot')), /Open colony/);
+
+  const open = findAllByClass(findByClass(ready, 'ant-card-bot'), 'ant-button')[0];
+  open.props.onClick();
+  assert.deepEqual(runtime.layout.selected, ['ant']);
+  assert.equal(props.model.getSnapshot().selectedTeamId, 'team-1');
+
   await cleanup();
   await runtime.disposeEffects();
 });
