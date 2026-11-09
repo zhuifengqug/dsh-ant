@@ -2,7 +2,7 @@
 
 状态：设计稿，已获用户批准写入；未实现、未安装、未作为运行时证明。
 
-本稿把已提交的 [轨道罗盘 HTML 视觉基线](../../ant-preview.html) 映射到真实 DSH Client 页面。它遵守已复审的 [Host 状态层与类型化动作契约](ant-host-contract.md)、[T1 架构基线](ant-baseline.md)、[GLOSSARY](../../GLOSSARY.md) 与 [Team WAL ADR](../adr/0001-team-wal-as-canonical-owner.md)。独立 HTML 只提供视觉和交互参考，不构成插件完成证据。
+本稿把已提交的 [轨道罗盘 HTML 视觉基线](../design/panel-preview.html) 映射到真实 DSH Client 页面。它遵守已复审的 [Host 状态层与类型化动作契约](ant-host-contract.md)、[T1 架构基线](ant-baseline.md)、[GLOSSARY](../../GLOSSARY.md) 与 [Team WAL ADR](../adr/0001-team-wal-as-canonical-owner.md)。独立 HTML 只提供视觉和交互参考，不构成插件完成证据。
 
 ## 1. 目标与非目标
 
@@ -143,6 +143,6 @@ remote.team.dispatch(request)
 - Client `layout`、`locale`、`slots`、`theme`、`sessions`、`uiWorkspace`、`workspaces` 的 catalog 已读回，页面只使用实现阶段重新 inspection 后的实际签名；
 - Client Event catalog 当前含 `connection/reset`、`locale/change`、`slots/changed`、`theme/change`，没有把未存在的玄驹事件写成当前能力。
 
-本设计稿的真实依据还包括 [Host 契约](ant-host-contract.md)、[T1 基线](ant-baseline.md)、[GLOSSARY](../../GLOSSARY.md)、[Team WAL ADR](../adr/0001-team-wal-as-canonical-owner.md) 和已提交的 [HTML 视觉基线](../../ant-preview.html)。实现前重新检查这些 live API 与安装 profile；若 slot props、Typert exports 或 TeamView schema 与本稿不一致，以新鲜 inspection 和 #2/#9 已批准契约为准，并记录差异。
+本设计稿的真实依据还包括 [Host 契约](ant-host-contract.md)、[T1 基线](ant-baseline.md)、[GLOSSARY](../../GLOSSARY.md)、[Team WAL ADR](../adr/0001-team-wal-as-canonical-owner.md) 和已提交的 [HTML 视觉基线](../design/panel-preview.html)。实现前重新检查这些 live API 与安装 profile；若 slot props、Typert exports 或 TeamView schema 与本稿不一致，以新鲜 inspection 和 #2/#9 已批准契约为准，并记录差异。
 
 本稿是 #3 设计输入，不是 Client 实现、安装或运行时完成证明。
