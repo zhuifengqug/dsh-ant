@@ -6,6 +6,7 @@ const ACTIVE_ATTEMPT = new Set(['queued', 'running', 'paused']);
 
 export function evaluateSchedule(view, { policy = autonomyPolicy() } = {}) {
   const capacity = capacityOf(view, policy);
+  if (view.halted === true) return { capacity, slots: 0, ready: [], assigns: [], wake: [], queued: [], halted: true };
   const dependencies = view.plan?.dependencies ?? [];
   const open = view.attempts.filter(item => ACTIVE_ATTEMPT.has(item.state));
   const slots = Math.max(0, capacity - open.length);

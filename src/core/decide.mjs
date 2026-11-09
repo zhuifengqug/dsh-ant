@@ -10,6 +10,12 @@ const systemOnly = new Set(['attempt.dispatch', 'attempt.pause', 'attempt.resume
 const active = attempt => ['queued', 'running', 'paused'].includes(attempt.state);
 const change = (type, payload, attemptId) => ({ type, payload, ...(attemptId ? { attemptId } : {}) });
 const requireState = (condition, message) => invariant(condition, 'team/invalid-state', message);
+/** Plan and roster edits are the lead's signature; the owner may always sign. */
+function leadReserved(view, context) {
+  if (context.actor === 'user') return;
+  invariant(view.leadMemberId !== undefined && view.leadMemberId === context.memberId, 'team/forbidden', 'This action is reserved to the colony lead');
+}
+const planStateOf = view => view.planState ?? (view.planConfirmed ? 'confirmed' : 'staged');
 
 /** verify[] is a promise: every command must appear as a command evidence line before completion. */
 function uncoveredVerify(task, evidence) {
@@ -58,7 +64,7 @@ export function authorize(request, context, view) {
     const attempt = view.attempts.find(item => item.attemptId === request.payload.attemptId);
     invariant(attempt?.memberId === member.memberId, 'team/forbidden', 'Quality report is restricted to the assigned attempt');
   }
-  invariant(['member.accept', 'mail.send', 'mail.read', 'mail.consume', 'quality.report', 'task.claim', 'task.complete', 'quality.review'].includes(request.action), 'team/forbidden', 'Action unavailable to member');
+  invariant(['member.accept', 'mail.send', 'mail.read', 'mail.consume', 'quality.report', 'task.claim', 'task.complete', 'quality.review', 'task.create', 'task.amend', 'task.reassign', 'plan.amend', 'team.halt', 'team.resume'].includes(request.action), 'team/forbidden', 'Action unavailable to member');
   if (request.action === 'task.claim') invariant(request.payload.memberId === member.memberId, 'team/forbidden', 'Claim must name the calling member');
   if (request.action === 'task.complete') { const target = view.attempts.find(item => item.attemptId === request.payload.attemptId); invariant(target?.memberId === member.memberId, 'team/forbidden', 'Completion is restricted to the assigned attempt'); }
   if (request.action === 'quality.review') invariant(request.payload.reviewerMemberId === member.memberId, 'team/forbidden', 'Review must name the calling member');
@@ -90,11 +96,65 @@ export function decideAction(view, request, context) {
     return item;
   };
   if (action === 'plan.confirm') {
-    requireState(!view.planConfirmed && payload.planDigest === view.planDigest, 'Plan digest mismatch or already confirmed');
+    requireState(planStateOf(view) !== 'confirmed' && payload.planDigest === view.planDigest, 'Plan digest mismatch or already confirmed');
     return [change('plan.confirmed', payload)];
+  }
+  if (action === 'plan.amend') {
+    leadReserved(view, context);
+    requireState(['staged', 'confirmed', 'amended'].includes(planStateOf(view)), 'Plan cannot be amended in its current state');
+    const next = new Set(payload.plan.tasks.map(item => item.taskId));
+    const dropped = view.tasks.filter(item => !next.has(item.taskId));
+    requireState(!dropped.some(item => view.attempts.some(value => value.taskId === item.taskId && active(value))), 'Plan amendment cannot drop a task with active work');
+    requireState(!dropped.some(item => ['reviewed', 'released'].includes(item.state)), 'Plan amendment cannot drop a settled task');
+    validatePlan(payload.plan, view.members.filter(item => item.status !== 'removed'));
+    return [change('plan.amended', { plan: payload.plan, previousDigest: view.planDigest, reason: payload.reason, revision: (view.planRevisions?.length ?? 0) + 1 })];
+  }
+  if (action === 'task.create') {
+    leadReserved(view, context);
+    requireState(view.planConfirmed, 'Plan requires confirmation');
+    requireState(!view.tasks.some(item => item.taskId === payload.task.taskId), 'Task identity already exists');
+    const dependencies = payload.dependencies ?? [];
+    const qualityGates = payload.qualityGates ?? [];
+    const grown = { ...view.plan, tasks: [...view.plan.tasks, payload.task], dependencies: [...view.plan.dependencies, ...dependencies], qualityGates: [...view.plan.qualityGates, ...qualityGates] };
+    validatePlan(grown, view.members.filter(item => item.status !== 'removed'));
+    return [change('task.created', { task: payload.task, dependencies, qualityGates, reason: payload.reason, revision: (view.taskRevisions?.length ?? 0) + 1 })];
+  }
+  if (action === 'task.amend') {
+    leadReserved(view, context);
+    const selected = task(payload.taskId);
+    requireState(selected.state !== 'released', 'Task is already released');
+    requireState(Object.keys(payload.patch).length > 0, 'Task amendment is empty');
+    if (payload.patch.ownerMemberId !== undefined) member(payload.patch.ownerMemberId);
+    const touchesContract = ['title', 'objective', 'inScope', 'outOfScope', 'acceptance', 'verify'].some(key => Object.hasOwn(payload.patch, key));
+    const reset = touchesContract && selected.selfCompleted === true;
+    const inFlight = view.attempts.some(item => item.taskId === payload.taskId && active(item));
+    requireState(!touchesContract || !inFlight || selected.selfCompleted === true, 'Amending the contract requires settling the running attempt');
+    const patched = { ...view.plan, tasks: view.plan.tasks.map(item => item.taskId === payload.taskId ? { ...item, ...payload.patch } : item) };
+    validatePlan(patched, view.members.filter(item => item.status !== 'removed'));
+    return [change('task.amended', { ...payload, reset, revision: (view.taskRevisions?.length ?? 0) + 1 })];
+  }
+  if (action === 'task.reassign') {
+    leadReserved(view, context);
+    const selected = task(payload.taskId);
+    member(payload.memberId);
+    requireState(selected.state !== 'released', 'Task is already released');
+    requireState(!view.attempts.some(item => item.taskId === payload.taskId && active(item) && item.memberId !== payload.memberId), 'Reassignment requires settling the running attempt');
+    return [change('task.reassigned', { ...payload, revision: (view.taskRevisions?.length ?? 0) + 1 })];
+  }
+  if (action === 'team.halt' || action === 'team.resume') {
+    leadReserved(view, context);
+    requireState(action === 'team.halt' ? view.halted !== true : view.halted === true, action === 'team.halt' ? 'Team is already halted' : 'Team is not halted');
+    const halting = action === 'team.halt';
+    const open = halting ? view.attempts.filter(active) : view.attempts.filter(item => item.state === 'paused');
+    const wrapped = open.map(item => change(halting ? 'attempt.pause-requested' : 'attempt.resume-requested', { taskId: item.taskId, attemptId: item.attemptId }, item.attemptId));
+    const header = halting
+      ? change('team.halted', payload.reason === undefined ? {} : { reason: payload.reason })
+      : change('team.resumed', {});
+    return [header, ...wrapped];
   }
   if (action === 'attempt.dispatch' || action === 'attempt.retry') {
     requireState(view.planConfirmed, 'Plan requires confirmation');
+    requireState(view.halted !== true, 'Team is halted');
     const selected = task(payload.taskId); member(payload.memberId);
     requireState(!view.attempts.some(item => active(item) && item.memberId === payload.memberId), 'Member already has active work');
     requireState(view.attempts.filter(active).length < capacityOf(view, autonomyPolicy(context.settings)), 'Active attempt limit reached');
@@ -190,6 +250,7 @@ export function decideAction(view, request, context) {
   }
   if (action === 'task.claim') {
     requireState(view.planConfirmed, 'Plan requires confirmation');
+    requireState(view.halted !== true, 'Team is halted');
     const selected = task(payload.taskId); member(payload.memberId);
     requireState(!['completed', 'reviewed', 'released'].includes(selected.state), 'Task is already resolved');
     requireState(!selected.claimMemberId, 'Task is already claimed');
@@ -248,6 +309,10 @@ export function decideAction(view, request, context) {
   }
   if (action === 'run.interrupted') {
     requireState(view.attempts.some(active), 'No open attempt to interrupt');
+    if (payload.attemptId !== undefined) {
+      requireState(payload.taskId !== undefined, 'attemptId requires taskId');
+      requireState(active(attempt(payload.taskId, payload.attemptId)), 'Attempt is not active');
+    }
     return [change('run.interrupted', payload)];
   }
   requireState(false, 'Action has no decision handler');

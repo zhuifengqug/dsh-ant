@@ -67,7 +67,45 @@ export function openIntegration(view, plan) {
     .filter(item => item.pendingGates.length > 0);
 }
 
+const OPEN_ATTEMPT = new Set(['queued', 'running', 'paused']);
+
+/**
+ * Coverage answers one question per task: who holds it, whether that holder can be woken,
+ * and which declared gate still stands open. Counts are derived once so no client re-derives them.
+ */
+export function taskCoverage(view, plan) {
+  const bound = memberId => {
+    const member = view.members.find(item => item.memberId === memberId);
+    return member?.status === 'active' && Boolean(member.sessionId);
+  };
+  const tasks = view.tasks.map(task => {
+    const attempts = view.attempts.filter(item => item.taskId === task.taskId);
+    return {
+      taskId: task.taskId,
+      state: task.state,
+      ownerMemberId: task.ownerMemberId ?? null,
+      ownerBound: task.ownerMemberId ? bound(task.ownerMemberId) : false,
+      attempts: attempts.length,
+      openAttempts: attempts.filter(item => OPEN_ATTEMPT.has(item.state)).length,
+      selfCompleted: task.selfCompleted === true,
+      repairRounds: task.repairRounds ?? 0,
+      pendingGates: plan ? gateStatus(view, plan, task.taskId).pending : [],
+    };
+  });
+  const count = state => tasks.filter(item => item.state === state).length;
+  return {
+    tasks,
+    counts: {
+      total: tasks.length, pending: count('pending'), running: count('running'), reviewed: count('reviewed'),
+      released: count('released'), failed: count('failed'), anomalous: count('anomalous'), dropped: count('dropped'),
+      unowned: tasks.filter(item => !item.ownerMemberId).length,
+      unbound: tasks.filter(item => Boolean(item.ownerMemberId) && !item.ownerBound).length,
+      halted: view.halted === true,
+    },
+  };
+}
+
 /** The panel's queues, derived once so the client never re-implements a gate rule. */
 export function withGateQueues(view) {
-  return { ...view, releaseQueue: pendingRelease(view, view.plan), blockedRelease: blockedRelease(view, view.plan), integrationQueue: openIntegration(view, view.plan) };
+  return { ...view, releaseQueue: pendingRelease(view, view.plan), blockedRelease: blockedRelease(view, view.plan), integrationQueue: openIntegration(view, view.plan), coverage: taskCoverage(view, view.plan) };
 }

@@ -22,10 +22,12 @@ const plan = object({ planId: id, mode: choice('normal', 'fast'), tasks: array(t
 const member = object({ memberId: id, role: text, sessionMode: choice('persistent', 'ephemeral'), sessionId: optional(id), ...modelFields, inScope: strings, outOfScope: strings, executionPrompt: optional(text) });
 const evidence = object({ kind: choice('file', 'command', 'session', 'event'), locator: text, digest: optional(text), note: optional(text) });
 const attempt = { taskId: id, attemptId: id };
+const taskPatch = object({ title: optional(text), objective: optional(text), inScope: optional(strings), outOfScope: optional(strings), acceptance: optional(strings), verify: optional(strings), ownerMemberId: optional(id), readOnly: optional({ type: 'boolean' }) });
 
 export const payloadSchemas = {
   'team.create': object({ goal: text, workspaceRelativePath: { type: 'string', minLength: 1, maxLength: 4096 }, plan, members: array(member), leadMemberId: optional(id), rerun: optional({ type: 'boolean' }) }),
   'plan.confirm': object({ planDigest: { type: 'string', pattern: '^[a-f0-9]{64}$' } }),
+  'plan.amend': object({ plan, reason: text }),
   'attempt.dispatch': object({ taskId: id, memberId: id, variants: optional({ type: 'integer', minimum: 1, maximum: 3 }) }),
   'attempt.pause': object(attempt),
   'attempt.resume': object(attempt),
@@ -41,15 +43,20 @@ export const payloadSchemas = {
   'mail.read': object({ messageId: id }),
   'mail.consume': object({ messageId: id }),
   'quality.report': object({ ...attempt, verdict: choice('pass', 'fail'), summary: text, evidence: array(evidence) }),
+  'task.create': object({ task, dependencies: optional(array(dependency)), qualityGates: optional(array(qualityGate)), reason: optional(text) }),
+  'task.amend': object({ taskId: id, patch: taskPatch, reason: text }),
+  'task.reassign': object({ taskId: id, memberId: id, reason: optional(text) }),
   'task.claim': object({ taskId: id, memberId: id }),
   'task.complete': object({ ...attempt, summary: text, evidence: array(evidence) }),
   'quality.review': object({ ...attempt, reviewerMemberId: id, verdict: choice('pass', 'fail'), criteria: strings, summary: text, gateId: optional(id) }),
   'batch.release': object({ batchId: id, taskIds: { type: 'array', items: id, maxItems: 256 } }),
   'attempt.select': object({ ...attempt, variant: { type: 'integer', minimum: 1, maximum: 3 } }),
   'spend.record': object({ ...attempt, tokensIn: optional({ type: 'integer', minimum: 0 }), tokensOut: optional({ type: 'integer', minimum: 0 }), costMicros: optional({ type: 'integer', minimum: 0 }), model: optional(text), source: optional(text) }),
-  'run.interrupted': object({ reason: text }),
+  'run.interrupted': object({ reason: text, taskId: optional(id), attemptId: optional(id) }),
   'team.archive': object({}),
   'team.restore': object({}),
+  'team.halt': object({ reason: optional(text) }),
+  'team.resume': object({}),
   'team.delete': object({}),
 };
 export const ACTIONS = Object.freeze(Object.keys(payloadSchemas));

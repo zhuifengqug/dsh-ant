@@ -16,15 +16,68 @@ export function foldTeam(events) {
       view = {
         schemaVersion: 1, teamId: event.teamId, goal: payload.goal, workspaceRelativePath: payload.workspaceRelativePath, fingerprint: teamFingerprint(payload),
         lifecycle: payload.plan.mode === 'fast' ? 'planned' : 'staged', plan: payload.plan, planDigest: digest(payload.plan),
-        planConfirmed: payload.plan.mode === 'fast', ...(payload.leadMemberId ? { leadMemberId: payload.leadMemberId } : {}), members: payload.members.map(member => ({ ...member, origin: member.sessionId ? 'existing' : 'team-created', status: member.sessionId ? 'active' : 'requested' })),
-        tasks: payload.plan.tasks.map(task => ({ ...task, state: 'pending' })), attempts: [], invitations: [], mailbox: [], claims: [], batches: [], reviews: [], spend: [], interruptions: [], cursor: 0,
+        planState: payload.plan.mode === 'fast' ? 'confirmed' : 'staged', planConfirmed: payload.plan.mode === 'fast', halted: false, ...(payload.leadMemberId ? { leadMemberId: payload.leadMemberId } : {}), members: payload.members.map(member => ({ ...member, origin: member.sessionId ? 'existing' : 'team-created', status: member.sessionId ? 'active' : 'requested' })),
+        tasks: payload.plan.tasks.map(task => ({ ...task, state: 'pending' })), attempts: [], invitations: [], mailbox: [], claims: [], batches: [], reviews: [], spend: [], interruptions: [], planRevisions: [], taskRevisions: [], cursor: 0,
       };
     } else {
       invariant(view, 'team/rebuild-required', 'Team creation must be first');
       const attempt = () => find(view.attempts, 'attemptId', event.attemptId ?? payload.attemptId);
       const task = () => find(view.tasks, 'taskId', payload.taskId ?? attempt().taskId);
       switch (event.type) {
-        case 'plan.confirmed': view.planConfirmed = true; view.lifecycle = 'planned'; break;
+        case 'plan.confirmed': view.planConfirmed = true; view.planState = 'confirmed'; view.lifecycle = 'planned'; break;
+        case 'plan.amended': {
+          view.plan = payload.plan;
+          view.planDigest = digest(payload.plan);
+          view.planState = view.planConfirmed ? 'amended' : 'staged';
+          view.planRevisions.push({ revision: payload.revision, reason: payload.reason, previousDigest: payload.previousDigest, digest: view.planDigest, eventSeq: event.eventSeq, occurredAt: event.occurredAt });
+          for (const item of view.tasks) {
+            const defined = payload.plan.tasks.find(value => value.taskId === item.taskId);
+            if (defined) Object.assign(item, defined);
+            else if (!['released', 'reviewed'].includes(item.state)) item.state = 'dropped';
+          }
+          for (const defined of payload.plan.tasks) {
+            if (!view.tasks.some(item => item.taskId === defined.taskId)) view.tasks.push({ ...defined, state: 'pending' });
+          }
+          break;
+        }
+        case 'task.created': {
+          view.tasks.push({ ...payload.task, state: 'pending' });
+          view.plan = {
+            ...view.plan,
+            tasks: [...view.plan.tasks, payload.task],
+            dependencies: [...view.plan.dependencies, ...(payload.dependencies ?? [])],
+            qualityGates: [...view.plan.qualityGates, ...(payload.qualityGates ?? [])],
+          };
+          view.planDigest = digest(view.plan);
+          view.taskRevisions.push({ taskId: payload.task.taskId, revision: payload.revision, change: 'create', reason: payload.reason ?? null, eventSeq: event.eventSeq });
+          break;
+        }
+        case 'task.amended': {
+          const amended = task();
+          Object.assign(amended, payload.patch);
+          const defined = view.plan.tasks.find(item => item.taskId === payload.taskId);
+          if (defined) Object.assign(defined, payload.patch);
+          if (payload.reset === true) {
+            amended.selfCompleted = false;
+            delete amended.repairRounds;
+            if (amended.state !== 'released') amended.state = 'pending';
+            const stale = [...view.attempts].reverse().find(item => item.taskId === payload.taskId);
+            if (stale && ['queued', 'running', 'paused', 'reviewed'].includes(stale.state)) stale.state = 'superseded';
+          }
+          view.planDigest = digest(view.plan);
+          view.taskRevisions.push({ taskId: payload.taskId, revision: payload.revision, change: 'amend', reason: payload.reason, eventSeq: event.eventSeq });
+          break;
+        }
+        case 'task.reassigned': {
+          task().ownerMemberId = payload.memberId;
+          const defined = view.plan.tasks.find(item => item.taskId === payload.taskId);
+          if (defined) defined.ownerMemberId = payload.memberId;
+          view.planDigest = digest(view.plan);
+          view.taskRevisions.push({ taskId: payload.taskId, revision: payload.revision, change: 'reassign', reason: payload.reason ?? null, eventSeq: event.eventSeq });
+          break;
+        }
+        case 'team.halted': view.halted = true; view.haltReason = payload.reason ?? null; break;
+        case 'team.resumed': view.halted = false; view.haltReason = null; break;
         case 'attempt.dispatched':
           view.attempts.push({ ...payload, state: 'running' }); task().state = 'running'; view.lifecycle = 'running'; break;
         case 'attempt.pause-requested':
