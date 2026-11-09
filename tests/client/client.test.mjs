@@ -673,3 +673,40 @@ test('the sidebar entry and the team card both open the colony', async () => {
   await cleanup();
   await runtime.disposeEffects();
 });
+
+test('unread mail reaches the header and the panel without a pending release', async () => {
+  const view = {
+    lifecycle: 'running', cursor: 4,
+    members: [{ memberId: 'member-1', status: 'active', sessionId: 's1' }],
+    attempts: [],
+    tasks: [{ taskId: 'task-1', state: 'running' }],
+    releaseQueue: [],
+    plan: { dependencies: [] },
+    summary: { goal: 'Ship', counts: { running: 1 }, unread: { total: 3, toLead: 2, recent: [] } },
+  };
+  const remoteTeam = {
+    async list() { return { ok: true, value: { teams: [{ teamId: 'team-1', goal: 'Ship', lifecycle: 'running', cursor: 4 }] } }; },
+    async get(request) { return { ok: true, value: { ...view, teamId: request.teamId } }; },
+    async dispatch() { return { ok: true, value: { outcome: 'committed' } }; },
+  };
+  const runtime = createClientContext(remoteTeam);
+  const { plugin } = await loadClient();
+  const cleanup = await plugin.apply(runtime.ctx);
+
+  const header = runtime.registrations.find(item => item.options.name === 'conversation.session.header.actions');
+  const headerProps = header.options.inject();
+  header.component(headerProps);
+  await new Promise(resolve => setImmediate(resolve));
+  const glyph = findByClass(header.component(headerProps), 'ant-glyph');
+  assert.equal(glyph.props['data-pending'], undefined, 'no release is pending');
+  assert.equal(glyph.props['data-unread'], 3);
+  assert.match(glyph.props.title, /3/);
+
+  const panel = runtime.registrations.find(item => item.options.name === 'main');
+  const panelProps = panel.options.inject();
+  panel.component(panelProps);
+  await new Promise(resolve => setImmediate(resolve));
+  const metas = findAllByClass(panel.component(panelProps), 'ant-meta').map(textOf);
+  assert.ok(metas.some(text => /unread|未读/i.test(text) && /3/.test(text)), 'the panel names the unread backlog: ' + metas.join(' | '));
+  await cleanup();
+});

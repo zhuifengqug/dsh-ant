@@ -172,7 +172,7 @@ window.__ModuleLoader__.load({
         autonomy: 'Autonomy', batchWindow: 'Batch window (minutes)', maxActive: 'Concurrent attempts', defaultVariants: 'Candidates per task',
         variantWrite: 'Allow parallel candidates on write tasks', settings: 'Amber Ant settings', save: 'Save settings', saved: 'Saved. The next action already uses it.',
         confirmL3: 'L3 releases batches by itself once the window closes. Switch anyway?', confirm: 'Switch to L3', cancel: 'Cancel',
-        settingsHint: 'The panel and the Host share one settings file.', pendingBadge: 'pending release', openNest: 'Open colony',
+        settingsHint: 'The panel and the Host share one settings file.', pendingBadge: 'pending release', openNest: 'Open colony', unread: 'unread',
       },
       zh: {
         panel: '玄驹', title: '虫珀·玄驹', subtitle: '多会话协作持久事实面', refresh: '刷新', loading: '正在读取团队事实', refreshing: '正在刷新',
@@ -187,7 +187,7 @@ window.__ModuleLoader__.load({
         autonomy: '自主级别', batchWindow: '批窗口（分钟）', maxActive: '并发上限', defaultVariants: '每任务候选数',
         variantWrite: '允许写任务并行候选', settings: '玄驹设置', save: '保存设置', saved: '已保存，下一次动作即生效。',
         confirmL3: 'L3 会在窗口到期后自动放行，仍要切换吗？', confirm: '切到 L3', cancel: '取消',
-        settingsHint: '面板与 Host 共用同一份设置文件。', pendingBadge: '待放行', openNest: '进入蚁巢',
+        settingsHint: '面板与 Host 共用同一份设置文件。', pendingBadge: '待放行', openNest: '进入蚁巢', unread: '未读',
        
       },
     };
@@ -287,6 +287,7 @@ const CSS = `
       .ant-glyph{position:relative;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;border:1px solid transparent;border-radius:2px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}
       .ant-glyph:hover,.ant-glyph[aria-expanded=true]{border-color:var(--ant-neon);color:var(--ant-neon);background:var(--dsw-alias-bg-layer-2)}
       .ant-badge{position:absolute;top:-4px;right:-5px;min-width:14px;height:14px;padding:0 3px;border-radius:999px;background:var(--ant-neon-2);color:#04121a;font-size:9px;line-height:14px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+    .ant-badge[data-kind=mail]{background:var(--ant-neon);color:#04121a}
       .ant-anchor{position:relative;display:inline-flex}
       .ant-pop{position:absolute;top:34px;right:0;z-index:40;width:298px;border:1px solid var(--ant-neon);background:var(--dsw-alias-bg-layer-1);box-shadow:0 18px 42px rgb(0 0 0 / 24%);clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px))}
       .ant-pop-top{display:flex;align-items:baseline;gap:8px;padding:11px 13px 7px;border-bottom:1px solid var(--dsw-alias-border-l1)}
@@ -305,6 +306,7 @@ const CSS = `
       .ant-card-mark{flex:none;color:var(--ant-neon)}
       .ant-card-goal{flex:1;min-width:0;font-size:13px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       .ant-card-life{flex:none;color:var(--ant-neon);font:10px var(--ant-mono);letter-spacing:.08em;text-transform:uppercase}
+    .ant-card-unread{flex:none;padding:1px 6px;border:1px solid var(--ant-neon);border-radius:999px;color:var(--ant-neon);font-size:9.5px;line-height:14px;letter-spacing:.04em}
       .ant-card-facts{margin:0;color:var(--dsw-alias-label-secondary);font-size:11px;font-variant-numeric:tabular-nums}
       .ant-card-bot{display:flex;align-items:center;justify-content:flex-end;gap:8px}
       .ant-card-bot .ant-button{height:26px;min-height:26px;font-size:11px}
@@ -408,6 +410,8 @@ const CSS = `
 
     /** One task lives in exactly one chamber; the five chambers partition the view. */
     function pendingReleaseTasks(view) { return view?.releaseQueue ?? []; }
+    /** Unread mail is the Host's summary count; the panel never recomputes receipts itself. */
+    function unreadMail(view) { return view?.summary?.unread?.total ?? 0; }
     function activitySummary(view) {
       const holding = (view?.attempts ?? []).filter(item => ACTIVE_ATTEMPT.includes(item.state));
       const busy = new Set(holding.map(item => item.memberId));
@@ -774,6 +778,7 @@ const CSS = `
               [h('option', { value: '', key: 'empty' }, t.t('team'))].concat(state.teams.map(team => h('option', { value: team.teamId, key: team.teamId }, team.goal ?? shortId(team.teamId)))))),
           h('div', { className: 'ant-meta' }, t.t('lifecycle'), h('strong', null, state.view?.lifecycle ?? t.t('unknown'))),
           h('div', { className: 'ant-meta' }, t.t('cursor'), h('strong', null, String(state.view?.cursor ?? '—'))),
+          h('div', { className: 'ant-meta' }, t.t('unread'), h('strong', null, String(unreadMail(state.view)))),
           h('button', { type: 'button', className: 'ant-button', onClick: model.loadList, disabled: Boolean(state.request), 'aria-label': t.t('refresh') }, t.t('refresh'))),
         statusText(state, t),
         loading ? h('div', { className: 'ant-loading', role: 'status', 'aria-busy': 'true' }, t.t('loading'))
@@ -792,16 +797,19 @@ const CSS = `
       React.useEffect(() => { model.ensureLoaded(); }, [model]);
       const view = state.view ?? {};
       const pending = pendingReleaseTasks(view);
+      const unread = unreadMail(view);
       const members = (view.members ?? []).filter(member => member.status !== 'removed');
-      const label = pending.length ? t.t('panel') + ' ' + pending.length + ' ' + t.t('pendingBadge') : t.t('panel');
+      const label = pending.length ? t.t('panel') + ' ' + pending.length + ' ' + t.t('pendingBadge')
+        : unread ? t.t('panel') + ' ' + unread + ' ' + t.t('unread') : t.t('panel');
       return h('div', { className: 'ant-anchor' },
         h('button', {
-          type: 'button', className: 'ant-glyph', 'data-ant-icon': '', 'data-pending': pending.length || undefined,
+          type: 'button', className: 'ant-glyph', 'data-ant-icon': '', 'data-pending': pending.length || undefined, 'data-unread': unread || undefined,
           'aria-expanded': open === true ? 'true' : 'false', 'aria-label': label, title: label,
           onClick: () => setOpen(!open), onKeyDown: event => { if (event.key === 'Escape') setOpen(false); },
         },
           h(AntShape, { size: 14 }),
-          pending.length ? h('span', { className: 'ant-badge', 'aria-hidden': 'true' }, String(pending.length)) : null),
+          pending.length ? h('span', { className: 'ant-badge', 'aria-hidden': 'true' }, String(pending.length))
+            : unread ? h('span', { className: 'ant-badge', 'data-kind': 'mail', 'aria-hidden': 'true' }, String(unread)) : null),
         open ? h('div', { className: 'ant-pop', role: 'dialog', 'aria-label': t.t('panel') },
           h('div', { className: 'ant-pop-top' }, h('strong', null, view.goal ?? t.t('panel')), h('span', null, pending.length + ' ' + t.t('pendingBadge'))),
           h('ul', { className: 'ant-roster' }, members.length ? members.map(member => h('li', { key: member.memberId },
@@ -872,7 +880,8 @@ const CSS = `
         h('div', { className: 'ant-card-top' },
           h(AntShape, { size: 13, className: 'ant-card-mark' }),
           h('strong', { className: 'ant-card-goal' }, view.goal ?? node?.data?.goal ?? shortId(teamId)),
-          h('span', { className: 'ant-card-life' }, view.lifecycle ?? node?.data?.mode ?? '')),
+          h('span', { className: 'ant-card-life' }, view.lifecycle ?? node?.data?.mode ?? ''),
+          unreadMail(view) ? h('span', { className: 'ant-card-unread' }, unreadMail(view) + ' ' + t.t('unread')) : null),
         h('p', { className: 'ant-card-facts' }, facts),
         h('div', { className: 'ant-card-bot' },
           h('button', {

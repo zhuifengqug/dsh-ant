@@ -1,3 +1,5 @@
+import { teamSummary } from './summary.mjs';
+
 /** Five-gate supervision: the executor self-reports, a peer reviews, the plan's gates decide release. */
 const isActive = member => member.status === 'active' && Boolean(member.sessionId);
 const RESOLVED = ['reviewed', 'released', 'anomalous'];
@@ -111,5 +113,6 @@ export function taskCoverage(view, plan) {
 
 /** The panel's queues, derived once so the client never re-implements a gate rule. */
 export function withGateQueues(view) {
-  return { ...view, releaseQueue: pendingRelease(view, view.plan), blockedRelease: blockedRelease(view, view.plan), integrationQueue: openIntegration(view, view.plan), coverage: taskCoverage(view, view.plan) };
+  const coverage = taskCoverage(view, view.plan);
+  return { ...view, releaseQueue: pendingRelease(view, view.plan), blockedRelease: blockedRelease(view, view.plan), integrationQueue: openIntegration(view, view.plan), coverage, summary: teamSummary(view, coverage) };
 }
