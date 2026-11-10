@@ -15,7 +15,6 @@ window.__ModuleLoader__.load({
     const REMOTE_SERVICE = 'ant';
     const LOCALE_NS = 'ant';
     const PANEL_ID = 'ant';
-    const CARD_KIND = 'ant-team';
 
     function codec(typeSymbol, create, jsonSchema) {
       return { mode: 'strict', typeSymbol, create, jsonSchema };
@@ -213,9 +212,9 @@ window.__ModuleLoader__.load({
 
 const CSS = `
       .ant-shell{box-sizing:border-box;display:flex;flex-direction:column;height:100%;min-height:100%;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-base);font:inherit;}
-      @supports (color:light-dark(#000,#fff)){.ant-shell,.ant-card{--ant-neon:light-dark(#008fa9,#16d9ed);--ant-neon-2:light-dark(#b0249f,#f04bd7);--ant-ok:light-dark(#0b8a63,#46d9aa);--ant-bad:light-dark(#c33b4f,#ff6179);--ant-grid:light-dark(rgba(40,70,95,.13),rgba(127,160,190,.16));--ant-cell:light-dark(rgba(255,255,255,.94),rgba(9,17,29,.86));--ant-row-hover:light-dark(rgba(0,143,169,.09),rgba(22,217,237,.09))}}
-      .ant-shell,.ant-card{--ant-neon:#16d9ed;--ant-neon-2:#f04bd7;--ant-ok:#46d9aa;--ant-bad:#ff6179;--ant-grid:rgba(127,160,190,.16);--ant-cell:rgba(9,17,29,.86);--ant-row-hover:rgba(22,217,237,.09);--ant-mono:"Cascadia Mono",Consolas,ui-monospace,monospace}
-      .ant-shell *,.ant-card *{box-sizing:border-box}
+      @supports (color:light-dark(#000,#fff)){.ant-shell,.ant-seat{--ant-neon:light-dark(#008fa9,#16d9ed);--ant-neon-2:light-dark(#b0249f,#f04bd7);--ant-ok:light-dark(#0b8a63,#46d9aa);--ant-bad:light-dark(#c33b4f,#ff6179);--ant-grid:light-dark(rgba(40,70,95,.13),rgba(127,160,190,.16));--ant-cell:light-dark(rgba(255,255,255,.94),rgba(9,17,29,.86));--ant-row-hover:light-dark(rgba(0,143,169,.09),rgba(22,217,237,.09))}}
+      .ant-shell,.ant-seat{--ant-neon:#16d9ed;--ant-neon-2:#f04bd7;--ant-ok:#46d9aa;--ant-bad:#ff6179;--ant-grid:rgba(127,160,190,.16);--ant-cell:rgba(9,17,29,.86);--ant-row-hover:rgba(22,217,237,.09);--ant-mono:"Cascadia Mono",Consolas,ui-monospace,monospace}
+      .ant-shell *,.ant-seat *{box-sizing:border-box}
       .ant-header{display:grid;grid-template-columns:minmax(180px,1fr) auto auto auto auto;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--dsw-alias-border-l1)}
       .ant-title{margin:0;font-size:17px;line-height:1.25;font-weight:700;letter-spacing:.02em}
       .ant-subtitle{margin:4px 0 0;color:var(--dsw-alias-label-secondary);font-size:11px}
@@ -224,7 +223,7 @@ const CSS = `
       .ant-select,.ant-button{min-height:32px;border:1px solid var(--dsw-alias-border-l1);border-radius:2px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px}
       .ant-select{min-width:168px;padding:0 10px}.ant-button{padding:0 12px;cursor:pointer}
       .ant-button:hover{border-color:var(--ant-neon);color:var(--ant-neon)}
-      .ant-button:focus-visible,.ant-select:focus-visible,.ant-chamber-head:focus-visible,.ant-gate:focus-visible,.ant-row:focus-visible,.ant-glyph:focus-visible{outline:2px solid var(--ant-neon);outline-offset:2px}
+      .ant-button:focus-visible,.ant-select:focus-visible,.ant-chamber-head:focus-visible,.ant-gate:focus-visible,.ant-row:focus-visible{outline:2px solid var(--ant-neon);outline-offset:2px}
       .ant-button[disabled]{cursor:wait;opacity:.5}
       .ant-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,282px);min-height:0;flex:1}
       .ant-nest{position:relative;min-width:0;min-height:0;overflow:hidden;padding:0;background:var(--dsw-alias-bg-base)}
@@ -295,44 +294,40 @@ const CSS = `
       .ant-stream li[data-kind=help]{border-left-color:var(--dsw-alias-state-error-primary)}
       .ant-stream li strong{min-width:78px;font-weight:650}.ant-stream p{margin:0 0 10px;padding:0 16px}
       .ant-note{color:var(--dsw-alias-label-secondary);font-size:11px}
-      .ant-glyph{position:relative;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;border:1px solid transparent;border-radius:2px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}
-      .ant-glyph:hover,.ant-glyph[aria-expanded=true]{border-color:var(--ant-neon);color:var(--ant-neon);background:var(--dsw-alias-bg-layer-2)}
       .ant-badge{position:absolute;top:-4px;right:-5px;min-width:14px;height:14px;padding:0 3px;border-radius:999px;background:var(--ant-neon-2);color:#04121a;font-size:9px;line-height:14px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
-    .ant-badge[data-kind=mail]{background:var(--ant-neon);color:#04121a}
-      .ant-anchor{position:relative;display:inline-flex}
+    
       .ant-pop{position:absolute;top:34px;right:0;z-index:40;width:298px;border:1px solid var(--ant-neon);background:var(--dsw-alias-bg-layer-1);box-shadow:0 18px 42px rgb(0 0 0 / 24%);clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px))}
       .ant-pop-top{display:flex;align-items:baseline;gap:8px;padding:11px 13px 7px;border-bottom:1px solid var(--dsw-alias-border-l1)}
       .ant-pop-top strong{font-size:12.5px;font-weight:650}.ant-pop-top span{margin-left:auto;color:var(--ant-neon-2);font-size:11px;font-variant-numeric:tabular-nums}
       .ant-roster{margin:0;padding:6px 6px 8px;list-style:none}
-      .ant-roster li{display:flex;align-items:center;gap:8px;padding:4px 7px;font-size:11.5px}
+      .ant-roster li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px;padding:4px 7px;font-size:11.5px}
       .ant-roster li:hover{background:var(--dsw-alias-bg-layer-2)}
-      .ant-roster em{margin-left:auto;color:var(--dsw-alias-label-secondary);font:10px var(--ant-mono);white-space:nowrap}
+      .ant-roster-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       .ant-pop-bot{display:flex;align-items:center;gap:8px;padding:9px 13px;border-top:1px solid var(--dsw-alias-border-l1)}
       .ant-pop-bot .ant-button{height:26px;min-height:26px;font-size:11px}
       .ant-pop-bot span{color:var(--dsw-alias-label-secondary);font-size:10.5px}
-      .ant-strip{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--dsw-alias-border-l1);border-radius:2px;background:var(--dsw-alias-bg-layer-1);font-size:11.5px}
-      .ant-strip-name{font-weight:650}.ant-strip-chip{padding:1px 6px;border:1px solid var(--ant-neon-2);border-radius:2px;color:var(--ant-neon-2);font-size:10.5px}
-      .ant-card{display:grid;gap:7px;margin:10px 0;padding:11px 13px;border:1px solid var(--dsw-alias-border-l1);border-left:2px solid var(--ant-neon);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px))}
-      .ant-card-top{display:flex;align-items:center;gap:8px}
-      .ant-card-mark{flex:none;color:var(--ant-neon)}
-      .ant-card-goal{flex:1;min-width:0;font-size:13px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-      .ant-card-life{flex:none;color:var(--ant-neon);font:10px var(--ant-mono);letter-spacing:.08em;text-transform:uppercase}
-    .ant-card-unread{flex:none;padding:1px 6px;border:1px solid var(--ant-neon);border-radius:999px;color:var(--ant-neon);font-size:9.5px;line-height:14px;letter-spacing:.04em}
-      .ant-card-facts{margin:0;color:var(--dsw-alias-label-secondary);font-size:11px;font-variant-numeric:tabular-nums}
-      .ant-card-bot{display:flex;align-items:center;justify-content:flex-end;gap:8px}
-      .ant-card-bot .ant-button{height:26px;min-height:26px;font-size:11px}
-      .ant-side{display:block;color:currentColor}
-  .ant-side[data-state="active"]{color:var(--ant-neon)}
-      .ant-strip .ant-button{height:24px;min-height:24px;margin-left:auto;font-size:11px}
-      .ant-settings{display:grid;gap:12px;max-width:560px}.ant-settings h2{margin:0;font-size:14px}
-      .ant-settings .ant-field{display:grid;grid-template-columns:minmax(180px,1fr) minmax(120px,180px);gap:10px;align-items:center;font-size:12px}
-      .ant-settings .ant-field select,.ant-settings .ant-field input{min-height:32px;padding:0 8px;border:1px solid var(--dsw-alias-border-l1);border-radius:2px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit}
-      .ant-settings .ant-warn{padding:9px 10px;border-left:3px solid var(--dsw-alias-state-warn-primary);background:var(--dsw-alias-bg-layer-2);font-size:12px}
-      .ant-settings .ant-row{display:flex;gap:8px}
-      .ant-launcher{position:fixed;right:18px;bottom:18px;z-index:60;display:flex;align-items:center;justify-content:center;width:42px;height:42px;padding:0;border:1px solid #16d9ed;border-radius:12px;background:#050911;color:#16d9ed;cursor:pointer;box-shadow:0 10px 26px rgba(0,0,0,.45),0 0 0 1px rgba(22,217,237,.16);transition:transform .16s ease,box-shadow .16s ease}
-      .ant-launcher:hover,.ant-launcher:focus-visible{transform:translateY(-1px);box-shadow:0 14px 30px rgba(0,0,0,.5),0 0 12px rgba(22,217,237,.45);outline:none}
-      .ant-launcher svg{display:block}
       @supports (color:light-dark(#000,#fff)){.ant-launcher{color:light-dark(#0a7d92,#16d9ed);border-color:light-dark(rgba(10,125,146,.55),rgba(22,217,237,.6));background:light-dark(rgba(255,255,255,.94),rgba(5,9,17,.92))}}
+
+.ant-seat{position:relative;display:inline-flex;align-items:center;flex:none}
+.ant-seat-btn{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border:1px solid var(--dsw-alias-border-l1);border-radius:999px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;font-size:11px;letter-spacing:.02em}
+.ant-seat-btn:hover,.ant-seat-btn[aria-expanded=true]{border-color:var(--ant-neon);color:var(--ant-neon)}
+.ant-seat-btn:focus-visible{outline:1px solid var(--ant-neon);outline-offset:1px}
+.ant-seat-name{white-space:nowrap}
+.ant-seat-life{color:var(--dsw-alias-label-secondary);font:9.5px var(--ant-mono);letter-spacing:.1em;text-transform:uppercase;opacity:.85}
+.ant-seat .ant-badge{position:static;top:auto;right:auto}
+.ant-pop-up{top:auto;bottom:calc(100% + 8px);left:0;right:auto;z-index:80;width:min(340px,calc(100vw - 32px));max-height:min(64vh,460px);overflow:auto}
+.ant-model{display:inline-flex;align-items:center;max-width:132px;padding:1px 7px;border:1px solid var(--dsw-alias-border-l1);border-radius:999px;background:transparent;color:var(--dsw-alias-label-secondary);font:10px var(--ant-mono);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ant-model:hover,.ant-model[aria-expanded=true]{border-color:var(--ant-neon);color:var(--ant-neon)}
+.ant-models{grid-column:1/-1;display:grid;gap:3px;margin:2px 0 4px;padding:6px 7px;border:1px solid var(--dsw-alias-border-l1);border-left:2px solid var(--ant-neon);background:var(--dsw-alias-bg-layer-2)}
+.ant-models .ant-cap{margin:2px 0 0}
+.ant-model-group{display:grid;gap:1px}
+.ant-model-pick{display:block;width:100%;padding:3px 6px;border:0;border-radius:2px;background:transparent;color:var(--dsw-alias-label-primary);font-size:11px;text-align:left;cursor:pointer}
+.ant-model-pick:hover{background:var(--ant-row-hover);color:var(--ant-neon)}
+.ant-model-pick[aria-pressed=true]{color:var(--ant-neon)}
+.ant-model-pick[aria-pressed=true]::before{content:"● ";font-size:8px}
+.ant-link{padding:0;border:0;background:transparent;color:var(--ant-neon);font-size:11px;cursor:pointer}
+.ant-link:hover{text-decoration:underline}
+
       @keyframes ant-flow{to{stroke-dashoffset:-24}}
       @media(prefers-reduced-motion:reduce){.ant-conduit-core{animation:none}.ant-chamber{transition:none}}
       @media(max-width:1024px){.ant-body{grid-template-columns:minmax(0,1fr)}.ant-nest-plan{min-height:0}.ant-rail{border-top:1px solid var(--dsw-alias-border-l1);border-left:0}}
@@ -474,77 +469,7 @@ const CSS = `
     const JUNCTIONS = [[550, 160], [540, 250], [550, 450], [550, 590], [690, 185], [420, 260], [690, 562], [390, 575], [550, 58]];
 
     /** One solid silhouette, currentColor, no outline — the same ant used at every size. */
-    /** The card exists only because a team was created in this conversation. */
-    function parseTeamCreateArguments(raw) {
-      try {
-        const request = JSON.parse(raw)?.request;
-        if (request?.action !== 'team.create') return undefined;
-        const goal = typeof request.payload?.goal === 'string' ? request.payload.goal.trim() : '';
-        if (goal === '') return undefined;
-        return {
-          goal,
-          mode: request.payload?.plan?.mode ?? 'normal',
-          memberCount: Array.isArray(request.payload?.members) ? request.payload.members.length : 0,
-        };
-      } catch (error) { return undefined; }
-    }
-    /** The receipt is the only place the Host publishes the canonical team identity. */
-    function teamIdFromReceipt(text) {
-      try {
-        const receipt = JSON.parse(text);
-        return typeof receipt?.teamId === 'string' && receipt.teamId !== '' ? receipt.teamId : undefined;
-      } catch (error) { return undefined; }
-    }
-    function resultText(message) {
-      return (message?.content ?? [])
-        .filter(block => block?.type === 'text' && typeof block.text === 'string')
-        .map(block => block.text)
-        .join('\n');
-    }
-    function toolResultFailed(message) {
-      return message?.isError === true || (message?.content ?? []).some(block => block?.type === 'tool-result' && block.isError === true);
-    }
-    /** One durable Chat node per created team: the call starts it, the receipt names it. */
-    const ANT_CARD = {
-      kind: CARD_KIND,
-      target: 'chat',
-      match(event) {
-        if (event?.type === 'tool/call' && event.data?.name === 'ant_team_dispatch') {
-          return parseTeamCreateArguments(event.data.arguments) === undefined
-            ? null
-            : { id: String(event.data.callId), role: 'start' };
-        }
-        if (event?.type === 'tool/result' && event.data?.message?.source?.kind === 'tool') {
-          return { id: String(event.data.message.source.callId), role: 'update' };
-        }
-        return null;
-      },
-      start(_context, match) {
-        const parsed = parseTeamCreateArguments(match.event.data.arguments);
-        if (parsed === undefined) throw new Error('ant card start requires a team.create call');
-        return { ...parsed, teamId: undefined, accepted: false };
-      },
-      update(context, match) {
-        if (match.event.type !== 'tool/result') return context.state;
-        if (match.event.data.error !== undefined || toolResultFailed(match.event.data.message)) return context.state;
-        const teamId = teamIdFromReceipt(resultText(match.event.data.message));
-        return { ...context.state, accepted: true, ...(teamId === undefined ? {} : { teamId }) };
-      },
-      buildViewNode(context) {
-        const state = context.state;
-        if (state?.accepted !== true || state.teamId === undefined) return null;
-        return {
-          key: context.key,
-          kind: CARD_KIND,
-          id: context.id,
-          target: 'chat',
-          anchorSeq: context.start.event.seq,
-          location: context.start.location,
-          visibility: 'visible',
-          data: { teamId: state.teamId, goal: state.goal, mode: state.mode, memberCount: state.memberCount },
-        };
-      },
-    };
+    /** One solid silhouette, currentColor, no outline — the same ant used at every size. */
 
     function AntShape({ size = 12, className, ...rest }) {
       const width = size * 1.55;
@@ -750,37 +675,6 @@ const CSS = `
     const LEVELS = ['L1', 'L2', 'L3'];
     const NUMBER_FIELDS = [['batchWindowMinutes', 'batchWindow', 1, 240], ['maxActiveAttempts', 'maxActive', 1, 8], ['defaultVariants', 'defaultVariants', 1, 3]];
 
-    function SettingsSection({ locale, remote }) {
-      const t = useLocale(locale);
-      const [form, setForm] = React.useState(undefined);
-      const [status, setStatus] = React.useState(undefined);
-      const [armed, setArmed] = React.useState(false);
-      React.useEffect(() => {
-        let closed = false;
-        Promise.resolve(remote.settings({})).then(result => { if (!closed) setForm(unwrapRemoteResult(result)); }, error => { if (!closed) setStatus(normalizeError(error)); });
-        return () => { closed = true; };
-      }, [remote]);
-      if (!form) return h('section', { className: 'ant-settings', 'aria-label': t.t('settings') }, h('h2', null, t.t('settings')), h('p', { className: 'ant-note' }, status ? t.t('error') + ' (' + status.code + ')' : t.t('loading')));
-      const update = patch => setForm({ ...form, ...patch });
-      const chooseLevel = level => { if (level === 'L3' && form.autonomy !== 'L3') { setArmed(true); return; } update({ autonomy: level }); };
-      const save = async () => {
-        setStatus(undefined);
-        try { setForm(unwrapRemoteResult(await remote.writeSettings({ patch: form }))); setStatus({ ok: true }); setArmed(false); }
-        catch (error) { setStatus(normalizeError(error)); }
-      };
-      const note = status?.ok ? t.t('saved') : status ? t.t('error') + ' (' + status.code + ')' : t.t('settingsHint');
-      return h('section', { className: 'ant-settings', 'aria-label': t.t('settings') },
-        h('h2', null, t.t('settings')),
-        h('label', { className: 'ant-field' }, h('span', null, t.t('autonomy')),
-          h('select', { value: form.autonomy, onChange: event => chooseLevel(event.target.value) }, LEVELS.map(level => h('option', { key: level, value: level }, level)))),
-        armed ? h('div', { className: 'ant-warn', role: 'alert' }, h('p', null, t.t('confirmL3')), h('div', { className: 'ant-row' }, h('button', { type: 'button', className: 'ant-button', onClick: () => { update({ autonomy: 'L3' }); setArmed(false); } }, t.t('confirm')), h('button', { type: 'button', className: 'ant-button', onClick: () => setArmed(false) }, t.t('cancel')))) : null,
-        NUMBER_FIELDS.map(([key, label, minimum, maximum]) => h('label', { className: 'ant-field', key }, h('span', null, t.t(label)), h('input', { type: 'number', min: minimum, max: maximum, value: form[key], onChange: event => update({ [key]: Number(event.target.value) }) }))),
-        h('label', { className: 'ant-field' }, h('span', null, t.t('variantWrite')), h('input', { type: 'checkbox', checked: form.variantWriteTasks === true, onChange: event => update({ variantWriteTasks: event.target.checked }) })),
-        h('div', { className: 'ant-row' }, h('button', { type: 'button', className: 'ant-button', onClick: save, disabled: armed }, t.t('save'))),
-        h('p', { className: 'ant-note', role: status?.ok ? 'status' : undefined }, note));
-    }
-
-
     function statusText(state, locale) {
       if (state.request) return h('p', { className: 'ant-status warn', role: 'status' }, locale.t('dispatching') + ' ' + state.request.action);
       if (state.error) {
@@ -819,132 +713,128 @@ const CSS = `
             h(ActivityStream, { state, locale: t })));
     }
 
-    function HeaderAction({ model, locale, layout }) {
+    /** The single entry: one seat in the composer row that opens the colony popover. */
+    function ColonySeat({ model, locale, layout, catalog }) {
       const state = useModel(model);
       const t = useLocale(locale);
       const [open, setOpen] = React.useState(false);
+      const [picker, setPicker] = React.useState(undefined);
+      const [groups, setGroups] = React.useState(undefined);
+      const [catalogFailed, setCatalogFailed] = React.useState(false);
       React.useEffect(() => { model.ensureLoaded(); }, [model]);
+      React.useEffect(() => {
+        if (picker === undefined || groups !== undefined) return undefined;
+        let live = true;
+        (async () => {
+          try {
+            const directory = catalog();
+            if (!directory) throw new Error('no model directory');
+            await directory.load();
+            if (live) setGroups(directory.store.getSnapshot().groups ?? []);
+          } catch (error) { if (live) setCatalogFailed(true); }
+        })();
+        return () => { live = false; };
+      }, [picker, groups, catalog]);
       const view = state.view ?? {};
       const pending = pendingReleaseTasks(view);
       const unread = unreadMail(view);
       const members = (view.members ?? []).filter(member => member.status !== 'removed');
-      const label = pending.length ? t.t('panel') + ' ' + pending.length + ' ' + t.t('pendingBadge')
-        : unread ? t.t('panel') + ' ' + unread + ' ' + t.t('unread') : t.t('panel');
-      return h('div', { className: 'ant-anchor' },
+      const badge = pending.length || unread;
+      const label = t.t('panel');
+      const choose = (member, group, item) => {
+        setPicker(undefined);
+        model.dispatch('member.changeModel', { memberId: member.memberId, provider: group.id, model: item.id });
+      };
+      const release = () => model.dispatch('batch.release', {
+        batchId: 'batch-' + ((view.cursor ?? 0) + 1),
+        taskIds: pending.map(task => task.taskId),
+      });
+      const modelList = member => {
+        if (catalogFailed) return h('p', { className: 'ant-note' }, t.t('unavailable'));
+        if (groups === undefined) return h('p', { className: 'ant-note' }, t.t('loading'));
+        if (groups.length === 0) return h('p', { className: 'ant-note' }, t.t('empty'));
+        return groups.map(group => h('div', { key: group.id, className: 'ant-model-group' },
+          h('span', { className: 'ant-cap' }, group.id),
+          (group.models ?? []).map(item => h('button', {
+            key: group.id + ':' + item.id,
+            type: 'button',
+            className: 'ant-model-pick',
+            'data-model': item.id,
+            'aria-pressed': item.id === member.model && group.id === member.provider ? 'true' : 'false',
+            onClick: () => choose(member, group, item),
+          }, item.label ?? item.id))));
+      };
+      const row = member => h('li', { key: member.memberId },
+        h(AntShape, { size: 10, className: 'ant-ant', 'data-state': member.status === 'active' ? 'active' : '' }),
+        h('span', { className: 'ant-roster-name' }, member.name ?? shortId(member.memberId)),
         h('button', {
-          type: 'button', className: 'ant-glyph', 'data-ant-icon': '', 'data-pending': pending.length || undefined, 'data-unread': unread || undefined,
-          'aria-expanded': open === true ? 'true' : 'false', 'aria-label': label, title: label,
-          onClick: () => setOpen(!open), onKeyDown: event => { if (event.key === 'Escape') setOpen(false); },
+          type: 'button',
+          className: 'ant-model',
+          'data-member': member.memberId,
+          title: t.t('model'),
+          'aria-expanded': picker === member.memberId ? 'true' : 'false',
+          onClick: () => setPicker(picker === member.memberId ? undefined : member.memberId),
+        }, (member.model ?? member.provider ?? '—') + ' ▾'),
+        picker === member.memberId ? h('div', { className: 'ant-models' }, modelList(member)) : null);
+      return h('span', { className: 'ant-seat' },
+        h('button', {
+          type: 'button',
+          className: 'ant-seat-btn',
+          'data-ant-seat': '',
+          'data-pending': pending.length || undefined,
+          'aria-expanded': open ? 'true' : 'false',
+          'aria-label': label,
+          title: label + (badge ? ' · ' + badge : ''),
+          onClick: () => setOpen(!open),
+          onKeyDown: event => { if (event.key === 'Escape') { setOpen(false); setPicker(undefined); } },
         },
-          h(AntShape, { size: 14 }),
-          pending.length ? h('span', { className: 'ant-badge', 'aria-hidden': 'true' }, String(pending.length))
-            : unread ? h('span', { className: 'ant-badge', 'data-kind': 'mail', 'aria-hidden': 'true' }, String(unread)) : null),
-        open ? h('div', { className: 'ant-pop', role: 'dialog', 'aria-label': t.t('panel') },
-          h('div', { className: 'ant-pop-top' }, h('strong', null, view.goal ?? t.t('panel')), h('span', null, pending.length + ' ' + t.t('pendingBadge'))),
-          h('ul', { className: 'ant-roster' }, members.length ? members.map(member => h('li', { key: member.memberId },
-            h(AntShape, { size: 11, className: 'ant-ant', 'data-state': member.status === 'active' ? 'active' : '' }),
-            h('span', null, member.name ?? shortId(member.memberId)),
-            h('em', null, member.model ?? member.provider ?? '—'))) : [h('li', { key: 'none' }, t.t('empty'))]),
+          h(AntShape, { size: 13 }),
+          h('span', { className: 'ant-seat-name' }, label),
+          h('span', { className: 'ant-seat-life' }, view.lifecycle ?? '—'),
+          badge ? h('span', { className: 'ant-badge', 'aria-hidden': 'true' }, String(badge)) : null),
+        open ? h('div', { className: 'ant-pop ant-pop-up', role: 'dialog', 'aria-label': label },
+          h('div', { className: 'ant-pop-top' },
+            h('strong', null, view.goal ?? label),
+            h('span', null, [view.lifecycle ?? '—', pending.length ? pending.length + ' ' + t.t('pendingBadge') : null].filter(Boolean).join(' · '))),
+          h('ul', { className: 'ant-roster' }, members.length ? members.map(row) : h('li', { key: 'none' }, t.t('empty'))),
           h('div', { className: 'ant-pop-bot' },
             h('button', {
-              type: 'button', className: 'ant-button', disabled: Boolean(state.request) || !pending.length,
-              onClick: () => model.dispatch('batch.release', { batchId: 'batch-' + ((view.cursor ?? 0) + 1), taskIds: pending.map(task => task.taskId) }),
+              type: 'button', className: 'ant-button',
+              disabled: Boolean(state.request) || !pending.length,
+              onClick: release,
             }, t.t('releaseNow') + ' ' + pending.length),
-            h('button', { type: 'button', className: 'ant-button', onClick: () => openNest(layout) }, t.t('openNest')),
+            h('button', { type: 'button', className: 'ant-link', onClick: () => { setOpen(false); openNest(layout); } }, t.t('openNest') + ' ›'),
             h('span', null, members.length + ' ' + t.t('members')))) : null);
     }
 
-    function ComposerStrip({ model, locale }) {
-      const state = useModel(model);
-      const t = useLocale(locale);
-      React.useEffect(() => { model.ensureLoaded(); }, [model]);
-      const view = state.view ?? {};
-      const pending = pendingReleaseTasks(view);
-      if (!state.selectedTeamId) return null;
-      return h('div', { className: 'ant-strip' },
-        h(AntShape, { size: 12, className: 'ant-ant', 'data-state': 'active' }),
-        h('span', { className: 'ant-strip-name' }, view.goal ?? shortId(state.selectedTeamId)),
-        pending.slice(0, 3).map(task => h('span', { key: task.taskId, className: 'ant-strip-chip' }, task.title ?? task.taskId)),
-        pending.length > 3 ? h('span', { className: 'ant-note' }, '+' + (pending.length - 3)) : null,
-        h('button', {
-          type: 'button', className: 'ant-button', disabled: Boolean(state.request) || !pending.length,
-          onClick: () => model.dispatch('batch.release', { batchId: 'batch-' + ((view.cursor ?? 0) + 1), taskIds: pending.map(task => task.taskId) }),
-        }, t.t('releaseNow') + ' ' + pending.length));
+    function StyleSheet() { return h('style', { 'data-ant': 'styles' }, CSS); }
+
+    /** Resolve the Host model catalogue for this Session without hard-depending on it. */
+    function directoryOf(ctx, sessionId) {
+      try {
+        const directories = typeof ctx.get === 'function' ? ctx.get('modelDirectories') : undefined;
+        if (!directories || sessionId === undefined) return undefined;
+        return directories.directoryFor(sessionId);
+      } catch (error) { trace('catalog-failed', error); return undefined; }
     }
 
-    /** The layout service is optional: without it the card still shows facts. */
     function openNest(layout) {
       if (typeof layout?.selectPanel !== 'function') return false;
-      try { layout.selectPanel(PANEL_ID); return true; } catch (error) { return false; }
-    }
-    function layoutOf(context) {
-      try { return typeof context?.get === 'function' ? context.get('layout') : context?.layout; } catch (error) { return undefined; }
-    }
-
-    /** Layer two: the team card the conversation keeps after the team was created. */
-    function AntTeamCard({ node, locale, remote, model, layout }) {
-      const t = useLocale(locale);
-      const teamId = node?.data?.teamId;
-      const [snapshot, setSnapshot] = React.useState({ status: 'loading' });
-      React.useEffect(() => {
-        if (!teamId) { setSnapshot({ status: 'lost' }); return undefined; }
-        const controller = new AbortController();
-        let live = true;
-        (async () => {
-          try {
-            const view = unwrapRemoteResult(await remote.get({ teamId }, controller.signal));
-            if (live) setSnapshot({ status: 'ready', view });
-          } catch (error) { if (live) setSnapshot({ status: 'lost' }); }
-        })();
-        return () => { live = false; controller.abort(); };
-      }, [remote, teamId]);
-      const view = snapshot.view ?? {};
-      const members = (view.members ?? []).filter(member => member.status !== 'removed').length;
-      const running = (view.attempts ?? []).filter(item => ACTIVE_ATTEMPT.includes(item.state)).length;
-      const pending = pendingReleaseTasks(view).length;
-      const facts = snapshot.status === 'ready'
-        ? members + ' ' + t.t('members') + ' · ' + running + ' ' + t.t('streamRunning') + ' · ' + pending + ' ' + t.t('pendingBadge')
-        : snapshot.status === 'loading' ? t.t('loading') : t.t('unavailable');
-      return h('div', { className: 'ant-card', 'data-team': teamId ?? '' },
-        h('div', { className: 'ant-card-top' },
-          h(AntShape, { size: 13, className: 'ant-card-mark' }),
-          h('strong', { className: 'ant-card-goal' }, view.goal ?? node?.data?.goal ?? shortId(teamId)),
-          h('span', { className: 'ant-card-life' }, view.lifecycle ?? node?.data?.mode ?? ''),
-          unreadMail(view) ? h('span', { className: 'ant-card-unread' }, unreadMail(view) + ' ' + t.t('unread')) : null),
-        h('p', { className: 'ant-card-facts' }, facts),
-        h('div', { className: 'ant-card-bot' },
-          h('button', {
-            type: 'button', className: 'ant-button',
-            onClick: () => { if (teamId) model.selectTeam(teamId); openNest(layout); },
-          }, t.t('openNest'))));
+      try {
+        layout.selectPanel(PANEL_ID);
+        return true;
+      } catch {
+        return false;
+      }
     }
 
-    /** Layer zero: the sidebar entry that selects the colony main panel. */
-    const LAUNCHER_SVG = '<svg viewBox="-14 -9 28 18" width="22" height="14" aria-hidden="true" focusable="false"><g fill="currentColor"><ellipse cx="9.9" cy="-1.1" rx="3.2" ry="2.9"/><ellipse cx="4.1" cy="0.2" rx="3.5" ry="2.5"/><ellipse cx="-0.5" cy="0.5" rx="1.15" ry="1.05"/><ellipse cx="-7.2" cy="1.3" rx="6" ry="4.2"/></g><g fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M10.9 -3.4 L12.2 -6.6 L15.6 -6.2"/><path d="M6.2 0.6 L10.4 -3.6 L13.6 2.6"/><path d="M3.8 0.8 L4.6 -3.8 L3.2 5.6"/><path d="M1 1 L-2.4 -2.8 L-6.6 2.8"/></g></svg>';
-
-    function mountLauncher(layout) {
-      if (typeof document === 'undefined' || !document.body) return () => {};
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'ant-launcher';
-      button.title = DICT.zh.panel;
-      button.setAttribute('aria-label', DICT.zh.panel);
-      button.setAttribute('data-ant-launcher', '');
-      button.innerHTML = LAUNCHER_SVG;
-      button.addEventListener('click', () => {
-        try {
-          if (layout && typeof layout.selectPanel === 'function') layout.selectPanel(PANEL_ID);
-        } catch (error) { trace('launcher-failed', error); }
-      });
-      document.body.appendChild(button);
-      trace('launcher-mounted');
-      return () => { try { button.remove(); } catch (error) { /* already gone */ } };
+    function layoutOf(ctx) {
+      try {
+        return typeof ctx?.get === 'function' ? ctx.get('layout') : ctx?.layout;
+      } catch {
+        return undefined;
+      }
     }
-
-    function SidebarGlyph({ size, active }) {
-      return h(AntShape, { size: size ?? 15, className: 'ant-side', 'data-state': active ? 'active' : '' });
-    }
-    function StyleSheet() { return h('style', { 'data-ant': 'styles' }, CSS); }
 
     function registerSurfaces(ctx, model, locale) {
       const disposers = [];
@@ -957,19 +847,10 @@ const CSS = `
         }
       };
       bind('main', { key: PANEL_ID }, MainPanel);
-      bind('sidebar.panellist', { id: PANEL_ID, order: 60, label: () => locale.t('panel') }, SidebarGlyph);
-      bind('conversation.session.header.actions', { id: PANEL_ID, order: 40, inject: () => ({ model, locale, layout: layoutOf(ctx) }) }, HeaderAction);
-      bind('conversation.input.dock', { id: PANEL_ID, order: 40 }, ComposerStrip);
-      bind('settings.section', { id: PANEL_ID, order: 70, inject: () => ({ locale, remote: ctx.remote.team, model }) }, SettingsSection);
-      const team = ctx.remote.team;
-      const cardScope = ctx.inject(['uiConversation', 'layout'], conversationCtx => {
-        conversationCtx.effect(() => conversationCtx.uiConversation.events.register(ANT_CARD), 'ant: card definition');
-        conversationCtx.slots.inject('conversation.chat.node', () => conversationCtx.slots.register({
-          name: 'conversation.chat.node', key: CARD_KIND, locale: LOCALE_NS,
-          inject: () => ({ locale, model, remote: team, layout: conversationCtx.layout }),
-        }, AntTeamCard));
-      });
-      ctx.effect(() => cardScope.dispose, 'ant: card scope');
+      bind('conversation.input.left', {
+        id: PANEL_ID, order: 10,
+        inject: sessionId => ({ model, locale, layout: layoutOf(ctx), catalog: () => directoryOf(ctx, sessionId) }),
+      }, ColonySeat);
       return disposers;
     }
 
@@ -1000,17 +881,12 @@ const CSS = `
             remoteCtx.effect(() => model.dispose, 'ant: model');
             for (const dispose of registerSurfaces(remoteCtx, model, locale)) remoteCtx.effect(() => dispose, 'ant: surface');
             trace('surfaces-registered');
-            remoteCtx.effect(() => mountLauncher(layoutOf(remoteCtx)), 'ant: launcher');
             if (DEBUG) setTimeout(() => {
               try {
                 const count = selector => document.querySelectorAll(selector).length;
                 trace('dom-probe', JSON.stringify({
                   shell: count('.ant-shell'),
-                  anchor: count('.ant-anchor'),
-                  strip: count('.ant-strip'),
-                  side: count('.ant-side'),
-                  card: count('.ant-card'),
-                  launcher: count('.ant-launcher'),
+                  seat: count('[data-ant-seat]'),
                 }));
               } catch (error) { trace('dom-probe-failed', error); }
             }, 2500);

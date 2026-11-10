@@ -78,7 +78,21 @@ async function dispatchThroughService(receiver, input, context, signal) {
     const delivery = stateOf(receiver).mailDelivery;
     if (mail?.state === 'queued' && delivery) void delivery.schedule(receipt.teamId, mail);
   }
+  if (input?.action === 'member.changeModel') await applyMemberModel(receiver, receipt, input);
   return receipt;
+}
+
+/** A committed model change also switches the member Session; the record stands if the switch fails. */
+async function applyMemberModel(receiver, receipt, input) {
+  const state = stateOf(receiver);
+  const adapter = state.sessionAdapter;
+  if (!adapter) return;
+  const view = await (await receiver.ready()).get({ teamId: receipt.teamId });
+  const member = view.members.find(item => item.memberId === input.payload?.memberId);
+  if (member?.sessionId === undefined) return;
+  const selection = { sessionId: member.sessionId, provider: member.provider, model: member.model };
+  if (member.reasoningEffort !== undefined) selection.reasoningEffort = member.reasoningEffort;
+  try { await adapter.selectModel(selection); } catch { /* the record stands; the next hatch or delivery applies it */ }
 }
 
 function normalizeConfig(config = {}) {
