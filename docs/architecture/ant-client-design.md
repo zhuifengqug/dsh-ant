@@ -1,5 +1,10 @@
 # 虫珀·玄驹 Client 轨道罗盘页面设计
 
+> 2026-11-10 现状：本文描述的轨道罗盘页面未实现，也不再是目标形态。
+> 客户端现在只有一张卡：会话输入区「完全权限」左侧的 `chatEntry` 按钮，展开 `shell.overlay` 里的活动面板。
+> 面板结构照上游 `@nanmicoder/dsh-agent-teams` v0.1.25 复刻——一列多队（归档另列）、进度条、成员树、依赖 DAG、行内任务详情、计划编辑。
+> 代码在 `client.js` 的 `ColonySeat` / `ColonyPanel` / `TeamSection` / `MemberTree` / `DependencyMap` / `PlanSection`；样式是上游三张表加 `[data-ant-ui]` 作用域后的整体搬入。
+
 状态：设计稿，已获用户批准写入；未实现、未安装、未作为运行时证明。
 
 本稿把已提交的 [轨道罗盘 HTML 视觉基线](../design/panel-preview.html) 映射到真实 DSH Client 页面。它遵守已复审的 [Host 状态层与类型化动作契约](ant-host-contract.md)、[T1 架构基线](ant-baseline.md)、[GLOSSARY](../../GLOSSARY.md) 与 [Team WAL ADR](../adr/0001-team-wal-as-canonical-owner.md)。独立 HTML 只提供视觉和交互参考，不构成插件完成证据。
