@@ -396,6 +396,13 @@ const CSS = `
       // The overlay slot has no session of its own; the seat hands it the catalogue.
       ui.setCatalog(catalog);
       React.useEffect(() => { model.ensureLoaded(); }, [model]);
+      // A team created in the conversation only shows up once the facts are re-read.
+      React.useEffect(() => {
+        if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return undefined;
+        const refresh = () => model.loadList();
+        window.addEventListener('focus', refresh);
+        return () => window.removeEventListener('focus', refresh);
+      }, [model]);
       const view = state.view ?? {};
       // The colony only speaks to its own conversations: another team's session gets no seat.
       const belongs = sessionId === undefined || (view.members ?? []).some(member => member.sessionId === sessionId);
@@ -428,7 +435,7 @@ const CSS = `
       const [picker, setPicker] = React.useState(undefined);
       const [groups, setGroups] = React.useState(undefined);
       const [catalogFailed, setCatalogFailed] = React.useState(false);
-      React.useEffect(() => { if (open) model.ensureLoaded(); }, [open, model]);
+      React.useEffect(() => { if (open) model.loadList(); }, [open, model]);
       React.useEffect(() => {
         if (open || picker === undefined) return undefined;
         setPicker(undefined);
