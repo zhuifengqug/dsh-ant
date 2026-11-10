@@ -228,76 +228,2005 @@ window.__ModuleLoader__.load({
       stateFailed: '失败', stateAnomalous: '异常', stateTerminated: '已终止',
     });
 
-const CSS = `
-      .ant-seat{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 9px;box-sizing:border-box;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;line-height:1;white-space:nowrap;cursor:pointer;transition:border-color .12s ease,background-color .12s ease,color .12s ease}
-      .ant-seat:hover{background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-primary)}
-      .ant-seat[aria-expanded=true]{border-color:var(--dsw-alias-border-l3);background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-primary)}
-      .ant-seat:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:1px}
-      .ant-ant{flex:none;color:currentColor;opacity:.86}
-      .ant-seat[data-busy=true] .ant-ant{color:var(--dsw-alias-state-business-primary);opacity:1}
-      .ant-seat-count{flex:none;min-width:15px;height:15px;padding:0 4px;box-sizing:border-box;border-radius:8px;background:var(--dsw-alias-state-business-primary);color:var(--dsw-alias-label-primary-inverted);font-size:9.5px;font-weight:600;line-height:15px;text-align:center;font-variant-numeric:tabular-nums}
-      .ant-panel{position:absolute;top:var(--dsh-frame-overlay-top,74px);right:16px;display:flex;flex-direction:column;width:440px;min-height:320px;max-height:calc(100% - var(--dsh-frame-overlay-top,74px) - 132px);max-width:calc(100% - 32px);box-sizing:border-box;overflow:hidden;border:1px solid var(--dsw-alias-border-l2);border-radius:14px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px;box-shadow:0 18px 44px color-mix(in srgb,var(--dsw-alias-bg-mask-3) 24%,transparent),0 2px 8px color-mix(in srgb,var(--dsw-alias-bg-mask-3) 12%,transparent);animation:ant-panel-in .14s ease-out}
-      .ant-panel *{box-sizing:border-box}
-      @keyframes ant-panel-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
-      .ant-panel-head{display:flex;flex:none;align-items:center;gap:8px;padding:9px 8px 9px 13px;border-bottom:1px solid var(--dsw-alias-border-l2);cursor:grab;user-select:none;touch-action:none}
-      .ant-panel-head:active{cursor:grabbing}
-      .ant-panel-head .ant-ant{color:var(--dsw-alias-label-primary)}
-      .ant-panel-name{flex:none;font-size:13px;font-weight:600;line-height:18px}
-      .ant-panel-goal{flex:1;min-width:0;overflow:hidden;color:var(--dsw-alias-label-tertiary);font-size:11.5px;line-height:16px;text-overflow:ellipsis;white-space:nowrap}
-      .ant-icon{display:grid;flex:none;width:24px;height:24px;place-items:center;padding:0;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-tertiary);font:inherit;font-size:15px;line-height:1;cursor:pointer;transition:background-color .12s ease,color .12s ease}
-      .ant-icon:hover{background:var(--dsw-alias-button-ghost-active-fill);color:var(--dsw-alias-label-primary)}
-      .ant-icon:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:1px}
-      .ant-panel-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:6px 0 8px;scrollbar-width:thin}
-      .ant-panel-section{display:flex;align-items:center;gap:6px;padding:7px 13px 3px;color:var(--dsw-alias-label-tertiary);font-size:10.5px;font-weight:600;letter-spacing:.04em}
-      .ant-panel-section span{margin-left:auto;font-weight:400;font-variant-numeric:tabular-nums}
-      .ant-row{display:flex;align-items:center;gap:8px;min-height:30px;padding:4px 13px;color:inherit;font:inherit}
-      .ant-row[data-state=running] .ant-ant{color:var(--dsw-alias-state-business-primary);opacity:1}
-      .ant-row-name{flex:1;min-width:0;overflow:hidden;font-size:12px;line-height:16px;text-overflow:ellipsis;white-space:nowrap}
-      .ant-row-note{flex:none;max-width:126px;overflow:hidden;color:var(--dsw-alias-label-tertiary);font-size:11px;line-height:16px;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums}
-      .ant-chip{flex:none;max-width:120px;overflow:hidden;padding:2px 7px;border:1px solid var(--dsw-alias-border-l2);border-radius:999px;background:transparent;color:var(--dsw-alias-label-tertiary);font:inherit;font-size:10.5px;line-height:14px;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;transition:border-color .12s ease,color .12s ease}
-      .ant-chip:hover,.ant-chip[aria-expanded=true]{border-color:var(--dsw-alias-state-business-primary);color:var(--dsw-alias-state-business-primary)}
-      .ant-chip:focus-visible,.ant-primary:focus-visible,.ant-model-pick:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:1px}
-      .ant-models{margin:2px 13px 8px;padding:4px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-layer-2);box-shadow:0 10px 24px color-mix(in srgb,var(--dsw-alias-bg-mask-3) 18%,transparent);max-height:196px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
-      .ant-models p{margin:2px 6px;color:var(--dsw-alias-label-tertiary);font-size:11px}
-      .ant-model-pick{display:flex;width:100%;align-items:center;gap:8px;height:28px;padding:0 8px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;line-height:1;text-align:left;cursor:pointer}
-      .ant-model-pick:hover{background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-primary)}
-      .ant-model-pick[aria-pressed=true]{color:var(--dsw-alias-label-primary)}
-      .ant-model-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-      .ant-model-provider{flex:none;color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,Consolas,monospace;font-size:10px}
-      .ant-model-check{flex:none;width:12px;color:var(--dsw-alias-state-business-primary);font-size:11px}
-      .ant-grip{position:absolute;right:0;bottom:0;width:16px;height:16px;cursor:nwse-resize;touch-action:none}
-      .ant-grip::before,.ant-grip::after{content:'';position:absolute;right:3px;bottom:3px;width:7px;height:1px;background:var(--dsw-alias-border-l3);transform:rotate(-45deg)}
-      .ant-grip::after{right:6px;bottom:6px;width:4px}
-      .ant-search{width:100%;height:28px;margin:0 0 4px;padding:0 8px;box-sizing:border-box;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px}
-      .ant-search::placeholder{color:var(--dsw-alias-label-tertiary)}
-      .ant-search:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:1px}
-      .ant-model-scroll{max-height:260px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
-      .ant-model-group{padding:2px 0 4px}
-      .ant-model-group-name{display:flex;align-items:center;gap:8px;padding:4px 4px 3px;color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,Consolas,monospace;font-size:10px}
-      .ant-model-group-name::after{content:'';flex:1;height:1px;background:var(--dsw-alias-border-l2)}
-      .ant-task{display:flex;width:100%;align-items:center;gap:8px;padding:5px 13px;border:0;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:12px;line-height:16px;text-align:left;cursor:pointer}
-      .ant-task:hover{background:var(--dsw-alias-bg-module-platform)}
-      .ant-task[data-state=running] .ant-row-name,.ant-task[data-state=reviewed] .ant-row-name{color:var(--dsw-alias-state-business-primary)}
-      .ant-task:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:-2px}
-      .ant-add{display:grid;width:20px;height:20px;margin-left:auto;place-items:center;padding:0;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;background:transparent;color:var(--dsw-alias-label-tertiary);font:inherit;font-size:13px;line-height:1;cursor:pointer}
-      .ant-add:hover:not([disabled]){border-color:var(--dsw-alias-state-business-primary);color:var(--dsw-alias-state-business-primary)}
-      .ant-add[disabled]{cursor:default;opacity:.4}
-      .ant-editor{display:flex;flex-direction:column;gap:6px;margin:4px 13px 8px;padding:8px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-layer-2)}
-      .ant-field{width:100%;height:28px;padding:0 8px;box-sizing:border-box;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px}
-      .ant-field::placeholder{color:var(--dsw-alias-label-tertiary)}
-      .ant-field:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:1px}
-      .ant-editor-actions{display:flex;align-items:center;gap:8px}
-      .ant-link{border:0;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:11.5px;cursor:pointer;padding:4px 6px;border-radius:6px}
-      .ant-link:hover{background:var(--dsw-alias-button-ghost-active-fill);color:var(--dsw-alias-label-primary)}
-      .ant-panel-foot{display:flex;flex:none;align-items:center;gap:8px;padding:8px 13px;border-top:1px solid var(--dsw-alias-border-l2)}
-      .ant-primary{flex:1;min-height:30px;padding:0 12px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:12px;cursor:pointer;transition:border-color .12s ease,color .12s ease}
-      .ant-primary:hover:not([disabled]){border-color:var(--dsw-alias-state-business-primary);color:var(--dsw-alias-state-business-primary)}
-      .ant-primary[disabled]{cursor:default;opacity:.45}
-      .ant-panel-status{padding:8px 13px;color:var(--dsw-alias-label-tertiary);font-size:11px;line-height:16px}
-      .ant-panel-empty{display:flex;flex-direction:column;gap:4px;padding:18px 13px;color:var(--dsw-alias-label-secondary);font-size:11.5px;line-height:17px}
-      .ant-panel-empty strong{color:var(--dsw-alias-label-primary);font-size:12.5px}
-      @media (prefers-reduced-motion: reduce){.ant-panel{animation:none}}
-    `;
+const STYLES = `[data-ant-ui] .badge{
+  position: absolute;
+  top: 64px;
+  right: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 92%, transparent);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 8px 28px color-mix(in srgb, var(--dsw-alias-bg-mask-3) 29%, transparent);
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+  cursor: pointer;
+  transition: border-color 150ms ease, transform 120ms ease;
+}
+[data-ant-ui] .badge:hover{
+  border-color: var(--dsw-alias-border-l3);
+  transform: translateY(-1px);
+}
+[data-ant-ui] .badge:active{
+  transform: translateY(0) scale(0.98);
+}
+[data-ant-ui] .badge:focus-visible,[data-ant-ui] .iconButton:focus-visible,[data-ant-ui] .memberRow:focus-visible,[data-ant-ui] .membersToggle:focus-visible,[data-ant-ui] .sectionToggleTitle:focus-visible,[data-ant-ui] .dagNode:focus-visible{
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 2px;
+}
+[data-ant-ui] .badgeDot,[data-ant-ui] .panelDot{
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dsw-alias-label-tertiary);
+}
+[data-ant-ui] .badgeDot[data-busy='true'],[data-ant-ui] .panelDot[data-busy='true']{
+  background: var(--dsw-alias-state-business-primary);
+  animation: agentTeamsPulse 1.25s ease-in-out infinite;
+}
+[data-ant-ui] .badgeCount,[data-ant-ui] .memberCount,[data-ant-ui] .teamStats,[data-ant-ui] .stageLabel,[data-ant-ui] .taskId{
+  font-variant-numeric: tabular-nums;
+}
+[data-ant-ui] .panel{
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-border-l3) 58%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-1) 95%, transparent);
+  backdrop-filter: blur(20px) saturate(1.08);
+  box-shadow:
+    0 12px 32px color-mix(in srgb, var(--dsw-alias-bg-mask-3) 25%, transparent),
+    0 32px 72px color-mix(in srgb, var(--dsw-alias-bg-mask-3) 33%, transparent);
+  animation: agentTeamsPanelIn 160ms ease-out;
+  will-change: transform;
+}
+[data-ant-ui] .panel[data-dragging],[data-ant-ui] .panel[data-resizing]{
+  user-select: none;
+  box-shadow:
+    0 16px 38px color-mix(in srgb, var(--dsw-alias-bg-mask-3) 29%, transparent),
+    0 36px 78px color-mix(in srgb, var(--dsw-alias-bg-mask-3) 38%, transparent);
+}
+@keyframes agentTeamsPanelIn {
+  from { opacity: 0; }
+[data-ant-ui] to{ opacity: 1; }
+@keyframes agentTeamsPulse {
+  0%, 100% { opacity: 0.42; }
+[data-ant-ui] 50%{ opacity: 1; }
+[data-ant-ui] .panelHead{
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 0 14px 0 16px;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+  cursor: grab;
+  touch-action: none;
+}
+[data-ant-ui] .panelHead:active,[data-ant-ui] .panel[data-dragging] .panelHead{
+  cursor: grabbing;
+}
+[data-ant-ui] .panel[data-compact] .panelHead{
+  cursor: default;
+  touch-action: auto;
+}
+[data-ant-ui] .panelTitle{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--dsw-alias-label-primary);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+}
+[data-ant-ui] .panelControls{
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+}
+[data-ant-ui] .iconButton{
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease, transform 120ms ease;
+}
+[data-ant-ui] .iconButton:hover{
+  background: var(--dsw-alias-button-ghost-active-fill);
+  color: var(--dsw-alias-label-primary);
+}
+[data-ant-ui] .iconButton:active{
+  transform: scale(0.94);
+}
+[data-ant-ui] .iconButton[data-control='dock'][data-mode='docked'] svg{
+  transform: scaleX(-1);
+}
+[data-ant-ui] .resizeHandle{
+  position: absolute;
+  z-index: 5;
+  touch-action: none;
+  pointer-events: auto;
+}
+[data-ant-ui] .resizeHandle[data-resize-edge='left']{
+  top: 44px;
+  bottom: 14px;
+  left: 0;
+  width: 14px;
+  cursor: ew-resize;
+}
+[data-ant-ui] .resizeHandle[data-resize-edge='left']::after{
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  width: 3px;
+  height: 48px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--dsw-alias-label-tertiary) 42%, transparent);
+  content: '';
+  opacity: 0.45;
+  transform: translateY(-50%);
+  transition: background-color 120ms ease, opacity 120ms ease;
+}
+[data-ant-ui] .resizeHandle[data-resize-edge='bottom']{
+  right: 20px;
+  bottom: 0;
+  left: 20px;
+  height: 14px;
+  cursor: ns-resize;
+}
+[data-ant-ui] .resizeHandle[data-resize-edge='bottom']::after{
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  width: 48px;
+  height: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--dsw-alias-label-tertiary) 42%, transparent);
+  content: '';
+  opacity: 0.45;
+  transform: translateX(-50%);
+  transition: background-color 120ms ease, opacity 120ms ease;
+}
+[data-ant-ui] .resizeHandle[data-resize-edge='corner']{
+  right: 0;
+  bottom: 0;
+  width: 28px;
+  height: 28px;
+  cursor: nwse-resize;
+}
+[data-ant-ui] .resizeHandle[data-resize-edge='corner']::after{
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid var(--dsw-alias-label-tertiary);
+  border-bottom: 2px solid var(--dsw-alias-label-tertiary);
+  content: '';
+  opacity: 0.58;
+  transition: border-color 120ms ease, opacity 120ms ease;
+}
+[data-ant-ui] .resizeHandle:hover::after,[data-ant-ui] .panel[data-resizing] .resizeHandle::after{
+  background-color: var(--dsw-alias-state-business-primary);
+  border-color: var(--dsw-alias-state-business-primary);
+  opacity: 0.95;
+}
+[data-ant-ui] .teams{
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: color-mix(in srgb, var(--dsw-alias-label-tertiary) 28%, transparent) transparent;
+  scrollbar-width: thin;
+}
+[data-ant-ui] .teams::-webkit-scrollbar{
+  width: 6px;
+}
+[data-ant-ui] .teams::-webkit-scrollbar-track{
+  background: transparent;
+}
+[data-ant-ui] .teams::-webkit-scrollbar-thumb{
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--dsw-alias-label-tertiary) 28%, transparent);
+  background-clip: padding-box;
+}
+[data-ant-ui] .teams:hover::-webkit-scrollbar-thumb{
+  background: color-mix(in srgb, var(--dsw-alias-label-tertiary) 44%, transparent);
+  background-clip: padding-box;
+}
+[data-ant-ui] .team{
+  container-name: agent-team;
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 14px 16px;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+}
+[data-ant-ui] .team:last-child{
+  border-bottom: 0;
+}
+[data-ant-ui] .teamHead{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+[data-ant-ui] .teamName{
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-ant-ui] .teamStats{
+  display: inline-flex;
+  flex: none;
+  gap: 8px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 10.5px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+[data-ant-ui] .teamStopButton{
+  display: grid;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease, color 150ms ease;
+}
+[data-ant-ui] .teamStopButton:hover{
+  border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 42%, var(--dsw-alias-border-l2));
+  background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 7%, transparent);
+  color: var(--dsw-alias-state-error-primary);
+}
+[data-ant-ui] .teamStopButton:focus-visible{
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 2px;
+}
+[data-ant-ui] .stopModalActions{
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+[data-ant-ui] .stopModalActions button{
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 13px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  background: var(--dsw-alias-button-ghost-active-fill);
+  color: var(--dsw-alias-label-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+}
+[data-ant-ui] .stopModalActions button[data-danger]{
+  border-color: var(--dsw-alias-state-error-primary);
+  background: var(--dsw-alias-state-error-primary);
+  color: var(--dsw-alias-label-primary-inverted);
+}
+[data-ant-ui] .stopModalActions button:disabled{
+  cursor: wait;
+  opacity: 0.58;
+}
+[data-ant-ui] .stopModalError{
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 0;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 8%, transparent);
+  color: var(--dsw-alias-state-error-primary);
+  font-size: 12px;
+  line-height: 18px;
+}
+[data-ant-ui] .stopModalError svg{
+  flex: none;
+  margin-top: 1px;
+}
+[data-ant-ui] .sectionHead{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+[data-ant-ui] .sectionTitle{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+}
+[data-ant-ui] .sectionHint{
+  overflow: hidden;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 10px;
+  line-height: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-ant-ui] .delegationSection{
+  min-width: 0;
+}
+[data-ant-ui] .captainNode{
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: center;
+  min-height: 56px;
+  padding: 6px 10px;
+  box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 32%, var(--dsw-alias-border-l2));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 7%, var(--dsw-alias-bg-layer-1));
+}
+[data-ant-ui] .captainAvatar,[data-ant-ui] .memberAvatar{
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+}
+[data-ant-ui] .captainAvatar{
+  width: 46px;
+  height: 46px;
+}
+[data-ant-ui] .leadAvatar,[data-ant-ui] .memberArt{
+  border: 0;
+  border-radius: 0;
+  object-fit: contain;
+  background: transparent;
+  filter: drop-shadow(0 1px 1px rgb(18 45 72 / 20%));
+}
+[data-ant-ui] .leadAvatar{
+  width: 44px;
+  height: 44px;
+}
+[data-ant-ui] .memberArt{
+  width: 40px;
+  height: 40px;
+}
+[data-ant-ui] .captainInfo,[data-ant-ui] .memberInfo{
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+[data-ant-ui] .captainInfo{
+  gap: 2px;
+}
+[data-ant-ui] .captainLine,[data-ant-ui] .memberLine{
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+[data-ant-ui] .captainName,[data-ant-ui] .memberName{
+  overflow: hidden;
+  color: var(--dsw-alias-label-primary);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-ant-ui] .captainRole,[data-ant-ui] .memberRole{
+  overflow: hidden;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 10px;
+  line-height: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-ant-ui] .captainSummary,[data-ant-ui] .memberStatusLine{
+  overflow: hidden;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 10.5px;
+  line-height: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-ant-ui] .taskDetailModel{
+  overflow: hidden;
+  color: var(--dsw-alias-label-tertiary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9.5px;
+  line-height: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-ant-ui] .memberModel{
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  min-width: 0;
+  max-width: 132px;
+  padding: 0 6px;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 999px;
+  background: var(--dsw-alias-button-ghost-active-fill);
+  color: var(--dsw-alias-label-tertiary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-ant-ui] .captainState,[data-ant-ui] .memberState{
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 15px;
+  white-space: nowrap;
+}
+[data-ant-ui] .captainState[data-busy='true'],[data-ant-ui] .memberState[data-activity='working']{
+  color: var(--dsw-alias-state-business-primary);
+}
+[data-ant-ui] .workGlyph rect{
+  opacity: 0.5;
+}
+[data-ant-ui] .workGlyph[data-active='true'] rect{
+  animation: agentTeamsDot 1.1s ease-in-out infinite;
+}
+@keyframes agentTeamsDot {
+  0%, 100% { opacity: 0.25; }
+[data-ant-ui] 50%{ opacity: 1; }
+[data-ant-ui] .progressOverview{
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+[data-ant-ui] .progressTitle{
+  color: var(--dsw-alias-label-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+}
+[data-ant-ui] .progressSegments{
+  display: flex;
+  gap: 3px;
+}
+[data-ant-ui] .progressSegments > span,[data-ant-ui] .progressEmpty{
+  flex: 1;
+  height: 5px;
+  border-radius: 2px;
+  background: var(--dsw-alias-border-l3);
+}
+[data-ant-ui] .progressEmpty{
+  display: block;
+  width: 100%;
+}
+[data-ant-ui] .progressSegments > span[data-state='running']{
+  background: var(--dsw-alias-state-business-primary);
+}
+[data-ant-ui] .progressSegments > span[data-state='blocked']{
+  background: var(--dsw-alias-state-warn-primary);
+}
+[data-ant-ui] .progressSegments > span[data-state='completed']{
+  background: var(--dsw-alias-state-success-primary);
+}
+[data-ant-ui] .progressSegments > span[data-state='failed']{
+  background: var(--dsw-alias-state-error-primary);
+}
+[data-ant-ui] .progressSegments > span[data-state='cancelled']{
+  opacity: 0.55;
+}
+[data-ant-ui] .progressLegend{
+  display: flex;
+  gap: 10px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 9.5px;
+  line-height: 14px;
+}
+[data-ant-ui] .progressLegend > span[data-state='running']{
+  color: var(--dsw-alias-state-business-primary);
+}
+[data-ant-ui] .progressLegend > span[data-state='blocked']{
+  color: var(--dsw-alias-state-warn-primary);
+}
+[data-ant-ui] .progressLegend > span[data-state='completed']{
+  color: var(--dsw-alias-state-success-primary);
+}
+[data-ant-ui] .progressSummary{
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 7%, var(--dsw-alias-bg-layer-1));
+  color: var(--dsw-alias-label-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 15px;
+}
+[data-ant-ui] .progressSummary[data-state='warning']{
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 8%, var(--dsw-alias-bg-layer-1));
+}
+[data-ant-ui] .progressSummary[data-state='completed']{
+  background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 8%, var(--dsw-alias-bg-layer-1));
+}
+[data-ant-ui] .progressSummary[data-state='discarded']{
+  background: var(--dsw-alias-button-ghost-active-fill);
+}
+[data-ant-ui] .progressSummary > span:last-child{
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-ant-ui] .progressSummaryDot{
+  flex: none;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--dsw-alias-state-business-primary);
+}
+[data-ant-ui] .progressSummary[data-state='warning'] .progressSummaryDot{
+  background: var(--dsw-alias-state-warn-primary);
+}
+[data-ant-ui] .progressSummary[data-state='completed'] .progressSummaryDot{
+  background: var(--dsw-alias-state-success-primary);
+}
+[data-ant-ui] .progressSummary[data-state='discarded'] .progressSummaryDot{
+  background: var(--dsw-alias-label-tertiary);
+}
+[data-ant-ui] .membersToggle{
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-module-platform);
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 15px;
+  cursor: pointer;
+}
+[data-ant-ui] .membersToggle:hover{
+  background: var(--dsw-alias-button-ghost-active-fill);
+}
+[data-ant-ui] .membersToggle > span{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+[data-ant-ui] .membersToggle > span:last-child{
+  color: var(--dsw-alias-state-business-primary);
+}
+[data-ant-ui] .chevron{
+  flex: none;
+  transition: transform 140ms ease;
+}
+[data-ant-ui] .chevron[data-open='true']{
+  transform: rotate(90deg);
+}
+[data-ant-ui] .delegationTree{
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-left: 18px;
+  padding: 9px 0 0 20px;
+}
+[data-ant-ui] .delegationTree::before{
+  position: absolute;
+  top: 0;
+  bottom: 22px;
+  left: 0;
+  width: 1px;
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 48%, var(--dsw-alias-border-l2));
+  content: '';
+}
+[data-ant-ui] .memberBlock{
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 3px 0 7px;
+}
+[data-ant-ui] .memberBranch{
+  position: absolute;
+  top: 27px;
+  right: 100%;
+  display: block;
+  width: 20px;
+  height: 1px;
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 48%, var(--dsw-alias-border-l2));
+}
+[data-ant-ui] .memberBranch::before{
+  position: absolute;
+  top: -2px;
+  right: -1px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--dsw-alias-state-business-primary);
+  content: '';
+}
+[data-ant-ui] .memberRow{
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 4px 6px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 120ms ease, transform 120ms ease;
+}
+[data-ant-ui] .memberRow:hover,[data-ant-ui] .memberRow[data-activity='working']{
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 6%, var(--dsw-alias-bg-layer-1));
+}
+[data-ant-ui] .memberRow:active{
+  transform: scale(0.995);
+}
+[data-ant-ui] .memberAvatar{
+  width: 42px;
+  height: 42px;
+}
+[data-ant-ui] .memberAvatar[data-unread='true']::after{
+  position: absolute;
+  top: 0;
+  right: -1px;
+  width: 6px;
+  height: 6px;
+  box-sizing: border-box;
+  border: 1px solid var(--dsw-alias-bg-layer-1);
+  border-radius: 50%;
+  background: var(--dsw-alias-state-business-primary);
+  content: '';
+  animation: agentTeamsUnreadPulse 1.8s ease-in-out infinite;
+}
+@keyframes agentTeamsUnreadPulse {
+  0%, 100% { opacity: 0.78; transform: scale(0.92); }
+[data-ant-ui] 50%{ opacity: 1; transform: scale(1.16); }
+[data-ant-ui] .memberInitial{
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--dsw-alias-state-business-primary);
+  color: var(--dsw-alias-label-primary-inverted);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+}
+[data-ant-ui] .stateArt{
+  position: absolute;
+  right: -5px;
+  bottom: -3px;
+  width: 22px;
+  height: 22px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 0;
+  object-fit: contain;
+  background: transparent;
+  filter:
+    drop-shadow(0 0 1px var(--dsw-alias-bg-layer-1))
+    drop-shadow(0 1px 1px rgb(18 45 72 / 24%));
+}
+[data-ant-ui] .stateArt[data-activity='working']{
+  animation: agentTeamsFloat 2.4s ease-in-out infinite;
+}
+[data-ant-ui] .stateArt[data-activity='idle']{
+  animation: agentTeamsBreathe 4.2s ease-in-out infinite;
+}
+[data-ant-ui] .stateArt[data-activity='unknown']{
+  animation: agentTeamsThink 2.8s ease-in-out infinite;
+}
+@keyframes agentTeamsFloat {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+[data-ant-ui] 50%{ transform: translateY(-2px) rotate(4deg); }
+@keyframes agentTeamsBreathe {
+  0%, 100% { opacity: 0.82; transform: scale(1); }
+[data-ant-ui] 50%{ opacity: 1; transform: scale(1.06); }
+@keyframes agentTeamsThink {
+  0%, 100% { transform: rotate(-7deg); }
+[data-ant-ui] 50%{ transform: rotate(7deg); }
+[data-ant-ui] .memberState{
+  margin-left: auto;
+}
+[data-ant-ui] .memberCount{
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 10.5px;
+  line-height: 16px;
+}
+[data-ant-ui] .assignmentLine{
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 0 6px 0 60px;
+}
+[data-ant-ui] .assignmentLabel{
+  flex: none;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 9.5px;
+  line-height: 14px;
+}
+[data-ant-ui] .assignmentTasks{
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+[data-ant-ui] .assignmentChip{
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: 16px;
+  padding: 0 5px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--dsw-alias-button-ghost-active-fill);
+  color: var(--dsw-alias-label-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-ant-ui] .assignmentChip[data-state='running']{
+  background: var(--dsw-alias-state-business-primary);
+  color: var(--dsw-alias-label-primary-inverted);
+}
+[data-ant-ui] .assignmentChip[data-state='completed']{
+  background: var(--dsw-alias-state-success-primary);
+  color: var(--dsw-alias-label-primary-inverted);
+}
+[data-ant-ui] .assignmentChip[data-state='blocked']{
+  background: var(--dsw-alias-state-warn-primary);
+  color: var(--dsw-alias-label-primary-inverted);
+}
+[data-ant-ui] .assignmentChip[data-state='failed']{
+  background: var(--dsw-alias-state-error-primary);
+  color: var(--dsw-alias-label-primary-inverted);
+}
+[data-ant-ui] .assignmentChip[data-state='cancelled']{
+  color: var(--dsw-alias-label-tertiary);
+  text-decoration: line-through;
+}
+[data-ant-ui] .unreadPill{
+  flex: none;
+  color: var(--dsw-alias-state-business-primary);
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 14px;
+  white-space: nowrap;
+}
+[data-ant-ui] .taskEmpty{
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 9.5px;
+  line-height: 14px;
+}
+[data-ant-ui] .dependencySection{
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--dsw-alias-border-l2);
+}
+[data-ant-ui] .sectionToggleTitle{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  cursor: pointer;
+}
+[data-ant-ui] .dagViewport{
+  min-width: 0;
+  overflow-x: auto;
+  padding: 2px 0 4px;
+  scrollbar-width: thin;
+}
+[data-ant-ui] .dagCanvas{
+  position: relative;
+  min-width: 100%;
+}
+[data-ant-ui] .dagCanvas[data-layout='parallel']{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+[data-ant-ui] .dagCanvas[data-layout='parallel'] .dagNode{
+  position: relative;
+  flex: 1 1 92px;
+  min-width: 92px;
+}
+[data-ant-ui] .dagEdges{
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+[data-ant-ui] .dagEdges path{
+  fill: none;
+  stroke: var(--dsw-alias-border-l3);
+  stroke-width: 1;
+  transition: opacity 140ms ease, stroke 140ms ease, stroke-width 140ms ease;
+}
+[data-ant-ui] .dagEdges path[data-active='true']{
+  stroke: var(--dsw-alias-state-business-primary);
+  stroke-width: 1.6;
+}
+[data-ant-ui] .dagEdges path[data-dimmed='true']{
+  opacity: 0.24;
+}
+[data-ant-ui] .dagNode{
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 140ms ease, background-color 140ms ease, opacity 140ms ease;
+}
+[data-ant-ui] .dagNode:hover,[data-ant-ui] .dagNode[data-focused='true']{
+  border-color: var(--dsw-alias-state-business-primary);
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 6%, var(--dsw-alias-bg-layer-1));
+}
+[data-ant-ui] .dagNode[data-dimmed='true']{
+  opacity: 0.3;
+}
+[data-ant-ui] .dagNode[data-state='running'][data-dimmed='true']{
+  opacity: 0.58;
+}
+[data-ant-ui] .dagNode[data-state='completed']{
+  border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary) 48%, var(--dsw-alias-border-l2));
+}
+[data-ant-ui] .dagNode[data-state='blocked']{
+  border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 52%, var(--dsw-alias-border-l2));
+}
+[data-ant-ui] .dagNode[data-state='failed']{
+  border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 56%, var(--dsw-alias-border-l2));
+}
+[data-ant-ui] .dagNode[data-verdict-stale='true']{
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 62%, var(--dsw-alias-border-l2));
+}
+[data-ant-ui] .dagNode[data-verdict-stale='true'] .dagNodeHead{
+  color: var(--dsw-alias-state-warn-primary);
+}
+[data-ant-ui] .dagNodeHead{
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--dsw-alias-label-primary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+}
+[data-ant-ui] .dagNodeDot{
+  flex: none;
+  width: 5px;
+  height: 5px;
+  border-radius: 1.5px;
+  background: var(--dsw-alias-border-l3);
+}
+[data-ant-ui] .dagNode[data-state='running'] .dagNodeDot{
+  background: var(--dsw-alias-state-business-primary);
+}
+[data-ant-ui] .dagNode[data-state='running'] .dagNodeHead{
+  padding-right: 12px;
+}
+[data-ant-ui] .dagRunningState{
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  display: inline-flex;
+  width: 9px;
+  height: 9px;
+  align-items: center;
+  justify-content: center;
+  color: var(--dsw-alias-state-business-primary);
+  pointer-events: none;
+}
+[data-ant-ui] .dagRunningState .workGlyph{
+  width: 9px;
+  height: 9px;
+}
+[data-ant-ui] .dagNode[data-state='blocked'] .dagNodeDot{
+  background: var(--dsw-alias-state-warn-primary);
+}
+[data-ant-ui] .dagNode[data-state='completed'] .dagNodeDot{
+  background: var(--dsw-alias-state-success-primary);
+}
+[data-ant-ui] .dagNode[data-state='failed'] .dagNodeDot{
+  background: var(--dsw-alias-state-error-primary);
+}
+[data-ant-ui] .dagNodeLabel{
+  overflow: hidden;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 8.5px;
+  line-height: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-ant-ui] .taskDetail{
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 9px;
+  background: var(--dsw-alias-bg-module-platform);
+}
+[data-ant-ui] .taskDetailHead{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+[data-ant-ui] .taskDetailId{
+  flex: none;
+  color: var(--dsw-alias-state-business-primary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  font-weight: 700;
+}
+[data-ant-ui] .taskDetailSubject{
+  overflow: hidden;
+  min-width: 0;
+  color: var(--dsw-alias-label-primary);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-ant-ui] .taskDetailBadge{
+  flex: none;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: var(--dsw-alias-button-ghost-active-fill);
+  color: var(--dsw-alias-label-secondary);
+  font-size: 8.5px;
+  font-weight: 600;
+  line-height: 14px;
+}
+[data-ant-ui] .taskDetailBadge[data-state='running']{
+  background: var(--dsw-alias-state-business-primary);
+  color: var(--dsw-alias-label-primary-inverted);
+}
+[data-ant-ui] .taskDetailBadge[data-state='blocked']{
+  background: var(--dsw-alias-state-warn-primary);
+  color: var(--dsw-alias-label-primary-inverted);
+}
+[data-ant-ui] .taskDetailBadge[data-state='completed']{
+  background: var(--dsw-alias-state-success-primary);
+  color: var(--dsw-alias-label-primary-inverted);
+}
+[data-ant-ui] .taskDetailBadge[data-state='failed']{
+  background: var(--dsw-alias-state-error-primary);
+  color: var(--dsw-alias-label-primary-inverted);
+}
+[data-ant-ui] .taskDetailLine,[data-ant-ui] .taskDetailMeta{
+  color: var(--dsw-alias-label-secondary);
+  font-size: 9.5px;
+  line-height: 14px;
+}
+[data-ant-ui] .taskDetailMeta{
+  color: var(--dsw-alias-label-tertiary);
+}
+[data-ant-ui] .emptyHint{
+  padding: 10px 12px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 11px;
+  line-height: 16px;
+}
+[data-ant-ui] .planEditor{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0 10px 12px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 30%, var(--dsw-alias-border-l2));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 94%, var(--dsw-alias-state-business-primary));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--dsw-alias-label-primary) 5%, transparent);
+}
+[data-ant-ui] .planHeader > span{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+[data-ant-ui] .planHeader > span > span{
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+[data-ant-ui] .planHeader strong{
+  color: var(--dsw-alias-label-primary);
+  font-size: 12px;
+}
+[data-ant-ui] .planHeader small{
+  color: var(--dsw-alias-label-secondary);
+  font-size: 9px;
+  font-weight: 500;
+  line-height: 13px;
+}
+[data-ant-ui] .planHeader em{
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--dsw-alias-state-business-primary);
+  color: var(--dsw-alias-label-primary-inverted);
+  font-size: 9px;
+  font-style: normal;
+  line-height: 16px;
+}
+[data-ant-ui] .planHeader p{
+  margin: 5px 0 0;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 10px;
+  line-height: 15px;
+}
+[data-ant-ui] .planFlow{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+[data-ant-ui] .planFlow li{
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 14px;
+}
+[data-ant-ui] .planFlow li:not(:last-child)::after{
+  height: 1px;
+  min-width: 8px;
+  flex: 1;
+  margin-right: 5px;
+  background: var(--dsw-alias-border-l2);
+  content: '';
+}
+[data-ant-ui] .planFlow li > span{
+  display: grid;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  place-items: center;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 50%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+}
+[data-ant-ui] .planFlow li[data-active]{
+  color: var(--dsw-alias-state-business-primary);
+}
+[data-ant-ui] .planFlow li[data-active] > span{
+  border-color: var(--dsw-alias-state-business-primary);
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);
+}
+[data-ant-ui] .planSection{
+  overflow: hidden;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-module-platform);
+}
+[data-ant-ui] .planSectionToggle,[data-ant-ui] .planCardHeader{
+  box-sizing: border-box;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  cursor: pointer;
+  text-align: left;
+}
+[data-ant-ui] .planSectionToggle{
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 9px;
+}
+[data-ant-ui] .planSectionToggle:hover,[data-ant-ui] .planCardHeader:hover{
+  background: color-mix(in srgb, var(--dsw-alias-button-ghost-active-fill) 46%, transparent);
+}
+[data-ant-ui] .planSectionToggle > span{
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 7px;
+}
+[data-ant-ui] .planSectionToggle strong{
+  font-size: 10.5px;
+}
+[data-ant-ui] .planSectionToggle small{
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 9px;
+}
+[data-ant-ui] .planList{
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-top: 1px solid var(--dsw-alias-border-l2);
+}
+[data-ant-ui] .planEmpty{
+  margin: 0;
+  padding: 12px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 10px;
+  text-align: center;
+}
+[data-ant-ui] .planCard{
+  position: relative;
+  display: block;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+[data-ant-ui] .planCard + .planCard{
+  border-top: 1px solid var(--dsw-alias-border-l2);
+}
+[data-ant-ui] .planCard[data-open='true']{
+  background: color-mix(in srgb, var(--dsw-alias-bg-base) 62%, transparent);
+}
+[data-ant-ui] .planCardHeader{
+  display: grid;
+  min-height: 40px;
+  grid-template-columns: minmax(80px, 0.9fr) minmax(72px, 1.15fr) auto 12px;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 9px;
+}
+[data-ant-ui] .planCardIdentity{
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+[data-ant-ui] .planCardIdentity strong,[data-ant-ui] .planTaskSummary{
+  overflow: hidden;
+  color: var(--dsw-alias-label-primary);
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-ant-ui] .planCardIdentity > span,[data-ant-ui] .planCardMeta{
+  overflow: hidden;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 8.5px;
+  line-height: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-ant-ui] .planTaskId{
+  width: max-content;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--dsw-alias-button-ghost-active-fill);
+  color: var(--dsw-alias-label-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 8.5px;
+  font-weight: 700;
+  line-height: 14px;
+}
+[data-ant-ui] .planDirty{
+  justify-self: end;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 13%, transparent);
+  color: var(--dsw-alias-state-warn-primary);
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 650;
+  line-height: 14px;
+}
+[data-ant-ui] .planChevron{
+  flex: none;
+  color: var(--dsw-alias-label-tertiary);
+  transition: transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+[data-ant-ui] .planChevron[data-open='true']{
+  transform: rotate(90deg);
+}
+[data-ant-ui] .planCardBody{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 9px 9px;
+}
+[data-ant-ui] .planCardBody fieldset{
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+[data-ant-ui] .planCardBody label,[data-ant-ui] .planNewTask label{
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 9px;
+}
+[data-ant-ui] .planCardBody label small{
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 8px;
+  line-height: 11px;
+}
+[data-ant-ui] .planCard input,[data-ant-ui] .planCard textarea,[data-ant-ui] .planCard select,[data-ant-ui] .planNewTask input{
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  outline: none;
+  background: var(--dsw-alias-bg-base);
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 10.5px;
+  line-height: 16px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+[data-ant-ui] .planCard input,[data-ant-ui] .planCard select,[data-ant-ui] .planNewTask input{
+  min-height: 32px;
+  padding: 6px 8px;
+}
+[data-ant-ui] .planCard textarea{
+  min-height: 58px;
+  padding: 7px 8px;
+  resize: vertical;
+}
+[data-ant-ui] .planCard input:focus-visible,[data-ant-ui] .planCard textarea:focus-visible,[data-ant-ui] .planCard select:focus-visible,[data-ant-ui] .planNewTask input:focus-visible{
+  border-color: var(--dsw-alias-state-business-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dsw-alias-state-business-primary) 16%, transparent);
+}
+[data-ant-ui] .planGrid{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 6px;
+}
+[data-ant-ui] .planModelPicker{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 5px;
+}
+[data-ant-ui] .planModelMenu{
+  display: flex;
+  width: 100%;
+}
+[data-ant-ui] .planModelTrigger{
+  display: flex;
+  width: 100%;
+  min-height: 38px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 9px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 7px;
+  background: var(--dsw-alias-bg-base);
+  color: var(--dsw-alias-label-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 160ms ease, background-color 160ms ease, transform 120ms ease;
+}
+[data-ant-ui] .planModelTrigger:hover:not(:disabled){
+  border-color: var(--dsw-alias-border-l3);
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+[data-ant-ui] .planModelTrigger:active:not(:disabled){
+  transform: translateY(1px);
+}
+[data-ant-ui] .planModelTrigger:focus-visible{
+  border-color: var(--dsw-alias-state-business-primary);
+  outline: 2px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 16%, transparent);
+  outline-offset: 1px;
+}
+[data-ant-ui] .planModelTrigger:disabled{
+  cursor: wait;
+  opacity: 0.64;
+}
+[data-ant-ui] .planModelTriggerCopy{
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 6px;
+}
+[data-ant-ui] .planModelTriggerCopy strong,[data-ant-ui] .planModelTriggerCopy span{
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-ant-ui] .planModelTriggerCopy strong{
+  color: var(--dsw-alias-label-primary);
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 15px;
+}
+[data-ant-ui] .planModelTriggerCopy span{
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 9px;
+  line-height: 14px;
+}
+[data-ant-ui] .planModelMenuRow{
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+[data-ant-ui] .planModelMenuRow > span:first-child{
+  color: var(--dsw-alias-label-primary);
+}
+[data-ant-ui] .planModelMenuRow strong{
+  overflow: hidden;
+  color: var(--dsw-alias-label-tertiary);
+  font-weight: 450;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-ant-ui] .planModelMenuBack{
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+[data-ant-ui] .planModelMenuBack svg{
+  transform: rotate(180deg);
+}
+[data-ant-ui] .planModelEffortRow{
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+}
+[data-ant-ui] .planModelEffortRow small{
+  overflow: hidden;
+  width: 100%;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 10px;
+  line-height: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-ant-ui] .planModelHint{
+  overflow: hidden;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 8.5px;
+  line-height: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-ant-ui] .planModelNotice{
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 7px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 9%, transparent);
+  color: var(--dsw-alias-label-secondary);
+  font-size: 8.5px;
+  line-height: 12px;
+}
+[data-ant-ui] .planModelNotice button{
+  flex: none;
+  padding: 2px 6px;
+  border: 0;
+  background: transparent;
+  color: var(--dsw-alias-state-business-primary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+}
+[data-ant-ui] .planActions,[data-ant-ui] .planApproveRow,[data-ant-ui] .planNewTask,[data-ant-ui] .planConfirm,[data-ant-ui] .planApproveActions,[data-ant-ui] .planSecondaryActions{
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+[data-ant-ui] .planReviewActions{
+  display: grid;
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+[data-ant-ui] .planSecondaryActions{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+[data-ant-ui] .planActions{
+  justify-content: flex-end;
+}
+[data-ant-ui] .planActions button,[data-ant-ui] .planNewTask button,[data-ant-ui] .planApproveRow button,[data-ant-ui] .planConfirm button{
+  flex: none;
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  background: var(--dsw-alias-button-ghost-active-fill);
+  color: var(--dsw-alias-label-primary);
+  cursor: pointer;
+  font-size: 9.5px;
+  font-weight: 600;
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+[data-ant-ui] .planActions button:hover:not(:disabled),[data-ant-ui] .planNewTask button:hover:not(:disabled),[data-ant-ui] .planApproveRow button:hover:not(:disabled),[data-ant-ui] .planConfirm button:hover:not(:disabled){
+  border-color: var(--dsw-alias-label-tertiary);
+}
+[data-ant-ui] .planActions button:active:not(:disabled),[data-ant-ui] .planNewTask button:active:not(:disabled),[data-ant-ui] .planApproveRow button:active:not(:disabled),[data-ant-ui] .planConfirm button:active:not(:disabled){
+  transform: scale(0.98);
+}
+[data-ant-ui] .planActions button[data-danger],[data-ant-ui] .planConfirm button[data-danger]{
+  color: var(--dsw-alias-state-error-primary);
+}
+[data-ant-ui] .planFeedback{
+  display: inline-flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 5px;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 9px;
+  line-height: 13px;
+  animation: plan-feedback-in 180ms ease-out;
+}
+[data-ant-ui] .planFeedback[data-tone='success']{
+  color: var(--dsw-alias-state-success-primary);
+}
+[data-ant-ui] .planFeedback[data-tone='error']{
+  color: var(--dsw-alias-state-error-primary);
+}
+[data-ant-ui] .planFeedback > span{
+  display: grid;
+  width: 15px;
+  height: 15px;
+  flex: none;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+[data-ant-ui] .planFeedback svg{
+  width: 11px;
+  height: 11px;
+}
+@keyframes plan-feedback-in {
+  from { opacity: 0; transform: translateY(-2px); }
+[data-ant-ui] to{ opacity: 1; transform: translateY(0); }
+[data-ant-ui] .planConfirm{
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  padding: 7px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-error-primary) 30%, var(--dsw-alias-border-l2));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 7%, transparent);
+}
+[data-ant-ui] .planConfirm > span{
+  min-width: 140px;
+  flex: 1;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 9px;
+  line-height: 13px;
+}
+[data-ant-ui] .planNewTask{
+  align-items: flex-end;
+}
+[data-ant-ui] .planNewTask label{
+  gap: 4px;
+}
+[data-ant-ui] .planNewTask label > span{
+  line-height: 13px;
+}
+[data-ant-ui] .planApproveRow{
+  position: sticky;
+  z-index: 1;
+  bottom: 0;
+  min-height: 50px;
+  align-items: stretch;
+  flex-direction: column;
+  justify-content: flex-end;
+  margin: 0 -4px -4px;
+  padding: 8px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 94%, transparent);
+  box-shadow: 0 -5px 16px color-mix(in srgb, var(--dsw-alias-bg-base) 35%, transparent);
+  backdrop-filter: blur(8px);
+}
+[data-ant-ui] .planApproveRow[data-armed='true']{
+  border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 45%, var(--dsw-alias-border-l2));
+}
+[data-ant-ui] .planApproveRow[data-discard='true']{
+  border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 45%, var(--dsw-alias-border-l2));
+}
+[data-ant-ui] .planApproveCopy{
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+[data-ant-ui] .planApproveCopy strong{
+  color: var(--dsw-alias-label-primary);
+  font-size: 9.5px;
+  line-height: 13px;
+}
+[data-ant-ui] .planApproveCopy small{
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 8.5px;
+  line-height: 12px;
+}
+[data-ant-ui] .planApproveRow button{
+  min-height: 32px;
+  padding-inline: 13px;
+  background: var(--dsw-alias-state-business-primary);
+  color: var(--dsw-alias-label-primary-inverted);
+}
+[data-ant-ui] .planReviewActions > button[data-plan-approve]{
+  width: 100%;
+}
+[data-ant-ui] .planApproveActions > button:first-child{
+  background: var(--dsw-alias-button-ghost-active-fill);
+  color: var(--dsw-alias-label-primary);
+}
+[data-ant-ui] .planSecondaryActions > button,[data-ant-ui] .planApproveActions > button[data-danger]{
+  border-color: var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-button-ghost-active-fill);
+  color: var(--dsw-alias-label-primary);
+}
+[data-ant-ui] .planSecondaryActions > button[data-danger],[data-ant-ui] .planApproveActions > button[data-danger]{
+  color: var(--dsw-alias-state-error-primary);
+}
+[data-ant-ui] .planSectionToggle:focus-visible,[data-ant-ui] .planCardHeader:focus-visible,[data-ant-ui] .planActions button:focus-visible,[data-ant-ui] .planNewTask button:focus-visible,[data-ant-ui] .planApproveRow button:focus-visible,[data-ant-ui] .planConfirm button:focus-visible{
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: -2px;
+}
+[data-ant-ui] .planActions button:disabled,[data-ant-ui] .planNewTask button:disabled,[data-ant-ui] .planApproveRow button:disabled{
+  cursor: default;
+  opacity: 0.55;
+}
+[data-ant-ui] .historicPill{
+  flex: none;
+  margin-left: auto;
+  padding: 1px 7px;
+  border-radius: 4px;
+  background: var(--dsw-alias-button-ghost-active-fill);
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 15px;
+}
+[data-ant-ui] .members{
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+[data-ant-ui] .archiveLabel{
+  display: block;
+  padding: 5px 14px 0;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 14px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  .badge,
+  .badgeDot,
+  .panelDot,
+  .workGlyph rect,
+  .stateArt,
+  .memberAvatar[data-unread='true']::after {
+    animation: none;
+    transition: none;
+  }
+[data-ant-ui] .planChevron,[data-ant-ui] .planFeedback,[data-ant-ui] .planActions button,[data-ant-ui] .planNewTask button,[data-ant-ui] .planApproveRow button,[data-ant-ui] .planConfirm button,[data-ant-ui] .planCard input,[data-ant-ui] .planCard textarea,[data-ant-ui] .planCard select,[data-ant-ui] .planNewTask input{
+    animation: none;
+    transition: none;
+  }
+@media (max-width: 960px) {
+  
+}
+@media (max-width: 640px) {
+  .badge {
+    top: 56px;
+    right: 10px;
+  }
+[data-ant-ui] .teamStats span[data-stat='messages']{
+    display: none;
+  }
+[data-ant-ui] .captainNode{
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+[data-ant-ui] .captainState{
+    display: none;
+  }
+[data-ant-ui] .delegationTree{
+    margin-left: 12px;
+    padding-left: 15px;
+  }
+[data-ant-ui] .memberBranch{
+    width: 15px;
+  }
+[data-ant-ui] .assignmentLine{
+    padding-left: 53px;
+  }
+[data-ant-ui] .planFlow li{
+    gap: 4px;
+    font-size: 8px;
+  }
+[data-ant-ui] .planFlow li:not(:last-child)::after{
+    margin-right: 3px;
+  }
+[data-ant-ui] .planCardHeader{
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+[data-ant-ui] .planCardHeader .planCardMeta{
+    display: none;
+  }
+[data-ant-ui] .planGrid{
+    grid-template-columns: minmax(0, 1fr);
+  }
+[data-ant-ui] .planModelPicker{
+    grid-template-columns: minmax(0, 1fr);
+  }
+[data-ant-ui] .planNewTask,[data-ant-ui] .planApproveRow{
+    align-items: stretch;
+    flex-direction: column;
+  }
+[data-ant-ui] .planNewTask button,[data-ant-ui] .planApproveRow > button,[data-ant-ui] .planApproveActions,[data-ant-ui] .planReviewActions{
+    width: 100%;
+  }
+[data-ant-ui] .planApproveActions button,[data-ant-ui] .planReviewActions button,[data-ant-ui] .planSecondaryActions button{
+    flex: 1;
+  }
+[data-ant-ui] @container agent-team (max-width: 360px){
+  .planEditor {
+    margin-inline: 0;
+    padding-inline: 10px;
+  }
+[data-ant-ui] .planHeader > span{
+    align-items: flex-start;
+  }
+[data-ant-ui] .planFlow li{
+    gap: 3px;
+    font-size: 7.5px;
+  }
+[data-ant-ui] .planFlow li:not(:last-child)::after{
+    min-width: 4px;
+    margin-right: 2px;
+  }
+[data-ant-ui] .planSecondaryActions,[data-ant-ui] .planApproveActions{
+    display: grid;
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+  }
+[data-ant-ui] .planSecondaryActions button,[data-ant-ui] .planApproveActions button{
+    width: 100%;
+  }
+[data-ant-ui] .dagOwner{ margin-left: auto; max-width: 64px; overflow: hidden; text-overflow: ellipsis; font-size: 9px; font-weight: 400; }
+[data-ant-ui] .team[data-workspace-team]{ container-type: normal; container-name: none; padding: 0; border: 0; background: transparent; }
+[data-ant-ui] .team[data-workspace-team] .teamHead{ flex-wrap: wrap; gap: 8px; padding-bottom: 18px; }
+[data-ant-ui] .team[data-workspace-team] .teamName{ font-size: 15px; }
+[data-ant-ui] .team[data-workspace-team] .teamStats{ flex-wrap: wrap; }
+[data-ant-ui] .team[data-workspace-team] .delegationSection{ min-width: 0; }
+[data-ant-ui] .team[data-workspace-team] .dependencySection{ min-width: 0; }
+[data-ant-ui] .team[data-workspace-team] .dagNodeLabel{ white-space: normal; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.4; }
+[data-ant-ui] .team[data-workspace-team] .sectionHead{ flex-wrap: wrap; gap: 6px; }
+[data-ant-ui] .team[data-workspace-team] .sectionHint{ white-space: normal; }
+[data-ant-ui] .team[data-workspace-team] .memberLine{ flex-wrap: wrap; }
+[data-ant-ui] .team[data-workspace-team] .memberStatusLine{ white-space: normal; }
+[data-ant-ui] .team[data-workspace-team] .taskDetailSubject{ white-space: normal; }
+[data-ant-ui] .team[data-workspace-team] .dagViewport{ padding-bottom: 12px; }
+[data-ant-ui] @container (min-width: 1000px){
+  .team[data-workspace-team] { display: grid; grid-template-columns: minmax(260px, .85fr) minmax(0, 1.35fr); column-gap: 32px; align-items: start; }
+[data-ant-ui] .team[data-workspace-team] > .teamHead{ grid-column: 1 / -1; }
+[data-ant-ui] .team[data-workspace-team] > :not(.teamHead):not(.delegationSection):not(.dependencySection){ grid-column: 1 / -1; }
+[data-ant-ui] .team[data-workspace-team] .dependencySection{ margin: 0; border-top: 0; border-left: 1px solid var(--dsw-alias-border-l2); padding: 0 0 0 28px; }
+[data-ant-ui] .team[data-workspace-team] .captainNode{ padding-top: 0; }
+[data-ant-ui] .team[data-workspace-team] .dagCanvas[data-layout='parallel']{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+[data-ant-ui] .team[data-workspace-team] .dagNode{ padding: 10px 11px; border-radius: 9px; }
+[data-ant-ui] .team[data-workspace-team] .dagNodeHead{ font-size: 10px; margin-bottom: 7px; }
+[data-ant-ui] .team[data-workspace-team] .dagNodeLabel{ font-size: 12px; letter-spacing: 0; }
+[data-ant-ui] .team[data-workspace-team] .dagOwner{ font-size: 10px; }
+[data-ant-ui] .team[data-workspace-team] .taskDetail{ margin-top: 14px; padding: 14px; }
+[data-ant-ui] .team[data-workspace-team] .captainName{ font-size: 14px; }
+[data-ant-ui] .team[data-workspace-team] .captainRole{ font-size: 11px; }
+[data-ant-ui] .team[data-workspace-team] .captainSummary{ font-size: 12px; line-height: 1.6; }
+[data-ant-ui] .team[data-workspace-team] .captainState{ font-size: 11px; }
+[data-ant-ui] .team[data-workspace-team] .memberName{ font-size: 13px; }
+[data-ant-ui] .team[data-workspace-team] .memberRole,[data-ant-ui] .team[data-workspace-team] .memberState,[data-ant-ui] .team[data-workspace-team] .memberCount{ font-size: 11px; }
+[data-ant-ui] .team[data-workspace-team] .memberStatusLine{ font-size: 12px; line-height: 1.6; }
+[data-ant-ui] .team[data-workspace-team] .taskDetailSubject{ font-size: 13px; line-height: 1.6; }
+[data-ant-ui] .team[data-workspace-team] .taskDetailLine,[data-ant-ui] .team[data-workspace-team] .taskDetailMeta{ font-size: 12px; line-height: 1.6; }
+[data-ant-ui] .team[data-workspace-team] .captainNode{ background: var(--dsw-alias-bg-module-platform); border-color: var(--dsw-alias-border-l2); }
+[data-ant-ui] .team[data-workspace-team] .planEditor{ background: transparent; border-color: var(--dsw-alias-border-l2); padding: 16px; margin: 0 0 24px; }
+[data-ant-ui] @container (min-width: 1000px){
+  .team[data-workspace-team]:has(> [data-staging-editor]) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+[data-ant-ui] .team[data-workspace-team] > [data-staging-editor]{ grid-column: 1 !important; grid-row: 2 / 4; }
+[data-ant-ui] .team[data-workspace-team]:has(> [data-staging-editor]) > .delegationSection{ grid-column: 2; grid-row: 2; }
+[data-ant-ui] .team[data-workspace-team]:has(> [data-staging-editor]) > .dependencySection{ grid-column: 2; grid-row: 3; border-left: 0; padding: 24px 0 0; }
+[data-ant-ui] .team[data-workspace-team] .memberBlock[data-selected-member] .memberRow{ outline: 1px solid var(--dsw-alias-state-business-primary); outline-offset: 3px; }
+[data-ant-ui] .team[data-workspace-team] .dagOwner{ white-space: nowrap; max-width: 105px; }
+[data-ant-ui] .team[data-workspace-team] .planApproveRow{ position: static; }
+[data-ant-ui] .root{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 10px;
+  background: var(--dsw-alias-bg-module-platform);
+}
+[data-ant-ui] .head{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+[data-ant-ui] .leadAvatar{
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 0;
+  object-fit: contain;
+  background: transparent;
+  filter: drop-shadow(0 1px 1px rgb(18 45 72 / 20%));
+}
+[data-ant-ui] .teamName{
+  overflow: hidden;
+  flex: 0 1 auto;
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-ant-ui] .memberCount{
+  flex: none;
+  margin-left: auto;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+[data-ant-ui] .panelButton{
+  flex: none;
+  padding: 2px 8px;
+  border: 1px solid var(--dsw-alias-border-l3);
+  border-radius: 999px;
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 16px;
+  cursor: pointer;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+[data-ant-ui] .panelButton:hover{
+  border-color: var(--dsw-alias-state-business-primary);
+  color: var(--dsw-alias-state-business-primary);
+}
+[data-ant-ui] .panelButton:focus-visible{
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 1px;
+}
+[data-ant-ui] .members{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+[data-ant-ui] .member{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 160px;
+  padding: 3px 8px 3px 3px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 999px;
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 16px;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+[data-ant-ui] .member:hover{
+  border-color: var(--dsw-alias-state-business-primary);
+  background: var(--dsw-alias-button-ghost-active-fill);
+}
+[data-ant-ui] .member:focus-visible{
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 1px;
+}
+[data-ant-ui] .memberArt{
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 0;
+  object-fit: contain;
+  background: transparent;
+  filter: drop-shadow(0 1px 1px rgb(18 45 72 / 18%));
+}
+[data-ant-ui] .memberInitial{
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--dsw-alias-state-business-primary);
+  color: var(--dsw-alias-label-primary-inverted);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 20px;
+}
+[data-ant-ui] .memberName{
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-ant-ui] .chatEntry{ display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 7px; color: var(--dsw-alias-label-secondary); background: transparent; font: inherit; font-size: 12px; white-space: nowrap; cursor: pointer; }
+[data-ant-ui] .chatEntry img{ width: 22px; height: 22px; object-fit: contain; }
+[data-ant-ui] .chatEntry:hover{ background: var(--dsw-alias-bg-module-platform); }
+[data-ant-ui] .chatEntry:focus-visible{ outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 2px; }
+[data-ant-ui] .turnCards{ display: grid; gap: 8px; margin-block: 10px; }
+@media (max-width: 600px) { .head { flex-wrap: wrap; }
+[data-ant-ui] .root{
+  container: team-workspace / inline-size;
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-bg-base);
+  font-family: inherit;
+}
+[data-ant-ui] .content{ max-width: 1400px; margin: 0 auto; padding: 12px 20px 28px; }
+[data-ant-ui] .selector{ display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 24px; }
+[data-ant-ui] .selector button{ display: flex; gap: 12px; align-items: center; max-width: 100%; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 8px 10px; text-align: left; overflow-wrap: anywhere; }
+[data-ant-ui] .selector span{ font-size: 10px; color: var(--dsw-alias-label-tertiary); white-space: nowrap; }
+[data-ant-ui] .selector button[aria-pressed='true']{ background: var(--dsw-alias-bg-module-platform); border-color: var(--dsw-alias-label-tertiary); }
+[data-ant-ui] .root button{ font-family: inherit; color: inherit; cursor: pointer; }
+[data-ant-ui] .root button:active{ transform: scale(.98); }
+[data-ant-ui] .root button:focus-visible{ outline: 2px solid var(--dsw-alias-label-secondary); outline-offset: 3px; }
+[data-ant-ui] .empty{ padding: 36px 0; max-width: 42ch; }
+[data-ant-ui] .emptyMark{ font-size: 32px; color: var(--dsw-alias-label-tertiary); }
+[data-ant-ui] .empty h3{ font-size: 16px; font-weight: 550; margin: 16px 0 10px; }
+[data-ant-ui] .empty p{ color: var(--dsw-alias-label-secondary); font-size: 13px; line-height: 1.8; }
+[data-ant-ui] .empty button,[data-ant-ui] .error button{ background: var(--dsw-alias-bg-module-platform); border: 1px solid var(--dsw-alias-border-l2); padding: 8px 12px; border-radius: 8px; font-size: 12px; }
+[data-ant-ui] .error{ display: flex; align-items: start; gap: 12px; padding: 12px; margin-bottom: 20px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; font-size: 12px; line-height: 1.65; }
+[data-ant-ui] .error button{ flex: none; }
+[data-ant-ui] .skeleton{ display: grid; gap: 16px; padding-top: 20px; }
+[data-ant-ui] .skeleton i{ height: 66px; border-radius: 8px; background: var(--dsw-alias-bg-module-platform); animation: breathe 1.8s ease-in-out infinite alternate; }
+[data-ant-ui] .skeleton i:first-child{ width: 70%; height: 36px; }
+[data-ant-ui] .skeleton i:last-child{ animation-delay: .3s; }
+@keyframes breathe { to { opacity: .45; }
+[data-ant-ui] @container (min-width: 720px){
+  .content { padding: 20px 28px 32px; }
+@media (prefers-reduced-motion: reduce) { .skeleton i { animation: none; }`;
+
+const CUSTOM_CSS = `[data-ant-ui] .planInput,[data-ant-ui] .planTextarea{display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:4px 6px;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px;line-height:18px}
+[data-ant-ui] .planTextarea{min-height:52px;resize:vertical}
+[data-ant-ui] .planModelPick{text-align:left}
+
+[data-ant-ui] .chatEntry{padding:0 8px 0 6px;height:26px}
+[data-ant-ui] .chatEntry svg{display:block;flex:none;color:var(--dsw-alias-state-business-primary)}
+[data-ant-ui] .chatEntryLabel{max-width:8em;overflow:hidden;text-overflow:ellipsis}
+[data-ant-ui] .chatEntryCount{display:inline-flex;align-items:center;justify-content:center;min-width:15px;height:15px;padding:0 4px;border-radius:999px;background:var(--dsw-alias-state-business-primary);color:var(--dsw-alias-label-primary-inverted);font-size:10px;font-weight:600;line-height:1}
+[data-ant-ui] .panel{z-index:30}
+[data-ant-ui] .resizeHandle[data-resize-edge='bottom']{left:12px;right:12px;bottom:0;height:6px;cursor:ns-resize}
+[data-ant-ui] .resizeHandle[data-resize-edge='bottom'] .grip{display:block;width:28px;height:3px;margin:0 auto;border-radius:2px;background:var(--dsw-alias-border-l3);opacity:.7}
+[data-ant-ui] .teams{padding-bottom:6px}
+[data-ant-ui] .teams>.team{padding:0 12px}
+`;
+
 
     function createLocale(ctx) {
       const listeners = new Set();
@@ -334,78 +2263,764 @@ const CSS = `
       throw new Error('Client Remote returned an invalid result envelope');
     }
 
+    Object.assign(DICT.en, { error: 'Error', state: 'state', owner: 'owner', waiting: 'waiting', idle: 'idle', dispatching: 'working…', taskCount: 'tasks', refresh: 'Refresh', emptyHint: 'Open a conversation that belongs to a team, or seed one with the ant tools.' });
+    Object.assign(DICT.zh, { error: '错误', state: '状态', owner: '归属', waiting: '等待', idle: '空闲', dispatching: '处理中…', taskCount: '任务', refresh: '刷新', emptyHint: '在属于某支团队的会话里打开，或用 ant 工具建一支。' });
+
+    // ---------- panel vocabulary (upstream-shaped labels) ----------
+    Object.assign(DICT.en, {
+      seatLabel: 'Amber Ant', panelName: 'Amber Ant', close: 'Close', stopTeam: 'Stop team', stopTeamAsk: 'Stop every member of this team?',
+      progress: 'Progress', progRunning: 'running', progBlocked: 'blocked', progDelivered: 'delivered',
+      captain: 'Captain', captainRole: 'lead', delegationHint: 'delegation', membersHint: 'members',
+      dependencies: 'Dependencies', depHint: 'click a node to trace its chain', dagHint: 'left to right by dependency depth',
+      plan: 'Plan', planEmpty: 'This plan has no task yet.', confirmPlan: 'Confirm plan', releasing: 'Releasing',
+      addTask: 'Add task', editTask: 'Edit task', save: 'Save', cancel: 'Cancel', title2: 'Title', objective2: 'Objective', acceptance2: 'Acceptance',
+      archived: 'Archived', archivedPill: 'archived', stoppedPill: 'stopped', stagedPill: 'awaiting approval',
+      emptyTeams: 'No team in this workspace', emptyTeamsHint: 'Create a team from the host tools, then reopen this panel.',
+      unreadPill: 'unread', modelMenu: 'Pick a model', modelSearch: 'Search models', noModelMatch: 'No model matches',
+      stopFailed: 'Stop failed', actionFailed: 'Action failed', releasingHint: 'Release the ready batch',
+    });
+    Object.assign(DICT.zh, {
+      seatLabel: '玄驹', panelName: '玄驹', close: '关闭', stopTeam: '终止团队', stopTeamAsk: '终止这支团队的全部成员？',
+      progress: '进度', progRunning: '运行', progBlocked: '受阻', progDelivered: '已交付',
+      captain: '队长', captainRole: '统率', delegationHint: '协作', membersHint: '成员',
+      dependencies: '依赖', depHint: '点击节点追溯链路', dagHint: '按依赖深度从左到右',
+      plan: '计划', planEmpty: '计划里还没有任务。', confirmPlan: '确认计划', releasing: '放行中',
+      addTask: '添加任务', editTask: '编辑任务', save: '保存', cancel: '取消', title2: '标题', objective2: '目标', acceptance2: '验收',
+      archived: '已归档', archivedPill: '已归档', stoppedPill: '已终止', stagedPill: '待审批',
+      emptyTeams: '这个工作区没有团队', emptyTeamsHint: '用宿主工具建队后再打开这个面板。',
+      unreadPill: '未读', modelMenu: '选择模型', modelSearch: '搜索模型', noModelMatch: '没有匹配的模型',
+      stopFailed: '终止失败', actionFailed: '操作失败', releasingHint: '放行就绪批次',
+    });
+
+    // ---------- team snapshot controller ----------
     function createController(remote) {
-      let state = { status: 'loading', teams: [], selectedTeamId: undefined, view: undefined, selectedTaskId: undefined, selectedAttemptId: undefined, selectedMemberId: undefined, selectedStage: undefined, request: undefined, receipt: undefined, error: undefined };
+      let state = { status: 'loading', teams: [], views: {}, request: undefined, receipt: undefined, error: undefined };
       const listeners = new Set();
       let sequence = 0;
       let controller;
       let disposed = false;
+      let bootstrapped = false;
       const emit = patch => { state = { ...state, ...patch }; listeners.forEach(listener => listener()); };
       const nextSignal = () => { controller?.abort(); controller = new AbortController(); return controller.signal; };
-      const read = async (teamId, atLeastEventSeq) => unwrapRemoteResult(await remote.get({ teamId, ...(atLeastEventSeq === undefined ? {} : { atLeastEventSeq }) }, nextSignal()));
-      const loadView = async (teamId, atLeastEventSeq) => {
-        if (!teamId || disposed) return;
-        const current = sequence;
-        emit({ status: state.view ? 'refreshing' : 'loading', selectedTeamId: teamId, error: undefined });
-        try { const view = await read(teamId, atLeastEventSeq); if (!disposed && current === sequence) emit({ status: 'ready', view, error: undefined }); }
-        catch (error) { if (!disposed && current === sequence) { const normalized = normalizeError(error); emit({ status: statusForError(normalized), error: normalized, view: normalized.code === 'team/not-found' ? undefined : state.view }); } }
-      };
-      let bootstrapped = false;
-      const loadList = async () => {
-        if (!disposed) bootstrapped = true;
+      const readTeam = async (teamId, signal) => unwrapRemoteResult(await remote.get({ teamId }, signal));
+      const loadAll = async () => {
+        if (disposed) return;
+        bootstrapped = true;
         const current = ++sequence;
-        emit({ status: state.view ? 'refreshing' : 'loading', error: undefined });
+        const signal = nextSignal();
+        emit({ status: state.teams.length ? 'refreshing' : 'loading', error: undefined });
         try {
-          const result = unwrapRemoteResult(await remote.list({ includeArchived: false, limit: 100 }, nextSignal()));
+          const result = unwrapRemoteResult(await remote.list({ includeArchived: true, limit: 100 }, signal));
           if (disposed || current !== sequence) return;
           const teams = Array.isArray(result?.teams) ? result.teams : [];
-          const selectedTeamId = teams.some(item => item.teamId === state.selectedTeamId) ? state.selectedTeamId : teams[0]?.teamId;
-          emit({ teams, selectedTeamId, status: teams.length ? 'ready' : 'empty', error: undefined });
-          if (selectedTeamId) await loadView(selectedTeamId);
-        } catch (error) { if (!disposed && current === sequence) { const normalized = normalizeError(error); emit({ status: statusForError(normalized), error: normalized }); } }
+          const settled = await Promise.all(teams.map(async item => {
+            try { return [item.teamId, await readTeam(item.teamId, signal)]; } catch { return undefined; }
+          }));
+          if (disposed || current !== sequence) return;
+          const views = {};
+          for (const entry of settled) if (entry) views[entry[0]] = entry[1];
+          emit({ teams, views, status: teams.length ? 'ready' : 'empty', error: undefined });
+        } catch (error) {
+          if (disposed || current !== sequence) return;
+          const normalized = normalizeError(error);
+          emit({ status: statusForError(normalized), error: normalized });
+        }
       };
-      const selectTeam = teamId => { emit({ selectedTeamId: teamId, selectedTaskId: undefined, selectedAttemptId: undefined, selectedMemberId: undefined, selectedStage: undefined }); return loadView(teamId); };
-      const selectStage = stage => { if (state.selectedStage !== stage) emit({ selectedStage: stage }); };
-      const selectNode = (layer, id) => emit({ selectedTaskId: layer === 'task' ? id : state.selectedTaskId, selectedAttemptId: layer === 'attempt' ? id : state.selectedAttemptId, selectedMemberId: layer === 'member' ? id : state.selectedMemberId });
-      const dispatch = async (action, payload) => {
-        if (!state.selectedTeamId || state.request || disposed) return;
-        const request = { requestId: makeRequestId(), teamId: state.selectedTeamId, action, payload };
+      const loadTeam = async teamId => {
+        if (!teamId || disposed) return;
+        try {
+          const view = await readTeam(teamId, nextSignal());
+          if (disposed) return;
+          emit({ views: { ...state.views, [teamId]: view } });
+        } catch (error) { if (!disposed) emit({ error: normalizeError(error) }); }
+      };
+      const dispatch = async (teamId, action, payload) => {
+        if (!teamId || state.request || disposed) return;
+        const request = { requestId: makeRequestId(), teamId, action, payload };
         emit({ request, receipt: undefined, error: undefined });
-        try { const receipt = unwrapRemoteResult(await remote.dispatch(request, nextSignal())); if (disposed) return; emit({ request: undefined, receipt }); await loadView(request.teamId, receipt?.lastEventSeq); }
-        catch (error) { if (!disposed) { const normalized = normalizeError(error); emit({ request: undefined, status: statusForError(normalized), error: normalized }); } }
+        try {
+          const receipt = unwrapRemoteResult(await remote.dispatch(request, nextSignal()));
+          if (disposed) return;
+          emit({ request: undefined, receipt });
+          await loadTeam(teamId);
+        } catch (error) {
+          if (disposed) return;
+          const normalized = normalizeError(error);
+          emit({ request: undefined, status: statusForError(normalized), error: normalized });
+        }
       };
-      return { subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); }, getSnapshot: () => state, loadList, ensureLoaded() { if (disposed || bootstrapped) return undefined; return loadList(); }, selectTeam, selectNode, selectStage, dispatch, dispose() { disposed = true; sequence += 1; controller?.abort(); listeners.clear(); } };
+      return {
+        subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
+        getSnapshot: () => state,
+        loadAll,
+        ensureLoaded() { if (disposed || bootstrapped) return undefined; return loadAll(); },
+        loadTeam,
+        dispatch,
+        dispose() { disposed = true; sequence += 1; controller?.abort(); listeners.clear(); },
+      };
     }
 
+    // ---------- host view -> panel projection ----------
+    const DONE_TASK_STATES = new Set(['released', 'reviewed']);
+    const DROPPED_TASK_STATES = new Set(['dropped', 'superseded']);
+
+    function routeOf(member) {
+      const provider = (member?.provider ?? '').trim();
+      const model = (member?.model ?? '').trim();
+      if (provider !== '' && model !== '') return provider + '/' + model;
+      return model !== '' ? model : provider;
+    }
+
+    function dependencyOf(view) {
+      const map = new Map();
+      const list = view?.plan?.dependencies;
+      if (!Array.isArray(list)) return map;
+      for (const dependency of list) {
+        if (!dependency || !dependency.taskId || !dependency.blockedByTaskId) continue;
+        const bucket = map.get(dependency.taskId) ?? [];
+        bucket.push(dependency.blockedByTaskId);
+        map.set(dependency.taskId, bucket);
+      }
+      return map;
+    }
+
+    function taskDepths(tasks, dependencies) {
+      const known = new Set(tasks.map(task => task.id));
+      const memo = new Map();
+      const visiting = new Set();
+      const depth = id => {
+        if (memo.has(id)) return memo.get(id);
+        if (visiting.has(id)) return 0;
+        visiting.add(id);
+        const parents = (dependencies.get(id) ?? []).filter(parent => known.has(parent));
+        const value = parents.length === 0 ? 0 : Math.max(...parents.map(parent => depth(parent) + 1));
+        visiting.delete(id);
+        memo.set(id, value);
+        return value;
+      };
+      for (const task of tasks) depth(task.id);
+      return memo;
+    }
+
+    function toTeam(item, view) {
+      const members = (view?.members ?? []).map(member => ({
+        id: member.memberId,
+        name: member.role ?? shortId(member.memberId),
+        role: member.role ?? '',
+        provider: member.provider ?? '',
+        model: member.model ?? '',
+        sessionId: member.sessionId,
+        status: member.status ?? 'active',
+        activity: 'idle',
+      }));
+      const byId = new Map(members.map(member => [member.id, member]));
+      const dependencies = dependencyOf(view);
+      const attempts = new Map();
+      for (const attempt of view?.attempts ?? []) {
+        const bucket = attempts.get(attempt.taskId) ?? [];
+        bucket.push(attempt);
+        attempts.set(attempt.taskId, bucket);
+      }
+      const declared = new Map((view?.tasks ?? []).map(task => [task.taskId, task]));
+      const tasks = (view?.tasks ?? []).map(task => {
+        const history = attempts.get(task.taskId) ?? [];
+        const last = history[history.length - 1];
+        const owner = byId.get(task.ownerMemberId ?? last?.memberId);
+        const waitingOn = (dependencies.get(task.taskId) ?? []).filter(id => {
+          const other = declared.get(id);
+          return other !== undefined && !DONE_TASK_STATES.has(other.state) && !DROPPED_TASK_STATES.has(other.state);
+        });
+        let tone = 'ready';
+        if (DONE_TASK_STATES.has(task.state)) tone = 'completed';
+        else if (DROPPED_TASK_STATES.has(task.state)) tone = 'cancelled';
+        else if (last?.state === 'running') { tone = 'running'; if (owner) owner.activity = 'working'; }
+        else if (last?.state === 'paused' || last?.state === 'taken-over') { tone = 'blocked'; if (owner) owner.activity = 'working'; }
+        else if (last?.state === 'terminated') tone = 'failed';
+        else if (waitingOn.length > 0) tone = 'blocked';
+        return {
+          id: task.taskId,
+          subject: task.title ?? task.taskId,
+          objective: task.objective ?? '',
+          acceptance: task.acceptance ?? [],
+          state: tone,
+          status: task.state,
+          assignee: owner?.name ?? '',
+          assigneeId: owner?.id,
+          model: owner ? routeOf(owner) : '',
+          dependencies: dependencies.get(task.taskId) ?? [],
+          waitingOn,
+        };
+      });
+      const depths = taskDepths(tasks, dependencies);
+      for (const task of tasks) task.depth = depths.get(task.id) ?? 0;
+      tasks.sort((left, right) => left.depth - right.depth || left.id.localeCompare(right.id, 'en', { numeric: true }));
+      const lead = byId.get(view?.leadMemberId) ?? members[0];
+      const goal = (view?.goal ?? item?.goal ?? '').trim();
+      return {
+        teamId: item?.teamId ?? view?.teamId,
+        name: goal !== '' ? goal : (item?.teamId ?? ''),
+        goal,
+        phase: view?.planConfirmed === true ? 'running' : 'staged',
+        halted: view?.halted === true,
+        archived: (view?.lifecycle ?? item?.lifecycle) === 'archived',
+        planConfirmed: view?.planConfirmed === true,
+        planDigest: view?.planDigest,
+        cursor: view?.cursor ?? item?.cursor ?? 0,
+        leadName: lead?.name,
+        captainSessionId: lead?.sessionId,
+        members,
+        tasks,
+        total: tasks.length,
+        done: tasks.filter(task => task.state === 'completed').length,
+        messageCount: (view?.mailbox ?? []).length,
+        view,
+      };
+    }
+
+    // ---------- compact dependency DAG (upstream geometry) ----------
+    const DAG_NODE_WIDTH = 92;
+    const DAG_NODE_HEIGHT = 30;
+    const DAG_COLUMN_GAP = 26;
+    const DAG_ROW_GAP = 8;
+
+    function dagLayout(tasks) {
+      const stages = new Map();
+      for (const task of tasks) {
+        const depth = Number.isFinite(task.depth) ? Math.max(0, Math.floor(task.depth)) : 0;
+        const bucket = stages.get(depth) ?? [];
+        bucket.push(task);
+        stages.set(depth, bucket);
+      }
+      const ordered = [...stages.entries()].sort((left, right) => left[0] - right[0]).map(entry => entry[1].slice().sort((left, right) => left.id.localeCompare(right.id, 'en', { numeric: true })));
+      const positions = new Map();
+      const nodes = [];
+      ordered.forEach((stage, column) => {
+        stage.forEach((task, row) => {
+          const x = column * (DAG_NODE_WIDTH + DAG_COLUMN_GAP);
+          const y = row * (DAG_NODE_HEIGHT + DAG_ROW_GAP);
+          positions.set(task.id, { x, y });
+          nodes.push({ task, x, y });
+        });
+      });
+      const edges = [];
+      for (const task of tasks) {
+        const target = positions.get(task.id);
+        if (target === undefined) continue;
+        for (const dependency of task.dependencies) {
+          const source = positions.get(dependency);
+          if (source === undefined) continue;
+          const x1 = source.x + DAG_NODE_WIDTH;
+          const y1 = source.y + DAG_NODE_HEIGHT / 2;
+          const x2 = target.x;
+          const y2 = target.y + DAG_NODE_HEIGHT / 2;
+          edges.push({ from: dependency, to: task.id, d: 'M' + x1 + ' ' + y1 + 'C' + (x1 + 14) + ' ' + y1 + ',' + (x2 - 14) + ' ' + y2 + ',' + x2 + ' ' + y2 });
+        }
+      }
+      const rows = Math.max(1, ...ordered.map(stage => stage.length));
+      return {
+        width: ordered.length === 0 ? 0 : ordered.length * DAG_NODE_WIDTH + (ordered.length - 1) * DAG_COLUMN_GAP,
+        height: ordered.length === 0 ? 0 : rows * DAG_NODE_HEIGHT + (rows - 1) * DAG_ROW_GAP,
+        nodes,
+        edges,
+      };
+    }
+
+    function relatedTaskIds(taskId, tasks) {
+      const byId = new Map(tasks.map(task => [task.id, task]));
+      if (!byId.has(taskId)) return null;
+      const dependents = new Map();
+      for (const task of tasks) {
+        for (const dependency of task.dependencies) {
+          const bucket = dependents.get(dependency) ?? [];
+          bucket.push(task.id);
+          dependents.set(dependency, bucket);
+        }
+      }
+      const related = new Set();
+      const walkUp = (id, seen) => {
+        if (seen.has(id)) return;
+        seen.add(id);
+        related.add(id);
+        for (const parent of byId.get(id)?.dependencies ?? []) walkUp(parent, seen);
+      };
+      const walkDown = (id, seen) => {
+        if (seen.has(id)) return;
+        seen.add(id);
+        related.add(id);
+        for (const child of dependents.get(id) ?? []) walkDown(child, seen);
+      };
+      walkUp(taskId, new Set());
+      walkDown(taskId, new Set());
+      return related;
+    }
+
+    // ---------- atoms ----------
+    function Chevron({ open }) {
+      return h('svg', { className: 'chevron', 'data-open': open ? 'true' : 'false', width: 9, height: 9, viewBox: '0 0 10 10', fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round', 'aria-hidden': 'true' },
+        h('path', { d: 'M3.5 2l3 3-3 3' }));
+    }
+
+    function WorkGlyph({ active }) {
+      const cells = [[0, 0], [4.2, 0], [8.4, 0], [0, 4.2], [4.2, 4.2], [8.4, 4.2]];
+      return h('svg', { className: 'workGlyph', 'data-active': active ? 'true' : 'false', width: 11, height: 11, viewBox: '0 0 11 11', fill: 'currentColor', 'aria-hidden': 'true' },
+        cells.map((cell, index) => h('rect', { key: String(index), x: cell[0], y: cell[1], width: 2.6, height: 2.6, rx: 0.6, style: { animationDelay: (index * 0.15) + 's' } })));
+    }
+
+    function stateText(t, task) {
+      if (task.state === 'completed') return t.t('progDelivered');
+      if (task.state === 'running') return t.t('progRunning');
+      if (task.state === 'blocked') return t.t('progBlocked');
+      if (task.state === 'failed') return t.t('error');
+      if (task.state === 'cancelled') return t.t('cancel');
+      return t.t('state');
+    }
+
+    function ProgressOverview({ team, t }) {
+      const running = team.tasks.filter(task => task.state === 'running').length;
+      const blocked = team.tasks.filter(task => task.state === 'blocked').length;
+      const completed = team.tasks.filter(task => task.state === 'completed').length;
+      const settled = team.total > 0 && team.tasks.every(task => task.state === 'completed' || task.state === 'failed' || task.state === 'cancelled');
+      const tone = blocked > 0 || team.tasks.some(task => task.state === 'failed') ? 'warning' : settled ? 'completed' : 'running';
+      return h('section', { className: 'progressOverview', 'aria-label': t.t('progress'), 'data-progress-summary': '' },
+        h('span', { className: 'progressTitle' }, t.t('progress')),
+        team.total > 0
+          ? h('span', { className: 'progressSegments', 'aria-hidden': 'true' }, team.tasks.map(task => h('span', { key: task.id, 'data-state': task.state })))
+          : h('span', { className: 'progressEmpty' }),
+        h('span', { className: 'progressLegend' },
+          h('span', { 'data-state': 'running' }, t.t('progRunning') + ' ' + running),
+          h('span', { 'data-state': 'blocked' }, t.t('progBlocked') + ' ' + blocked),
+          h('span', { 'data-state': 'completed' }, t.t('progDelivered') + ' ' + completed)),
+        h('span', { className: 'progressSummary', 'data-state': tone },
+          h('span', { className: 'progressSummaryDot' }),
+          h('span', null, team.done + '/' + team.total)));
+    }
+
+    function DependencyMap({ team, t, selectedId, onSelect }) {
+      const [open, setOpen] = React.useState(true);
+      const [pinned, setPinned] = React.useState(null);
+      const [hovered, setHovered] = React.useState(null);
+      const focusId = pinned ?? hovered ?? selectedId ?? null;
+      const related = focusId === null ? null : relatedTaskIds(focusId, team.tasks);
+      const layout = React.useMemo(() => dagLayout(team.tasks), [team.tasks]);
+      if (team.tasks.length === 0) return null;
+      const detail = team.tasks.find(task => task.id === focusId)
+        ?? team.tasks.find(task => task.state === 'blocked')
+        ?? team.tasks.find(task => task.state === 'running')
+        ?? team.tasks[0];
+      const dependents = team.tasks.filter(task => task.dependencies.indexOf(detail.id) >= 0);
+      return h('section', { className: 'dependencySection', 'aria-label': t.t('dependencies'), 'data-dependency-map': '' },
+        h('header', { className: 'sectionHead' },
+          h('button', { type: 'button', className: 'sectionToggleTitle', 'aria-expanded': open ? 'true' : 'false', onClick: () => setOpen(value => !value) },
+            h(Chevron, { open }),
+            h('span', null, t.t('dependencies'))),
+          h('span', { className: 'sectionHint' }, focusId === null ? t.t('dagHint') : detail.id)),
+        open ? h('div', { className: 'dagViewport' },
+          h('div', { className: 'dagCanvas', style: { width: layout.width, height: layout.height } },
+            h('svg', { className: 'dagEdges', width: layout.width, height: layout.height, 'aria-hidden': 'true' },
+              layout.edges.map(edge => h('path', {
+                key: edge.from + '>' + edge.to,
+                d: edge.d,
+                'data-active': related !== null && related.has(edge.from) && related.has(edge.to) ? 'true' : undefined,
+                'data-dimmed': related !== null && !(related.has(edge.from) && related.has(edge.to)) ? 'true' : undefined,
+              }))),
+            layout.nodes.map(node => h('button', {
+              key: node.task.id,
+              type: 'button',
+              className: 'dagNode',
+              'data-state': node.task.state,
+              'data-focused': focusId === node.task.id ? 'true' : undefined,
+              'data-dimmed': related !== null && !related.has(node.task.id) ? 'true' : undefined,
+              style: { left: node.x, top: node.y, width: DAG_NODE_WIDTH, height: DAG_NODE_HEIGHT },
+              title: node.task.id + ' · ' + node.task.subject,
+              onClick: () => { const next = pinned === node.task.id ? null : node.task.id; setPinned(next); onSelect(next); },
+              onMouseEnter: () => setHovered(node.task.id),
+              onMouseLeave: () => setHovered(current => current === node.task.id ? null : current),
+            },
+              h('span', { className: 'dagNodeHead' }, h('span', { className: 'dagNodeDot' }), h('span', { className: 'dagNodeLabel' }, node.task.subject)),
+              node.task.assignee !== '' ? h('span', { className: 'dagOwner' }, node.task.assignee) : null)))) : null,
+        h('div', { className: 'taskDetail', 'data-task-detail': detail.id },
+          h('div', { className: 'taskDetailHead' },
+            h('span', { className: 'taskDetailId' }, detail.id),
+            h('span', { className: 'taskDetailBadge', 'data-state': detail.state }, stateText(t, detail))),
+          h('div', { className: 'taskDetailSubject' }, detail.subject),
+          detail.objective !== '' ? h('div', { className: 'taskDetailLine' }, detail.objective) : null,
+          h('div', { className: 'taskDetailMeta' },
+            h('span', null, detail.assignee === '' ? t.t('owner') : detail.assignee),
+            detail.model !== '' ? h('span', { className: 'taskDetailModel' }, detail.model) : null),
+          detail.waitingOn.length > 0 ? h('div', { className: 'taskDetailLine' }, t.t('dependencies') + ': ' + detail.waitingOn.join(', ')) : null,
+          dependents.length > 0 ? h('div', { className: 'taskDetailLine' }, dependents.map(task => task.id).join(', ')) : null));
+    }
+
+    Object.assign(DICT.en, { idle: 'idle', waiting: 'waiting', members: 'Members', taskCount: 'tasks' });
+    Object.assign(DICT.zh, { idle: '空闲', waiting: '等待', members: '成员', taskCount: '任务' });
+
+    function memberStatusText(t, member, tasks) {
+      const owned = tasks.filter(task => task.assigneeId === member.id);
+      if (member.activity === 'working') return t.t('progRunning');
+      if (owned.some(task => task.state === 'failed')) return t.t('error');
+      if (owned.some(task => task.state === 'blocked')) return t.t('progBlocked');
+      if (owned.length > 0 && owned.every(task => task.state === 'completed')) return t.t('progDelivered');
+      if (owned.length > 0) return t.t('waiting');
+      return t.t('idle');
+    }
+
+    function ModelMenu({ t, ui, onPick }) {
+      const [groups, setGroups] = React.useState(undefined);
+      const [query, setQuery] = React.useState('');
+      React.useEffect(() => {
+        let live = true;
+        (async () => {
+          try {
+            const directory = ui.catalog();
+            if (!directory) throw new Error('no model directory');
+            await directory.load();
+            if (live) setGroups(directory.store.getSnapshot().groups ?? []);
+          } catch (error) { trace('catalog-failed', error); if (live) setGroups([]); }
+        })();
+        return () => { live = false; };
+      }, [ui]);
+      const needle = query.trim().toLowerCase();
+      const entries = [];
+      for (const group of groups ?? []) {
+        const provider = group.provider ?? group.id ?? '';
+        const models = Array.isArray(group.models) ? group.models : [];
+        const picked = models
+          .map(item => (typeof item === 'string' ? { model: item } : item))
+          .filter(item => needle === '' || String(item.model ?? item.id ?? '').toLowerCase().indexOf(needle) >= 0);
+        if (picked.length > 0) entries.push({ provider, models: picked });
+      }
+      return h('div', { className: 'planModelMenu' },
+        h('input', { className: 'planModelMenuRow', value: query, placeholder: t.t('modelSearch'), onChange: event => setQuery(event.target.value) }),
+        groups !== undefined && entries.length === 0 ? h('div', { className: 'planModelHint' }, t.t('noModelMatch')) : null,
+        entries.map(entry => h('div', { key: entry.provider },
+          h('div', { className: 'stageLabel' }, entry.provider),
+          entry.models.map(item => {
+            const model = String(item.model ?? item.id ?? '');
+            return h('button', { key: entry.provider + '/' + model, type: 'button', className: 'planModelMenuRow planModelPick', 'data-model-pick': entry.provider + '/' + model, onClick: () => onPick(entry.provider, model) }, model);
+          }))));
+    }
+
+    function MemberTree({ team, t, ui, open, onToggle, menuMemberId, onMenu, onDispatch }) {
+      const working = team.members.filter(member => member.activity === 'working');
+      const visible = open ? team.members : working;
+      return h('section', { className: 'delegationSection', 'aria-label': t.t('members') },
+        h('button', { type: 'button', className: 'membersToggle', 'aria-expanded': open ? 'true' : 'false', onClick: onToggle },
+          h(Chevron, { open }),
+          h('span', null, t.t('members') + ' ' + team.members.length),
+          h('span', null, open ? '' : working.length + '/' + team.members.length)),
+        h('div', { className: 'delegationTree' }, visible.map(member => {
+          const owned = team.tasks.filter(task => task.assigneeId === member.id);
+          return h('div', { key: member.id, className: 'memberBlock' },
+            h('div', { className: 'memberRow', 'data-activity': member.activity, role: 'group' },
+              h('span', { className: 'memberAvatar' }, h(AntShape, { size: 14 })),
+              h('span', { className: 'memberInfo' },
+                h('span', { className: 'memberLine' },
+                  h('span', { className: 'memberName' }, member.name),
+                  h('span', { className: 'memberRole' }, team.leadName === member.name ? t.t('captainRole') : '')),
+                h('span', { className: 'memberStatusLine' }, memberStatusText(t, member, team.tasks))),
+              member.model !== '' || member.provider !== ''
+                ? h('button', { type: 'button', className: 'memberModel', 'aria-expanded': menuMemberId === member.id ? 'true' : 'false', onClick: () => onMenu(menuMemberId === member.id ? null : member.id) }, routeOf(member))
+                : null,
+              h('span', { className: 'memberState', 'data-activity': member.activity }, member.activity === 'working' ? t.t('progRunning') : t.t('idle'))),
+            menuMemberId === member.id
+              ? h(ModelMenu, { t, ui, onPick: (provider, model) => { onMenu(null); onDispatch('member.changeModel', { memberId: member.id, provider, model }); } })
+              : null,
+            owned.length > 0
+              ? h('div', { className: 'assignmentLine' }, owned.map(task => h('span', { key: task.id, className: 'assignmentChip', 'data-state': task.state }, task.id)))
+              : null);
+        })));
+    }
+
+    function PlanSection({ team, t, request, onDispatch }) {
+      const [editor, setEditor] = React.useState(undefined);
+      const confirmed = team.planConfirmed;
+      const ready = team.tasks.filter(task => task.state !== 'completed' && task.state !== 'cancelled');
+      const openEditor = (task) => setEditor(task === undefined
+        ? { id: 'new', title: '', objective: '', acceptance: '' }
+        : { id: task.id, title: task.subject, objective: task.objective, acceptance: (task.acceptance ?? []).join('；') });
+      const save = () => {
+        const title = editor.title.trim();
+        const objective = editor.objective.trim();
+        if (title === '' || objective === '') return;
+        const acceptance = editor.acceptance.split(/[；;\n]/).map(item => item.trim()).filter(item => item !== '');
+        setEditor(undefined);
+        if (editor.id === 'new') {
+          onDispatch('task.create', {
+            task: { taskId: 'task-' + Date.now().toString(36), title, objective, inScope: [], outOfScope: [], acceptance, verify: [] },
+            reason: 'added from the colony panel',
+          });
+        } else {
+          onDispatch('task.amend', { taskId: editor.id, patch: { title, objective, acceptance }, reason: 'amended from the colony panel' });
+        }
+      };
+      return h('section', { className: 'planSection', 'aria-label': t.t('plan') },
+        h('header', { className: 'sectionHead' },
+          h('span', { className: 'sectionTitle' }, t.t('plan')),
+          h('span', { className: 'sectionHint' }, team.done + '/' + team.total)),
+        team.total === 0 ? h('div', { className: 'planEmpty' }, t.t('planEmpty')) : null,
+        h('div', { className: 'planGrid' }, team.tasks.map(task => h('div', { key: task.id, className: 'planCard', 'data-state': task.state },
+          h('div', { className: 'planCardHeader' },
+            h('button', { type: 'button', className: 'planCardIdentity', onClick: () => openEditor(task) },
+              h('span', { className: 'planTaskId' }, task.id),
+              h('span', { className: 'planTaskSummary' }, task.subject)),
+            h('span', { className: 'stageLabel', 'data-state': task.state }, stateText(t, task))),
+          editor !== undefined && editor.id === task.id
+            ? h('div', { className: 'planEditor' },
+              h('input', { className: 'planInput', value: editor.title, placeholder: t.t('title2'), onChange: event => setEditor({ ...editor, title: event.target.value }) }),
+              h('textarea', { className: 'planTextarea', value: editor.objective, placeholder: t.t('objective2'), onChange: event => setEditor({ ...editor, objective: event.target.value }) }),
+              h('input', { className: 'planInput', value: editor.acceptance, placeholder: t.t('acceptance2'), onChange: event => setEditor({ ...editor, acceptance: event.target.value }) }),
+              h('div', { className: 'planApproveRow' },
+                h('button', { type: 'button', onClick: save, disabled: editor.title.trim() === '' || editor.objective.trim() === '' }, t.t('save')),
+                h('button', { type: 'button', onClick: () => setEditor(undefined) }, t.t('cancel'))))
+            : null,
+          task.assignee !== '' ? h('div', { className: 'planCardMeta' }, h('span', null, task.assignee), task.model !== '' ? h('span', null, task.model) : null) : null))),
+        editor !== undefined && editor.id === 'new'
+          ? h('div', { className: 'planEditor' },
+            h('input', { className: 'planInput', value: editor.title, placeholder: t.t('title2'), onChange: event => setEditor({ ...editor, title: event.target.value }) }),
+            h('textarea', { className: 'planTextarea', value: editor.objective, placeholder: t.t('objective2'), onChange: event => setEditor({ ...editor, objective: event.target.value }) }),
+            h('input', { className: 'planInput', value: editor.acceptance, placeholder: t.t('acceptance2'), onChange: event => setEditor({ ...editor, acceptance: event.target.value }) }),
+            h('div', { className: 'planApproveRow' },
+              h('button', { type: 'button', onClick: save, disabled: editor.title.trim() === '' || editor.objective.trim() === '' }, t.t('save')),
+              h('button', { type: 'button', onClick: () => setEditor(undefined) }, t.t('cancel'))))
+          : null,
+        h('div', { className: 'planApproveRow' },
+          confirmed
+            ? h('button', { type: 'button', disabled: ready.length === 0 || request === true, onClick: () => onDispatch('batch.release', { batchId: 'batch-' + (team.cursor + 1), taskIds: ready.map(task => task.id) }) }, t.t('releasing'))
+            : h('button', { type: 'button', disabled: !team.planDigest || request === true, onClick: () => onDispatch('plan.confirm', { planDigest: team.planDigest }) }, t.t('confirmPlan')),
+          confirmed ? h('button', { type: 'button', onClick: () => openEditor(undefined) }, t.t('addTask')) : null),
+        request === true ? h('div', { className: 'planFeedback' }, t.t('dispatching')) : null);
+    }
+
+    function TeamSection({ team, t, ui, request, onDispatch, historic }) {
+      const [membersOpen, setMembersOpen] = React.useState(!historic);
+      const [selectedTaskId, setSelectedTaskId] = React.useState(null);
+      const [menuMemberId, setMenuMemberId] = React.useState(null);
+      const [stopArmed, setStopArmed] = React.useState(false);
+      const busyCount = team.members.filter(member => member.activity === 'working').length;
+      const canStop = !historic && !team.halted && team.phase === 'running';
+      return h('section', { className: 'team', 'data-team-id': team.teamId, 'data-ant-team': team.teamId },
+        h('header', { className: 'teamHead' },
+          h('span', { className: 'teamName', title: team.goal !== '' ? team.goal : team.teamId }, team.name),
+          team.archived ? h('span', { className: 'historicPill' }, t.t('archivedPill')) : null,
+          team.halted ? h('span', { className: 'historicPill' }, t.t('stoppedPill')) : null,
+          team.phase === 'staged' && !team.archived ? h('span', { className: 'historicPill' }, t.t('stagedPill')) : null,
+          h('span', { className: 'teamStats' },
+            h('span', { 'data-stat': 'members' }, t.t('members') + ' ' + team.members.length),
+            h('span', { 'data-stat': 'tasks' }, team.done + '/' + team.total),
+            h('span', { 'data-stat': 'messages' }, String(team.messageCount))),
+          canStop ? h('button', { type: 'button', className: 'teamStopButton', 'aria-label': t.t('stopTeam'), title: t.t('stopTeam'), onClick: () => setStopArmed(value => !value) },
+            h('svg', { width: 12, height: 12, viewBox: '0 0 12 12', fill: 'currentColor', 'aria-hidden': 'true' }, h('rect', { x: 2, y: 2, width: 8, height: 8, rx: 2 }))) : null),
+        stopArmed ? h('div', { className: 'planApproveRow', 'data-armed': 'true' },
+          h('button', { type: 'button', 'data-danger': 'true', onClick: () => { setStopArmed(false); onDispatch('team.halt', { reason: 'stopped from the colony panel' }); } }, t.t('stopTeam')),
+          h('button', { type: 'button', onClick: () => setStopArmed(false) }, t.t('cancel'))) : null,
+        h('div', { className: 'captainNode' },
+          h('span', { className: 'captainAvatar' }, h(AntShape, { size: 16 })),
+          h('span', { className: 'captainInfo' },
+            h('span', { className: 'captainLine' },
+              h('span', { className: 'captainName' }, team.leadName ?? t.t('captain')),
+              h('span', { className: 'captainRole' }, t.t('captainRole'))),
+            h('span', { className: 'captainSummary' }, t.t('members') + ' ' + team.members.length + ' · ' + t.t('taskCount') + ' ' + team.total)),
+          h('span', { className: 'captainState', 'data-busy': busyCount > 0 ? 'true' : 'false' },
+            h(WorkGlyph, { active: busyCount > 0 }),
+            busyCount > 0 ? t.t('progRunning') + ' ' + busyCount : t.t('idle'))),
+        h(ProgressOverview, { team, t }),
+        h(MemberTree, { team, t, ui, open: membersOpen, onToggle: () => setMembersOpen(value => !value), menuMemberId, onMenu: setMenuMemberId, onDispatch }),
+        h(DependencyMap, { team, t, selectedId: selectedTaskId, onSelect: setSelectedTaskId }),
+        historic ? null : h(PlanSection, { team, t, request, onDispatch }));
+    }
+
+
+    const PANEL_STORAGE = 'ant:panel:v1';
+    const PANEL_DEFAULT_WIDTH = 388;
+    const PANEL_MIN_WIDTH = 320;
+    const PANEL_MIN_HEIGHT = 360;
+
+    function clampNumber(value, min, max) { return Math.min(Math.max(value, min), max); }
+
+    function readGeometry() {
+      try {
+        const raw = window.localStorage.getItem(PANEL_STORAGE);
+        if (!raw) return undefined;
+        const value = JSON.parse(raw);
+        if (!value || typeof value.x !== 'number' || typeof value.y !== 'number' || typeof value.width !== 'number' || typeof value.height !== 'number') return undefined;
+        return { x: value.x, y: value.y, width: clampNumber(value.width, PANEL_MIN_WIDTH, 900), height: clampNumber(value.height, PANEL_MIN_HEIGHT, 1400) };
+      } catch (error) { trace('geometry-read-failed', error); return undefined; }
+    }
+
+    function writeGeometry(geometry) {
+      try { window.localStorage.setItem(PANEL_STORAGE, JSON.stringify(geometry)); } catch (error) { trace('geometry-write-failed', error); }
+    }
+
+    function beginPointer(event, onMove) {
+      if (typeof document === 'undefined' || (event.button !== undefined && event.button !== 0)) return;
+      const startX = event.clientX ?? 0;
+      const startY = event.clientY ?? 0;
+      const move = moveEvent => onMove((moveEvent.clientX ?? startX) - startX, (moveEvent.clientY ?? startY) - startY);
+      const stop = () => {
+        document.removeEventListener('pointermove', move);
+        document.removeEventListener('pointerup', stop);
+      };
+      document.addEventListener('pointermove', move);
+      document.addEventListener('pointerup', stop);
+    }
+
+    function RefreshIcon() {
+      return h('svg', { width: 14, height: 14, viewBox: '0 0 16 16', fill: 'none', stroke: 'currentColor', strokeWidth: 1.4, strokeLinecap: 'round', 'aria-hidden': 'true' },
+        h('path', { d: 'M13 8a5 5 0 1 1-1.7-3.8' }),
+        h('path', { d: 'M13 2.6v2.6h-2.6' }));
+    }
+
+    function CloseIcon() {
+      return h('svg', { width: 14, height: 14, viewBox: '0 0 16 16', fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round', 'aria-hidden': 'true' },
+        h('path', { d: 'M4 4l8 8M12 4l-8 8' }));
+    }
+
+    function ColonyPanel({ model, locale, ui }) {
+      const state = useModel(model);
+      const t = useLocale(locale);
+      const open = useShell(ui);
+      const [geometry, setGeometry] = React.useState(readGeometry);
+      React.useEffect(() => { if (open) model.loadAll(); }, [open, model]);
+      React.useEffect(() => { if (geometry !== undefined) writeGeometry(geometry); }, [geometry]);
+      React.useEffect(() => {
+        if (!open || typeof document === 'undefined') return undefined;
+        const away = event => {
+          const target = event.target;
+          if (target && typeof target.closest === 'function' && (target.closest('[data-ant-panel]') || target.closest('[data-ant-seat]'))) return;
+          ui.set(false);
+        };
+        const key = event => { if (event.key === 'Escape') ui.set(false); };
+        document.addEventListener('mousedown', away);
+        document.addEventListener('keydown', key);
+        return () => {
+          document.removeEventListener('mousedown', away);
+          document.removeEventListener('keydown', key);
+        };
+      }, [open, ui]);
+      if (!open) return null;
+      const entries = (state.teams ?? []).map(item => ({ item, team: toTeam(item, state.views?.[item.teamId]) }));
+      const live = entries.filter(entry => !entry.team.archived);
+      const archived = entries.filter(entry => entry.team.archived);
+      const base = () => {
+        if (geometry !== undefined) return geometry;
+        const width = typeof window === 'undefined' ? 1200 : (window.innerWidth || 1200);
+        return { x: Math.max(12, width - PANEL_DEFAULT_WIDTH - 18), y: 64, width: PANEL_DEFAULT_WIDTH, height: 560 };
+      };
+      const onHeadDown = event => {
+        const start = base();
+        if (start === undefined) return;
+        beginPointer(event, (dx, dy) => setGeometry({ x: Math.round(start.x + dx), y: Math.round(start.y + dy), width: start.width, height: start.height }));
+      };
+      const onGripDown = event => {
+        const start = base();
+        if (start === undefined) return;
+        beginPointer(event, (dx, dy) => setGeometry({
+          x: start.x,
+          y: start.y,
+          width: clampNumber(start.width + dx, PANEL_MIN_WIDTH, 900),
+          height: clampNumber(start.height + dy, PANEL_MIN_HEIGHT, 1400),
+        }));
+      };
+      const style = geometry === undefined
+        ? { position: 'absolute', top: 64, left: 'auto', right: 18, width: PANEL_DEFAULT_WIDTH, maxHeight: 'calc(100% - 116px)' }
+        : { position: 'fixed', top: geometry.y, left: geometry.x, right: 'auto', width: geometry.width, height: geometry.height, maxHeight: 'none' };
+      const renderTeam = (entry, historic) => h(TeamSection, {
+        key: entry.team.teamId,
+        team: entry.team,
+        t,
+        ui,
+        historic,
+        request: state.request !== undefined && state.request.teamId === entry.team.teamId,
+        onDispatch: (action, payload) => model.dispatch(entry.team.teamId, action, payload),
+      });
+      return h('div', {
+        className: 'panel',
+        'data-ant-ui': 'true',
+        'data-ant-panel': 'true',
+        style,
+        role: 'dialog',
+        'aria-label': t.t('seatLabel'),
+      },
+        h('div', { className: 'panelHead', onPointerDown: onHeadDown },
+          h('span', { className: 'panelTitle' }, h(AntShape, { size: 14 }), t.t('seatLabel')),
+          h('span', { className: 'panelControls' },
+            h('button', { type: 'button', className: 'iconButton', title: t.t('refresh'), 'aria-label': t.t('refresh'), onClick: () => model.loadAll() }, h(RefreshIcon)),
+            h('button', { type: 'button', className: 'iconButton', title: t.t('close'), 'aria-label': t.t('close'), onClick: () => ui.set(false) }, h(CloseIcon)))),
+        h('div', { className: 'teams' },
+          state.error !== undefined ? h('div', { className: 'error' }, h('span', null, state.error.message ?? String(state.error))) : null,
+          entries.length === 0
+            ? h('div', { className: 'empty' }, h('h3', null, t.t('emptyTeams')), h('p', null, t.t('emptyHint')))
+            : null,
+          live.map(entry => renderTeam(entry, false)),
+          archived.length > 0 ? h('span', { key: 'archive-label', className: 'archiveLabel' }, t.t('archived')) : null,
+          archived.map(entry => renderTeam(entry, true))),
+        h('div', { className: 'resizeHandle', 'data-resize-edge': 'bottom', onPointerDown: onGripDown }, h('span', { className: 'grip' })));
+    }
+
+    function ColonySeat({ model, locale, ui, sessionId, catalog }) {
+      const state = useModel(model);
+      const t = useLocale(locale);
+      const open = useShell(ui);
+      if (typeof catalog === 'function') ui.setCatalog(catalog);
+      React.useEffect(() => { model.ensureLoaded(); }, [model]);
+      React.useEffect(() => {
+        if (typeof window === 'undefined') return undefined;
+        const focus = () => model.loadAll();
+        window.addEventListener('focus', focus);
+        return () => window.removeEventListener('focus', focus);
+      }, [model]);
+      const entries = (state.teams ?? []).map(item => toTeam(item, state.views?.[item.teamId]));
+      const mine = entries.filter(team => !team.archived && (sessionId === undefined || team.members.some(member => member.sessionId === sessionId)));
+      const hidden = entries.length > 0 && mine.length === 0;
+      React.useEffect(() => { if (hidden) ui.set(false); }, [hidden, ui]);
+      if (hidden) return null;
+      const busy = mine.filter(team => team.tasks.some(task => task.state === 'running')).length;
+      const label = mine.length === 0 ? t.t('seatLabel') : mine.length === 1 ? mine[0].name : t.t('seatLabel') + ' ' + mine.length;
+      return h('span', { 'data-ant-ui': 'true', 'data-ant-seat': 'true' },
+        h('button', {
+          type: 'button',
+          className: 'chatEntry',
+          title: label,
+          'aria-haspopup': 'dialog',
+          'aria-expanded': open ? 'true' : 'false',
+          onClick: () => ui.toggle(),
+        },
+          h(AntShape, { size: 14 }),
+          h('span', { className: 'chatEntryLabel' }, label),
+          busy > 0 ? h('span', { className: 'chatEntryCount', 'data-busy': 'true' }, String(busy)) : null));
+    }
+
+    function installStyles() {
+      if (typeof document === 'undefined') return () => {};
+      if (document.querySelector('style[data-ant="styles"]')) return () => {};
+      const element = document.createElement('style');
+      element.setAttribute('data-ant', 'styles');
+      element.textContent = STYLES + CUSTOM_CSS;
+      document.head.appendChild(element);
+      return () => { element.remove(); };
+    }
+
+    function createShell() {
+      let open = false;
+      let catalog;
+      const listeners = new Set();
+      const emit = () => { for (const listener of [...listeners]) listener(); };
+      return {
+        getSnapshot: () => open,
+        subscribe(listener) { listeners.add(listener); return () => { listeners.delete(listener); }; },
+        set(next) { if (next === open) return; open = next; emit(); },
+        toggle() { open = !open; emit(); },
+        setCatalog(next) { catalog = next; },
+        catalog: () => (typeof catalog === 'function' ? catalog() : undefined),
+        dispose() { listeners.clear(); },
+      };
+    }
     function useModel(model) { return React.useSyncExternalStore(model.subscribe, model.getSnapshot, model.getSnapshot); }
+
     function useLocale(locale) { React.useSyncExternalStore(locale.subscribe, locale.snapshot, locale.snapshot); return locale; }
+
     function useShell(shell) { return React.useSyncExternalStore(shell.subscribe, shell.getSnapshot, shell.getSnapshot); }
 
-    const ACTIVE_ATTEMPT = ['queued', 'running', 'paused', 'taken-over'];
-    const STATE_KEYS = {
-      queued: 'stateQueued', running: 'stateRunning', paused: 'statePaused', 'taken-over': 'stateTakenOver',
-      pending: 'statePending', reviewed: 'stateReviewed', released: 'stateReleased', completed: 'stateCompleted',
-      failed: 'stateFailed', anomalous: 'stateAnomalous', terminated: 'stateTerminated',
-    };
-
-    /** One task lives in exactly one chamber; the five chambers partition the view. */
-    function pendingReleaseTasks(view) { return view?.releaseQueue ?? []; }
-    /** Unread mail is the Host summary count; the panel never recomputes receipts itself. */
-    function unreadMail(view) { return view?.summary?.unread?.total ?? 0; }
-    function liveMembers(view) { return (view?.members ?? []).filter(member => member.status !== 'removed'); }
-    function memberName(member) { return member.role ?? member.name ?? shortId(member.memberId); }
-    function heldTask(member, view) {
-      const attempt = (view?.attempts ?? []).find(item => item.memberId === member.memberId && ACTIVE_ATTEMPT.includes(item.state));
-      return attempt === undefined ? undefined : (view?.tasks ?? []).find(task => task.taskId === attempt.taskId);
-    }
-    function stateWord(state, t) { return t.t(STATE_KEYS[state] ?? 'unknown'); }
-    function statusLine(state, t) {
-      if (!state.error) return undefined;
-      const key = { 'stale-cursor': 'stale', 'not-found': 'notFound', 'rebuild-required': 'rebuild', lease: 'lease', 'persistence-failed': 'persistence' }[state.status];
-      return t.t(key ?? 'unavailable');
-    }
-
-    /** One solid silhouette, currentColor, no outline — the same ant at every size. */
     function AntShape({ size = 12, className, ...rest }) {
       const width = size * 1.55;
       return h('svg', { className, viewBox: '-20 -11 38 20', width, height: size, 'aria-hidden': 'true', focusable: 'false', ...rest },
@@ -417,338 +3032,12 @@ const CSS = `
         h('path', { d: 'M6.2 0.6 L10.4 -3.2 L13.4 2.2 M3.8 0.8 L4.6 -3.4 L3.2 5.2 M1 1 L-2.4 -2.6 L-6.4 2.6', fill: 'none', stroke: 'currentColor', strokeWidth: 1.2, strokeLinecap: 'round', strokeLinejoin: 'round' }));
     }
 
-    /** The single entry beside the permission chip: one click opens the colony panel. */
-    function ColonySeat({ model, locale, ui, catalog, sessionId }) {
-      const state = useModel(model);
-      const t = useLocale(locale);
-      const open = useShell(ui);
-      // The overlay slot has no session of its own; the seat hands it the catalogue.
-      ui.setCatalog(catalog);
-      React.useEffect(() => { model.ensureLoaded(); }, [model]);
-      // A team created in the conversation only shows up once the facts are re-read.
-      React.useEffect(() => {
-        if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return undefined;
-        const refresh = () => model.loadList();
-        window.addEventListener('focus', refresh);
-        return () => window.removeEventListener('focus', refresh);
-      }, [model]);
-      const view = state.view ?? {};
-      // The colony only speaks to its own conversations: another team's session gets no seat.
-      const belongs = sessionId === undefined || (view.members ?? []).some(member => member.sessionId === sessionId);
-      const hidden = (state.teams ?? []).length > 0 && !belongs;
-      React.useEffect(() => { if (hidden && open) ui.set(false); }, [hidden, open, ui]);
-      if (hidden) return null;
-      const count = pendingReleaseTasks(view).length || unreadMail(view);
-      const busy = (view.attempts ?? []).some(item => ACTIVE_ATTEMPT.includes(item.state));
-      return h('button', {
-        type: 'button',
-        className: 'ant-seat',
-        'data-ant-seat': '',
-        'data-busy': busy ? 'true' : undefined,
-        'aria-expanded': open ? 'true' : 'false',
-        'aria-haspopup': 'dialog',
-        title: t.t('panel'),
-        'aria-label': t.t('panel'),
-        onClick: () => ui.toggle(),
-      },
-        h(AntShape, { size: 12, className: 'ant-ant' }),
-        h('span', null, t.t('panel')),
-        count ? h('span', { className: 'ant-seat-count', 'aria-hidden': 'true' }, String(count)) : null);
-    }
-
-    const PANEL_STORAGE = 'ant:panel:v1';
-    const PANEL_MIN_WIDTH = 320;
-    const PANEL_MIN_HEIGHT = 240;
-    const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-
-    function readGeometry() {
-      try {
-        if (typeof localStorage === 'undefined') return undefined;
-        const raw = localStorage.getItem(PANEL_STORAGE);
-        if (!raw) return undefined;
-        const parsed = JSON.parse(raw);
-        if (typeof parsed?.width !== 'number' || typeof parsed?.height !== 'number') return undefined;
-        return parsed;
-      } catch (error) { return undefined; }
-    }
-
-    /** The colony lives in the shell overlay: a card that can be moved and resized, never a page. */
-    function ColonyPanel({ model, locale, ui }) {
-      const state = useModel(model);
-      const t = useLocale(locale);
-      const open = useShell(ui);
-      const [picker, setPicker] = React.useState(undefined);
-      const [query, setQuery] = React.useState('');
-      const [groups, setGroups] = React.useState(undefined);
-      const [catalogFailed, setCatalogFailed] = React.useState(false);
-      const [editor, setEditor] = React.useState(undefined);
-      const [geometry, setGeometry] = React.useState(undefined);
-      React.useEffect(() => { if (open) { model.loadList(); setGeometry(readGeometry()); } }, [open, model]);
-      React.useEffect(() => {
-        if (open || picker === undefined) return undefined;
-        setPicker(undefined);
-        return undefined;
-      }, [open, picker]);
-      React.useEffect(() => {
-        if (!open || picker === undefined || groups !== undefined) return undefined;
-        let live = true;
-        (async () => {
-          try {
-            const directory = ui.catalog();
-            if (!directory) throw new Error('no model directory');
-            await directory.load();
-            if (live) setGroups(directory.store.getSnapshot().groups ?? []);
-          } catch (error) { trace('catalog-failed', error); if (live) setCatalogFailed(true); }
-        })();
-        return () => { live = false; };
-      }, [open, picker, groups, ui]);
-      React.useEffect(() => {
-        if (!geometry || typeof localStorage === 'undefined') return undefined;
-        try { localStorage.setItem(PANEL_STORAGE, JSON.stringify(geometry)); } catch (error) { trace('geometry-unsaved', error); }
-        return undefined;
-      }, [geometry]);
-      React.useEffect(() => {
-        if (!open || typeof document === 'undefined') return undefined;
-        const dismiss = event => {
-          const target = event.target;
-          if (!target || typeof target.closest !== 'function') return;
-          if (target.closest('[data-ant-panel]') || target.closest('[data-ant-seat]')) return;
-          ui.set(false);
-        };
-        const escape = event => { if (event.key === 'Escape') ui.set(false); };
-        document.addEventListener('mousedown', dismiss);
-        document.addEventListener('keydown', escape);
-        return () => {
-          document.removeEventListener('mousedown', dismiss);
-          document.removeEventListener('keydown', escape);
-        };
-      }, [open, ui]);
-      if (!open) return null;
-      const view = state.view ?? {};
-      const members = liveMembers(view);
-      const tasks = view.tasks ?? [];
-      const busyIds = new Set((view.attempts ?? []).filter(item => ACTIVE_ATTEMPT.includes(item.state)).map(item => item.memberId));
-      const pending = pendingReleaseTasks(view);
-      const unread = unreadMail(view);
-      const notice = statusLine(state, t);
-      const confirmed = view.planConfirmed === true || view.planState === 'confirmed';
-      const busy = Boolean(state.request);
-      const choose = (member, group, item) => {
-        setPicker(undefined);
-        setQuery('');
-        model.dispatch('member.changeModel', { memberId: member.memberId, provider: group.id, model: item.id });
-      };
-
-      // Dragging the head and the corner grip both land in the same geometry state.
-      const startDrag = event => {
-        if (typeof document === 'undefined' || (event.button ?? 0) !== 0) return;
-        const element = event.currentTarget?.closest?.('[data-ant-panel]');
-        if (!element) return;
-        if (typeof event.preventDefault === 'function') event.preventDefault();
-        const rect = element.getBoundingClientRect();
-        const origin = { x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, width: rect.width, height: rect.height };
-        const move = moved => setGeometry({
-          left: clamp(origin.left + moved.clientX - origin.x, 0, Math.max(0, (window.innerWidth ?? 1280) - 140)),
-          top: clamp(origin.top + moved.clientY - origin.y, 0, Math.max(0, (window.innerHeight ?? 800) - 80)),
-          width: origin.width,
-          height: origin.height,
-        });
-        const stop = () => {
-          document.removeEventListener('pointermove', move);
-          document.removeEventListener('pointerup', stop);
-        };
-        document.addEventListener('pointermove', move);
-        document.addEventListener('pointerup', stop);
-      };
-      const startResize = event => {
-        if (typeof document === 'undefined' || (event.button ?? 0) !== 0) return;
-        const element = event.currentTarget?.closest?.('[data-ant-panel]');
-        if (!element) return;
-        if (typeof event.preventDefault === 'function') event.preventDefault();
-        const rect = element.getBoundingClientRect();
-        const origin = { x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, width: rect.width, height: rect.height };
-        const move = moved => setGeometry({
-          left: origin.left,
-          top: origin.top,
-          width: clamp(origin.width + moved.clientX - origin.x, PANEL_MIN_WIDTH, Math.max(PANEL_MIN_WIDTH, (window.innerWidth ?? 1280) - origin.left - 8)),
-          height: clamp(origin.height + moved.clientY - origin.y, PANEL_MIN_HEIGHT, Math.max(PANEL_MIN_HEIGHT, (window.innerHeight ?? 800) - origin.top - 8)),
-        });
-        const stop = () => {
-          document.removeEventListener('pointermove', move);
-          document.removeEventListener('pointerup', stop);
-        };
-        document.addEventListener('pointermove', move);
-        document.addEventListener('pointerup', stop);
-      };
-
-      const modelList = member => {
-        if (catalogFailed) return h('p', null, t.t('unavailable'));
-        if (groups === undefined) return h('p', null, t.t('loading'));
-        const rows = groups.flatMap(group => (group.models ?? []).map(item => ({ group, item })));
-        const needle = query.trim().toLowerCase();
-        const matched = needle === '' ? rows : rows.filter(({ group, item }) => (String(item.label ?? '') + ' ' + item.id + ' ' + group.id).toLowerCase().includes(needle));
-        const sections = [];
-        for (const row of matched) {
-          let section = sections.find(candidate => candidate.id === row.group.id);
-          if (!section) sections.push(section = { id: row.group.id, rows: [] });
-          section.rows.push(row);
-        }
-        return [
-          h('input', {
-            key: 'search', className: 'ant-search', type: 'search', value: query,
-            placeholder: t.t('searchModels'), 'aria-label': t.t('searchModels'),
-            onChange: event => setQuery(event.target.value),
-          }),
-          matched.length === 0
-            ? h('p', { key: 'no-match' }, t.t('noMatch'))
-            : h('div', { key: 'scroll', className: 'ant-model-scroll' }, sections.map(section => h('div', { key: section.id, className: 'ant-model-group' },
-              h('div', { className: 'ant-model-group-name' }, section.id),
-              section.rows.map(({ group, item }) => {
-                const active = item.id === member.model && group.id === member.provider;
-                return h('button', {
-                  key: group.id + ':' + item.id,
-                  type: 'button',
-                  className: 'ant-model-pick',
-                  'data-model': item.id,
-                  'data-provider': group.id,
-                  'aria-pressed': active ? 'true' : 'false',
-                  onClick: () => choose(member, group, item),
-                },
-                  h('span', { className: 'ant-model-name' }, item.label ?? item.id),
-                  h('span', { className: 'ant-model-check', 'aria-hidden': 'true' }, active ? '✓' : ''));
-              })))),
-        ];
-      };
-
-      const openEditor = (task) => {
-        setPicker(undefined);
-        setEditor(task === undefined
-          ? { mode: 'new', taskId: 'task-' + Date.now().toString(36), title: '', objective: '', acceptance: '' }
-          : { mode: 'edit', taskId: task.taskId, title: task.title ?? '', objective: task.objective ?? '', acceptance: (task.acceptance ?? []).join('；') });
-      };
-      const saveEditor = () => {
-        if (!editor) return;
-        const acceptance = editor.acceptance.split(/[；;\n]/).map(item => item.trim()).filter(Boolean);
-        if (editor.mode === 'new') {
-          model.dispatch('task.create', {
-            task: { taskId: editor.taskId, title: editor.title, objective: editor.objective, inScope: [], outOfScope: [], acceptance, verify: [] },
-            reason: 'added from the colony panel',
-          });
-        } else {
-          model.dispatch('task.amend', {
-            taskId: editor.taskId,
-            patch: { title: editor.title, objective: editor.objective, acceptance },
-            reason: 'amended from the colony panel',
-          });
-        }
-        setEditor(undefined);
-      };
-      const editField = (key, placeholder) => h('input', {
-        className: 'ant-field', value: editor[key] ?? '', placeholder,
-        'aria-label': placeholder,
-        onChange: event => setEditor({ ...editor, [key]: event.target.value }),
-      });
-
-      const memberBlock = member => h('div', { key: member.memberId, className: 'ant-member' },
-        h('div', { className: 'ant-row', 'data-state': busyIds.has(member.memberId) ? 'running' : 'idle' },
-          h(AntShape, { size: 11, className: 'ant-ant' }),
-          h('span', { className: 'ant-row-name' }, memberName(member)),
-          h('span', { className: 'ant-row-note' }, heldTask(member, view)?.title ?? (member.status === 'active' ? t.t('idle') : String(member.status ?? ''))),
-          h('button', {
-            type: 'button',
-            className: 'ant-chip',
-            'data-member': member.memberId,
-            title: t.t('model'),
-            'aria-expanded': picker === member.memberId ? 'true' : 'false',
-            onClick: () => { setEditor(undefined); setQuery(''); setPicker(picker === member.memberId ? undefined : member.memberId); },
-          }, (member.model ?? member.provider ?? '—') + ' ▾')),
-        picker === member.memberId ? h('div', { className: 'ant-models' }, modelList(member)) : null);
-
-      const order = { running: 0, paused: 1, 'taken-over': 1, reviewed: 2, failed: 3, anomalous: 3, pending: 4, queued: 5, terminated: 6, released: 7, completed: 7 };
-      const taskRow = task => h('button', {
-        key: task.taskId, type: 'button', className: 'ant-task', 'data-state': task.state,
-        title: t.t('editTask'),
-        onClick: () => openEditor(task),
-      },
-        h('span', { className: 'ant-row-name' }, task.title ?? task.taskId),
-        h('span', { className: 'ant-row-note' }, stateWord(task.state, t)));
-
-      const editorBlock = () => h('div', { className: 'ant-editor' },
-        editField('title', t.t('taskTitle')),
-        editField('objective', t.t('taskObjective')),
-        editField('acceptance', t.t('taskAcceptance')),
-        h('div', { className: 'ant-editor-actions' },
-          h('button', { type: 'button', className: 'ant-primary', disabled: !editor.title.trim() || !editor.objective.trim(), onClick: saveEditor }, t.t('save')),
-          h('button', { type: 'button', className: 'ant-link', onClick: () => setEditor(undefined) }, t.t('cancel'))));
-
-      const body = state.status === 'loading' && !state.view
-        ? h('p', { className: 'ant-panel-status', role: 'status' }, t.t('loading'))
-        : state.status === 'empty'
-          ? h('div', { className: 'ant-panel-empty' }, h('strong', null, t.t('empty')), h('span', null, t.t('emptyHint')))
-          : [
-            h('div', { key: 'members-head', className: 'ant-panel-section' }, t.t('members'), h('span', null, String(members.length))),
-            members.length ? members.map(memberBlock) : h('p', { key: 'no-members', className: 'ant-panel-status' }, t.t('empty')),
-            h('div', { key: 'tasks-head', className: 'ant-panel-section' }, t.t('tasks'), h('span', null, String(tasks.length)),
-              h('button', { type: 'button', className: 'ant-add', title: t.t('addTask'), 'aria-label': t.t('addTask'), disabled: !confirmed, onClick: () => { setPicker(undefined); openEditor(undefined); } }, '+')),
-            tasks.length ? [...tasks].sort((a, b) => (order[a.state] ?? 9) - (order[b.state] ?? 9)).map(taskRow) : h('p', { key: 'no-tasks', className: 'ant-panel-status' }, t.t('noActivity')),
-            editor ? editorBlock() : null,
-          ];
-
-      const style = geometry
-        ? { position: 'fixed', left: geometry.left + 'px', top: geometry.top + 'px', width: geometry.width + 'px', height: geometry.height + 'px', maxHeight: 'none' }
-        : undefined;
-
-      return h('div', { className: 'ant-panel', 'data-ant-panel': '', role: 'dialog', 'aria-label': t.t('panel'), style },
-        h('div', { className: 'ant-panel-head', onPointerDown: startDrag },
-          h(AntShape, { size: 13, className: 'ant-ant' }),
-          h('strong', { className: 'ant-panel-name' }, t.t('panel')),
-          h('span', { className: 'ant-panel-goal' }, view.goal ?? ''),
-          h('button', { type: 'button', className: 'ant-icon', title: t.t('close'), 'aria-label': t.t('close'), onClick: () => ui.set(false) }, '×')),
-        notice ? h('p', { className: 'ant-panel-status', role: 'alert' }, notice) : null,
-        h('div', { className: 'ant-panel-body' }, body),
-        h('div', { className: 'ant-panel-foot' },
-          confirmed
-            ? h('button', { type: 'button', className: 'ant-primary', disabled: busy || !pending.length, onClick: () => model.dispatch('batch.release', { batchId: 'batch-' + ((view.cursor ?? 0) + 1), taskIds: pending.map(task => task.taskId) }) }, t.t('releaseNow') + (pending.length ? ' ' + pending.length : ''))
-            : h('button', { type: 'button', className: 'ant-primary', disabled: busy || !view.planDigest, onClick: () => model.dispatch('plan.confirm', { planDigest: view.planDigest }) }, t.t('confirmPlan')),
-          unread ? h('span', { className: 'ant-row-note' }, unread + ' ' + t.t('unread')) : null),
-        h('div', { className: 'ant-grip', onPointerDown: startResize, 'aria-hidden': 'true' }));
-    }
-
-    /** The stylesheet is global: the seat and the panel are registered on different slots. */
-    function installStyles() {
-      if (typeof document === 'undefined' || !document.head) return () => {};
-      const existing = document.querySelector('style[data-ant="styles"]');
-      if (existing) return () => {};
-      const element = document.createElement('style');
-      element.setAttribute('data-ant', 'styles');
-      element.textContent = CSS;
-      document.head.appendChild(element);
-      return () => { element.remove(); };
-    }
-
-    /** Resolve the Host model catalogue for this Session without hard-depending on it. */
     function directoryOf(ctx, sessionId) {
       try {
         const directories = typeof ctx.get === 'function' ? ctx.get('modelDirectories') : undefined;
         if (!directories || sessionId === undefined) return undefined;
         return directories.directoryFor(sessionId);
       } catch (error) { trace('catalog-failed', error); return undefined; }
-    }
-
-    /** Panel visibility is shared state: the seat lives in the composer, the panel in the overlay. */
-    function createShell() {
-      let open = false;
-      let resolveCatalog;
-      const listeners = new Set();
-      return {
-        getSnapshot: () => open,
-        subscribe(listener) { listeners.add(listener); return () => { listeners.delete(listener); }; },
-        set(value) { if (open !== value) { open = value; listeners.forEach(listener => listener()); } },
-        toggle() { this.set(!open); },
-        setCatalog(fn) { resolveCatalog = fn; },
-        catalog() { return typeof resolveCatalog === 'function' ? resolveCatalog() : undefined; },
-        dispose() { listeners.clear(); resolveCatalog = undefined; },
-      };
     }
 
     function registerSurfaces(ctx, model, locale, shell) {
