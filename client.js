@@ -212,13 +212,17 @@ window.__ModuleLoader__.load({
 
 
     Object.assign(DICT.en, {
-      close: 'Close', idle: 'idle',
+      close: 'Close', idle: 'idle', searchModels: 'Search models', noMatch: 'No model matches',
+      addTask: 'Add task', editTask: 'Edit task', taskTitle: 'Title', taskObjective: 'Objective', taskAcceptance: 'Acceptance (separate with ;)',
+      save: 'Save', cancel: 'Cancel', confirmPlan: 'Confirm plan',
       stateQueued: 'queued', stateRunning: 'running', statePaused: 'paused', stateTakenOver: 'taken over',
       statePending: 'waiting', stateReviewed: 'ready to release', stateReleased: 'released', stateCompleted: 'done',
       stateFailed: 'failed', stateAnomalous: 'anomalous', stateTerminated: 'stopped',
     });
     Object.assign(DICT.zh, {
-      close: '关闭', idle: '空闲',
+      close: '关闭', idle: '空闲', searchModels: '搜索模型', noMatch: '没有匹配的模型',
+      addTask: '新增任务', editTask: '修改任务', taskTitle: '标题', taskObjective: '目标', taskAcceptance: '验收标准（用；分隔）',
+      save: '保存', cancel: '取消', confirmPlan: '确认计划',
       stateQueued: '排队', stateRunning: '进行中', statePaused: '已暂停', stateTakenOver: '已接管',
       statePending: '等待', stateReviewed: '待放行', stateReleased: '已放行', stateCompleted: '已完成',
       stateFailed: '失败', stateAnomalous: '异常', stateTerminated: '已终止',
@@ -232,10 +236,11 @@ const CSS = `
       .ant-ant{flex:none;color:currentColor;opacity:.86}
       .ant-seat[data-busy=true] .ant-ant{color:var(--dsw-alias-state-business-primary);opacity:1}
       .ant-seat-count{flex:none;min-width:15px;height:15px;padding:0 4px;box-sizing:border-box;border-radius:8px;background:var(--dsw-alias-state-business-primary);color:var(--dsw-alias-label-primary-inverted);font-size:9.5px;font-weight:600;line-height:15px;text-align:center;font-variant-numeric:tabular-nums}
-      .ant-panel{position:absolute;top:var(--dsh-frame-overlay-top,74px);right:16px;display:flex;flex-direction:column;width:380px;max-height:calc(100% - var(--dsh-frame-overlay-top,74px) - 132px);max-width:calc(100% - 32px);box-sizing:border-box;overflow:hidden;border:1px solid var(--dsw-alias-border-l2);border-radius:14px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px;box-shadow:0 18px 44px color-mix(in srgb,var(--dsw-alias-bg-mask-3) 24%,transparent),0 2px 8px color-mix(in srgb,var(--dsw-alias-bg-mask-3) 12%,transparent);animation:ant-panel-in .14s ease-out}
+      .ant-panel{position:absolute;top:var(--dsh-frame-overlay-top,74px);right:16px;display:flex;flex-direction:column;width:440px;min-height:320px;max-height:calc(100% - var(--dsh-frame-overlay-top,74px) - 132px);max-width:calc(100% - 32px);box-sizing:border-box;overflow:hidden;border:1px solid var(--dsw-alias-border-l2);border-radius:14px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px;box-shadow:0 18px 44px color-mix(in srgb,var(--dsw-alias-bg-mask-3) 24%,transparent),0 2px 8px color-mix(in srgb,var(--dsw-alias-bg-mask-3) 12%,transparent);animation:ant-panel-in .14s ease-out}
       .ant-panel *{box-sizing:border-box}
       @keyframes ant-panel-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
-      .ant-panel-head{display:flex;flex:none;align-items:center;gap:8px;padding:9px 8px 9px 13px;border-bottom:1px solid var(--dsw-alias-border-l2)}
+      .ant-panel-head{display:flex;flex:none;align-items:center;gap:8px;padding:9px 8px 9px 13px;border-bottom:1px solid var(--dsw-alias-border-l2);cursor:grab;user-select:none;touch-action:none}
+      .ant-panel-head:active{cursor:grabbing}
       .ant-panel-head .ant-ant{color:var(--dsw-alias-label-primary)}
       .ant-panel-name{flex:none;font-size:13px;font-weight:600;line-height:18px}
       .ant-panel-goal{flex:1;min-width:0;overflow:hidden;color:var(--dsw-alias-label-tertiary);font-size:11.5px;line-height:16px;text-overflow:ellipsis;white-space:nowrap}
@@ -260,6 +265,30 @@ const CSS = `
       .ant-model-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       .ant-model-provider{flex:none;color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,Consolas,monospace;font-size:10px}
       .ant-model-check{flex:none;width:12px;color:var(--dsw-alias-state-business-primary);font-size:11px}
+      .ant-grip{position:absolute;right:0;bottom:0;width:16px;height:16px;cursor:nwse-resize;touch-action:none}
+      .ant-grip::before,.ant-grip::after{content:'';position:absolute;right:3px;bottom:3px;width:7px;height:1px;background:var(--dsw-alias-border-l3);transform:rotate(-45deg)}
+      .ant-grip::after{right:6px;bottom:6px;width:4px}
+      .ant-search{width:100%;height:28px;margin:0 0 4px;padding:0 8px;box-sizing:border-box;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px}
+      .ant-search::placeholder{color:var(--dsw-alias-label-tertiary)}
+      .ant-search:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:1px}
+      .ant-model-scroll{max-height:260px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+      .ant-model-group{padding:2px 0 4px}
+      .ant-model-group-name{display:flex;align-items:center;gap:8px;padding:4px 4px 3px;color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,Consolas,monospace;font-size:10px}
+      .ant-model-group-name::after{content:'';flex:1;height:1px;background:var(--dsw-alias-border-l2)}
+      .ant-task{display:flex;width:100%;align-items:center;gap:8px;padding:5px 13px;border:0;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:12px;line-height:16px;text-align:left;cursor:pointer}
+      .ant-task:hover{background:var(--dsw-alias-bg-module-platform)}
+      .ant-task[data-state=running] .ant-row-name,.ant-task[data-state=reviewed] .ant-row-name{color:var(--dsw-alias-state-business-primary)}
+      .ant-task:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:-2px}
+      .ant-add{display:grid;width:20px;height:20px;margin-left:auto;place-items:center;padding:0;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;background:transparent;color:var(--dsw-alias-label-tertiary);font:inherit;font-size:13px;line-height:1;cursor:pointer}
+      .ant-add:hover:not([disabled]){border-color:var(--dsw-alias-state-business-primary);color:var(--dsw-alias-state-business-primary)}
+      .ant-add[disabled]{cursor:default;opacity:.4}
+      .ant-editor{display:flex;flex-direction:column;gap:6px;margin:4px 13px 8px;padding:8px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-layer-2)}
+      .ant-field{width:100%;height:28px;padding:0 8px;box-sizing:border-box;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px}
+      .ant-field::placeholder{color:var(--dsw-alias-label-tertiary)}
+      .ant-field:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:1px}
+      .ant-editor-actions{display:flex;align-items:center;gap:8px}
+      .ant-link{border:0;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:11.5px;cursor:pointer;padding:4px 6px;border-radius:6px}
+      .ant-link:hover{background:var(--dsw-alias-button-ghost-active-fill);color:var(--dsw-alias-label-primary)}
       .ant-panel-foot{display:flex;flex:none;align-items:center;gap:8px;padding:8px 13px;border-top:1px solid var(--dsw-alias-border-l2)}
       .ant-primary{flex:1;min-height:30px;padding:0 12px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:12px;cursor:pointer;transition:border-color .12s ease,color .12s ease}
       .ant-primary:hover:not([disabled]){border-color:var(--dsw-alias-state-business-primary);color:var(--dsw-alias-state-business-primary)}
@@ -427,15 +456,34 @@ const CSS = `
         count ? h('span', { className: 'ant-seat-count', 'aria-hidden': 'true' }, String(count)) : null);
     }
 
-    /** The colony lives in the shell overlay: a docked card, never a page of its own. */
+    const PANEL_STORAGE = 'ant:panel:v1';
+    const PANEL_MIN_WIDTH = 320;
+    const PANEL_MIN_HEIGHT = 240;
+    const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+    function readGeometry() {
+      try {
+        if (typeof localStorage === 'undefined') return undefined;
+        const raw = localStorage.getItem(PANEL_STORAGE);
+        if (!raw) return undefined;
+        const parsed = JSON.parse(raw);
+        if (typeof parsed?.width !== 'number' || typeof parsed?.height !== 'number') return undefined;
+        return parsed;
+      } catch (error) { return undefined; }
+    }
+
+    /** The colony lives in the shell overlay: a card that can be moved and resized, never a page. */
     function ColonyPanel({ model, locale, ui }) {
       const state = useModel(model);
       const t = useLocale(locale);
       const open = useShell(ui);
       const [picker, setPicker] = React.useState(undefined);
+      const [query, setQuery] = React.useState('');
       const [groups, setGroups] = React.useState(undefined);
       const [catalogFailed, setCatalogFailed] = React.useState(false);
-      React.useEffect(() => { if (open) model.loadList(); }, [open, model]);
+      const [editor, setEditor] = React.useState(undefined);
+      const [geometry, setGeometry] = React.useState(undefined);
+      React.useEffect(() => { if (open) { model.loadList(); setGeometry(readGeometry()); } }, [open, model]);
       React.useEffect(() => {
         if (open || picker === undefined) return undefined;
         setPicker(undefined);
@@ -454,6 +502,11 @@ const CSS = `
         })();
         return () => { live = false; };
       }, [open, picker, groups, ui]);
+      React.useEffect(() => {
+        if (!geometry || typeof localStorage === 'undefined') return undefined;
+        try { localStorage.setItem(PANEL_STORAGE, JSON.stringify(geometry)); } catch (error) { trace('geometry-unsaved', error); }
+        return undefined;
+      }, [geometry]);
       React.useEffect(() => {
         if (!open || typeof document === 'undefined') return undefined;
         const dismiss = event => {
@@ -478,35 +531,124 @@ const CSS = `
       const pending = pendingReleaseTasks(view);
       const unread = unreadMail(view);
       const notice = statusLine(state, t);
+      const confirmed = view.planConfirmed === true || view.planState === 'confirmed';
+      const busy = Boolean(state.request);
       const choose = (member, group, item) => {
         setPicker(undefined);
+        setQuery('');
         model.dispatch('member.changeModel', { memberId: member.memberId, provider: group.id, model: item.id });
       };
-      const release = () => model.dispatch('batch.release', {
-        batchId: 'batch-' + ((view.cursor ?? 0) + 1),
-        taskIds: pending.map(task => task.taskId),
-      });
+
+      // Dragging the head and the corner grip both land in the same geometry state.
+      const startDrag = event => {
+        if (typeof document === 'undefined' || (event.button ?? 0) !== 0) return;
+        const element = event.currentTarget?.closest?.('[data-ant-panel]');
+        if (!element) return;
+        if (typeof event.preventDefault === 'function') event.preventDefault();
+        const rect = element.getBoundingClientRect();
+        const origin = { x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+        const move = moved => setGeometry({
+          left: clamp(origin.left + moved.clientX - origin.x, 0, Math.max(0, (window.innerWidth ?? 1280) - 140)),
+          top: clamp(origin.top + moved.clientY - origin.y, 0, Math.max(0, (window.innerHeight ?? 800) - 80)),
+          width: origin.width,
+          height: origin.height,
+        });
+        const stop = () => {
+          document.removeEventListener('pointermove', move);
+          document.removeEventListener('pointerup', stop);
+        };
+        document.addEventListener('pointermove', move);
+        document.addEventListener('pointerup', stop);
+      };
+      const startResize = event => {
+        if (typeof document === 'undefined' || (event.button ?? 0) !== 0) return;
+        const element = event.currentTarget?.closest?.('[data-ant-panel]');
+        if (!element) return;
+        if (typeof event.preventDefault === 'function') event.preventDefault();
+        const rect = element.getBoundingClientRect();
+        const origin = { x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+        const move = moved => setGeometry({
+          left: origin.left,
+          top: origin.top,
+          width: clamp(origin.width + moved.clientX - origin.x, PANEL_MIN_WIDTH, Math.max(PANEL_MIN_WIDTH, (window.innerWidth ?? 1280) - origin.left - 8)),
+          height: clamp(origin.height + moved.clientY - origin.y, PANEL_MIN_HEIGHT, Math.max(PANEL_MIN_HEIGHT, (window.innerHeight ?? 800) - origin.top - 8)),
+        });
+        const stop = () => {
+          document.removeEventListener('pointermove', move);
+          document.removeEventListener('pointerup', stop);
+        };
+        document.addEventListener('pointermove', move);
+        document.addEventListener('pointerup', stop);
+      };
+
       const modelList = member => {
         if (catalogFailed) return h('p', null, t.t('unavailable'));
         if (groups === undefined) return h('p', null, t.t('loading'));
         const rows = groups.flatMap(group => (group.models ?? []).map(item => ({ group, item })));
-        if (rows.length === 0) return h('p', null, t.t('empty'));
-        return rows.map(({ group, item }) => {
-          const active = item.id === member.model && group.id === member.provider;
-          return h('button', {
-            key: group.id + ':' + item.id,
-            type: 'button',
-            className: 'ant-model-pick',
-            'data-model': item.id,
-            'data-provider': group.id,
-            'aria-pressed': active ? 'true' : 'false',
-            onClick: () => choose(member, group, item),
-          },
-            h('span', { className: 'ant-model-name' }, item.label ?? item.id),
-            h('span', { className: 'ant-model-provider' }, group.id),
-            h('span', { className: 'ant-model-check', 'aria-hidden': 'true' }, active ? '✓' : ''));
-        });
+        const needle = query.trim().toLowerCase();
+        const matched = needle === '' ? rows : rows.filter(({ group, item }) => (String(item.label ?? '') + ' ' + item.id + ' ' + group.id).toLowerCase().includes(needle));
+        const sections = [];
+        for (const row of matched) {
+          let section = sections.find(candidate => candidate.id === row.group.id);
+          if (!section) sections.push(section = { id: row.group.id, rows: [] });
+          section.rows.push(row);
+        }
+        return [
+          h('input', {
+            key: 'search', className: 'ant-search', type: 'search', value: query,
+            placeholder: t.t('searchModels'), 'aria-label': t.t('searchModels'),
+            onChange: event => setQuery(event.target.value),
+          }),
+          matched.length === 0
+            ? h('p', { key: 'no-match' }, t.t('noMatch'))
+            : h('div', { key: 'scroll', className: 'ant-model-scroll' }, sections.map(section => h('div', { key: section.id, className: 'ant-model-group' },
+              h('div', { className: 'ant-model-group-name' }, section.id),
+              section.rows.map(({ group, item }) => {
+                const active = item.id === member.model && group.id === member.provider;
+                return h('button', {
+                  key: group.id + ':' + item.id,
+                  type: 'button',
+                  className: 'ant-model-pick',
+                  'data-model': item.id,
+                  'data-provider': group.id,
+                  'aria-pressed': active ? 'true' : 'false',
+                  onClick: () => choose(member, group, item),
+                },
+                  h('span', { className: 'ant-model-name' }, item.label ?? item.id),
+                  h('span', { className: 'ant-model-check', 'aria-hidden': 'true' }, active ? '✓' : ''));
+              })))),
+        ];
       };
+
+      const openEditor = (task) => {
+        setPicker(undefined);
+        setEditor(task === undefined
+          ? { mode: 'new', taskId: 'task-' + Date.now().toString(36), title: '', objective: '', acceptance: '' }
+          : { mode: 'edit', taskId: task.taskId, title: task.title ?? '', objective: task.objective ?? '', acceptance: (task.acceptance ?? []).join('；') });
+      };
+      const saveEditor = () => {
+        if (!editor) return;
+        const acceptance = editor.acceptance.split(/[；;\n]/).map(item => item.trim()).filter(Boolean);
+        if (editor.mode === 'new') {
+          model.dispatch('task.create', {
+            task: { taskId: editor.taskId, title: editor.title, objective: editor.objective, inScope: [], outOfScope: [], acceptance, verify: [] },
+            reason: 'added from the colony panel',
+          });
+        } else {
+          model.dispatch('task.amend', {
+            taskId: editor.taskId,
+            patch: { title: editor.title, objective: editor.objective, acceptance },
+            reason: 'amended from the colony panel',
+          });
+        }
+        setEditor(undefined);
+      };
+      const editField = (key, placeholder) => h('input', {
+        className: 'ant-field', value: editor[key] ?? '', placeholder,
+        'aria-label': placeholder,
+        onChange: event => setEditor({ ...editor, [key]: event.target.value }),
+      });
+
       const memberBlock = member => h('div', { key: member.memberId, className: 'ant-member' },
         h('div', { className: 'ant-row', 'data-state': busyIds.has(member.memberId) ? 'running' : 'idle' },
           h(AntShape, { size: 11, className: 'ant-ant' }),
@@ -518,13 +660,27 @@ const CSS = `
             'data-member': member.memberId,
             title: t.t('model'),
             'aria-expanded': picker === member.memberId ? 'true' : 'false',
-            onClick: () => setPicker(picker === member.memberId ? undefined : member.memberId),
+            onClick: () => { setEditor(undefined); setQuery(''); setPicker(picker === member.memberId ? undefined : member.memberId); },
           }, (member.model ?? member.provider ?? '—') + ' ▾')),
         picker === member.memberId ? h('div', { className: 'ant-models' }, modelList(member)) : null);
+
       const order = { running: 0, paused: 1, 'taken-over': 1, reviewed: 2, failed: 3, anomalous: 3, pending: 4, queued: 5, terminated: 6, released: 7, completed: 7 };
-      const taskRow = task => h('div', { key: task.taskId, className: 'ant-row', 'data-state': task.state },
+      const taskRow = task => h('button', {
+        key: task.taskId, type: 'button', className: 'ant-task', 'data-state': task.state,
+        title: t.t('editTask'),
+        onClick: () => openEditor(task),
+      },
         h('span', { className: 'ant-row-name' }, task.title ?? task.taskId),
         h('span', { className: 'ant-row-note' }, stateWord(task.state, t)));
+
+      const editorBlock = () => h('div', { className: 'ant-editor' },
+        editField('title', t.t('taskTitle')),
+        editField('objective', t.t('taskObjective')),
+        editField('acceptance', t.t('taskAcceptance')),
+        h('div', { className: 'ant-editor-actions' },
+          h('button', { type: 'button', className: 'ant-primary', disabled: !editor.title.trim() || !editor.objective.trim(), onClick: saveEditor }, t.t('save')),
+          h('button', { type: 'button', className: 'ant-link', onClick: () => setEditor(undefined) }, t.t('cancel'))));
+
       const body = state.status === 'loading' && !state.view
         ? h('p', { className: 'ant-panel-status', role: 'status' }, t.t('loading'))
         : state.status === 'empty'
@@ -532,11 +688,18 @@ const CSS = `
           : [
             h('div', { key: 'members-head', className: 'ant-panel-section' }, t.t('members'), h('span', null, String(members.length))),
             members.length ? members.map(memberBlock) : h('p', { key: 'no-members', className: 'ant-panel-status' }, t.t('empty')),
-            h('div', { key: 'tasks-head', className: 'ant-panel-section' }, t.t('tasks'), h('span', null, String(tasks.length))),
+            h('div', { key: 'tasks-head', className: 'ant-panel-section' }, t.t('tasks'), h('span', null, String(tasks.length)),
+              h('button', { type: 'button', className: 'ant-add', title: t.t('addTask'), 'aria-label': t.t('addTask'), disabled: !confirmed, onClick: () => { setPicker(undefined); openEditor(undefined); } }, '+')),
             tasks.length ? [...tasks].sort((a, b) => (order[a.state] ?? 9) - (order[b.state] ?? 9)).map(taskRow) : h('p', { key: 'no-tasks', className: 'ant-panel-status' }, t.t('noActivity')),
+            editor ? editorBlock() : null,
           ];
-      return h('div', { className: 'ant-panel', 'data-ant-panel': '', role: 'dialog', 'aria-label': t.t('panel') },
-        h('div', { className: 'ant-panel-head' },
+
+      const style = geometry
+        ? { position: 'fixed', left: geometry.left + 'px', top: geometry.top + 'px', width: geometry.width + 'px', height: geometry.height + 'px', maxHeight: 'none' }
+        : undefined;
+
+      return h('div', { className: 'ant-panel', 'data-ant-panel': '', role: 'dialog', 'aria-label': t.t('panel'), style },
+        h('div', { className: 'ant-panel-head', onPointerDown: startDrag },
           h(AntShape, { size: 13, className: 'ant-ant' }),
           h('strong', { className: 'ant-panel-name' }, t.t('panel')),
           h('span', { className: 'ant-panel-goal' }, view.goal ?? ''),
@@ -544,8 +707,11 @@ const CSS = `
         notice ? h('p', { className: 'ant-panel-status', role: 'alert' }, notice) : null,
         h('div', { className: 'ant-panel-body' }, body),
         h('div', { className: 'ant-panel-foot' },
-          h('button', { type: 'button', className: 'ant-primary', disabled: Boolean(state.request) || !pending.length, onClick: release }, t.t('releaseNow') + (pending.length ? ' ' + pending.length : '')),
-          unread ? h('span', { className: 'ant-row-note' }, unread + ' ' + t.t('unread')) : null));
+          confirmed
+            ? h('button', { type: 'button', className: 'ant-primary', disabled: busy || !pending.length, onClick: () => model.dispatch('batch.release', { batchId: 'batch-' + ((view.cursor ?? 0) + 1), taskIds: pending.map(task => task.taskId) }) }, t.t('releaseNow') + (pending.length ? ' ' + pending.length : ''))
+            : h('button', { type: 'button', className: 'ant-primary', disabled: busy || !view.planDigest, onClick: () => model.dispatch('plan.confirm', { planDigest: view.planDigest }) }, t.t('confirmPlan')),
+          unread ? h('span', { className: 'ant-row-note' }, unread + ' ' + t.t('unread')) : null),
+        h('div', { className: 'ant-grip', onPointerDown: startResize, 'aria-hidden': 'true' }));
     }
 
     /** The stylesheet is global: the seat and the panel are registered on different slots. */

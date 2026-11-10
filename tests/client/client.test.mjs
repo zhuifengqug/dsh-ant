@@ -380,6 +380,8 @@ const SEAT_VIEW = {
   goal: 'Ship the panel',
   lifecycle: 'running',
   cursor: 7,
+  planConfirmed: true,
+  planDigest: 'a'.repeat(64),
   members: [
     { memberId: 'member-1', name: '工蚁 1', status: 'active', provider: 'deepseek', model: 'deepseek-v4', sessionId: 'session-1' },
   ],
@@ -449,7 +451,9 @@ test('the seat sits beside the permission chip and folds the whole colony behind
   const rows = findAllByClass(panel, 'ant-row');
   assert.match(textOf(rows[0]), /工蚁 1/);
   assert.match(textOf(rows[0]), /idle/);
-  assert.match(textOf(rows[1]), /ready to release/);
+  const taskRow = findAllByClass(panel, 'ant-task');
+  assert.equal(taskRow.length, 1);
+  assert.match(textOf(taskRow[0]), /ready to release/);
   assert.equal(findAllByClass(panel, 'ant-panel').length, 1, 'the panel never nests a second panel');
   await colony.cleanup();
   await colony.runtime.disposeEffects();
@@ -520,6 +524,84 @@ test('the close button shuts the panel without leaving the conversation', async 
   const shut = colony.draw();
   assert.equal(shut.panel, null);
   assert.equal(findByClass(shut.seat, 'ant-seat').props['aria-expanded'], 'false');
+  await colony.cleanup();
+  await colony.runtime.disposeEffects();
+});
+
+test('an unconfirmed plan asks for confirmation before anything else', async () => {
+  const view = { ...SEAT_VIEW, planConfirmed: false, planState: 'staged' };
+  const colony = await mountColony({ view });
+  findByClass(colony.tree.seat, 'ant-seat').props.onClick();
+  const tree = colony.draw();
+  const primary = findByClass(tree.panel, 'ant-primary');
+  assert.equal(textOf(primary), 'Confirm plan');
+  assert.equal(primary.props.disabled, false);
+  assert.equal(findByClass(tree.panel, 'ant-add').props.disabled, true, 'tasks arrive after the plan is confirmed');
+  primary.props.onClick();
+  const dispatched = colony.calls.filter(item => item[0] === 'dispatch').map(item => item[1]);
+  assert.equal(dispatched[0].action, 'plan.confirm');
+  assert.equal(dispatched[0].payload.planDigest, 'a'.repeat(64));
+  await colony.cleanup();
+  await colony.runtime.disposeEffects();
+});
+
+test('the panel adds a task and amends one without leaving the conversation', async () => {
+  const colony = await mountColony();
+  findByClass(colony.tree.seat, 'ant-seat').props.onClick();
+  colony.draw();
+
+  findByClass(colony.tree.panel, 'ant-add').props.onClick();
+  colony.draw();
+  const fields = findAllByClass(colony.tree.panel, 'ant-field');
+  assert.equal(fields.length, 3);
+  const save = findByClass(colony.tree.panel, 'ant-editor-actions').children[0];
+  assert.equal(save.props.disabled, true, 'an empty task is not dispatched');
+  fields[0].props.onChange({ target: { value: '写测试' } });
+  colony.draw();
+  findAllByClass(colony.tree.panel, 'ant-field')[1].props.onChange({ target: { value: '覆盖座席' } });
+  colony.draw();
+  findAllByClass(colony.tree.panel, 'ant-field')[2].props.onChange({ target: { value: '测试全绿；无告警' } });
+  colony.draw();
+  findByClass(colony.tree.panel, 'ant-editor-actions').children[0].props.onClick();
+  const created = colony.calls.filter(item => item[0] === 'dispatch').map(item => item[1]);
+  assert.equal(created[0].action, 'task.create');
+  assert.equal(created[0].payload.task.title, '写测试');
+  assert.equal(created[0].payload.task.objective, '覆盖座席');
+  assert.equal(created[0].payload.task.acceptance.length, 2);
+  assert.equal(created[0].payload.task.acceptance[0], '测试全绿');
+  assert.equal(created[0].payload.task.acceptance[1], '无告警');
+  assert.equal(created[0].payload.task.inScope.length, 0);
+  assert.ok(created[0].payload.task.taskId.startsWith('task-'));
+  await colony.settle();
+
+  colony.draw();
+  findByClass(colony.tree.panel, 'ant-task').props.onClick();
+  colony.draw();
+  findAllByClass(colony.tree.panel, 'ant-field')[0].props.onChange({ target: { value: '改标题' } });
+  colony.draw();
+  findByClass(colony.tree.panel, 'ant-editor-actions').children[0].props.onClick();
+  const amended = colony.calls.filter(item => item[0] === 'dispatch').map(item => item[1]).at(-1);
+  assert.equal(amended.action, 'task.amend');
+  assert.equal(amended.payload.taskId, 'task-a');
+  assert.equal(amended.payload.patch.title, '改标题');
+  assert.match(amended.payload.reason, /panel/);
+  await colony.cleanup();
+  await colony.runtime.disposeEffects();
+});
+
+test('the panel can be dragged by its head and resized from the corner', async () => {
+  const colony = await mountColony();
+  findByClass(colony.tree.seat, 'ant-seat').props.onClick();
+  const tree = colony.draw();
+  const head = findByClass(tree.panel, 'ant-panel-head');
+  assert.equal(typeof head.props.onPointerDown, 'function');
+  const grip = findByClass(tree.panel, 'ant-grip');
+  assert.equal(typeof grip.props.onPointerDown, 'function');
+  assert.equal(tree.panel.props.style, undefined, 'the card docks itself until it is moved');
+  const { source } = await loadClient();
+  assert.match(source, /PANEL_MIN_WIDTH = 320/);
+  assert.match(source, /PANEL_MIN_HEIGHT = 240/);
+  assert.match(source, /localStorage\.setItem\(PANEL_STORAGE/);
   await colony.cleanup();
   await colony.runtime.disposeEffects();
 });
