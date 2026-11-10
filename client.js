@@ -252,13 +252,14 @@ const CSS = `
       .ant-chip{flex:none;max-width:120px;overflow:hidden;padding:2px 7px;border:1px solid var(--dsw-alias-border-l2);border-radius:999px;background:transparent;color:var(--dsw-alias-label-tertiary);font:inherit;font-size:10.5px;line-height:14px;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;transition:border-color .12s ease,color .12s ease}
       .ant-chip:hover,.ant-chip[aria-expanded=true]{border-color:var(--dsw-alias-state-business-primary);color:var(--dsw-alias-state-business-primary)}
       .ant-chip:focus-visible,.ant-primary:focus-visible,.ant-model-pick:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:1px}
-      .ant-models{padding:2px 13px 8px}
-      .ant-models p{margin:2px 0;color:var(--dsw-alias-label-tertiary);font-size:11px}
-      .ant-model-group{display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:3px 0}
-      .ant-model-group>span{min-width:58px;color:var(--dsw-alias-label-tertiary);font-family:var(--ant-mono,monospace);font-size:10px}
-      .ant-model-pick{padding:2px 8px;border:1px solid var(--dsw-alias-border-l2);border-radius:999px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:11px;line-height:16px;cursor:pointer;transition:border-color .12s ease,color .12s ease}
-      .ant-model-pick:hover{border-color:var(--dsw-alias-state-business-primary);color:var(--dsw-alias-state-business-primary)}
-      .ant-model-pick[aria-pressed=true]{border-color:var(--dsw-alias-state-business-primary);background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 12%,transparent);color:var(--dsw-alias-state-business-primary)}
+      .ant-models{margin:2px 13px 8px;padding:4px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-layer-2);box-shadow:0 10px 24px color-mix(in srgb,var(--dsw-alias-bg-mask-3) 18%,transparent);max-height:196px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+      .ant-models p{margin:2px 6px;color:var(--dsw-alias-label-tertiary);font-size:11px}
+      .ant-model-pick{display:flex;width:100%;align-items:center;gap:8px;height:28px;padding:0 8px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;line-height:1;text-align:left;cursor:pointer}
+      .ant-model-pick:hover{background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-primary)}
+      .ant-model-pick[aria-pressed=true]{color:var(--dsw-alias-label-primary)}
+      .ant-model-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .ant-model-provider{flex:none;color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,Consolas,monospace;font-size:10px}
+      .ant-model-check{flex:none;width:12px;color:var(--dsw-alias-state-business-primary);font-size:11px}
       .ant-panel-foot{display:flex;flex:none;align-items:center;gap:8px;padding:8px 13px;border-top:1px solid var(--dsw-alias-border-l2)}
       .ant-primary{flex:1;min-height:30px;padding:0 12px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:12px;cursor:pointer;transition:border-color .12s ease,color .12s ease}
       .ant-primary:hover:not([disabled]){border-color:var(--dsw-alias-state-business-primary);color:var(--dsw-alias-state-business-primary)}
@@ -388,7 +389,7 @@ const CSS = `
     }
 
     /** The single entry beside the permission chip: one click opens the colony panel. */
-    function ColonySeat({ model, locale, ui, catalog }) {
+    function ColonySeat({ model, locale, ui, catalog, sessionId }) {
       const state = useModel(model);
       const t = useLocale(locale);
       const open = useShell(ui);
@@ -396,6 +397,11 @@ const CSS = `
       ui.setCatalog(catalog);
       React.useEffect(() => { model.ensureLoaded(); }, [model]);
       const view = state.view ?? {};
+      // The colony only speaks to its own conversations: another team's session gets no seat.
+      const belongs = sessionId === undefined || (view.members ?? []).some(member => member.sessionId === sessionId);
+      const hidden = (state.teams ?? []).length > 0 && !belongs;
+      React.useEffect(() => { if (hidden && open) ui.set(false); }, [hidden, open, ui]);
+      if (hidden) return null;
       const count = pendingReleaseTasks(view).length || unreadMail(view);
       const busy = (view.attempts ?? []).some(item => ACTIVE_ATTEMPT.includes(item.state));
       return h('button', {
@@ -476,17 +482,23 @@ const CSS = `
       const modelList = member => {
         if (catalogFailed) return h('p', null, t.t('unavailable'));
         if (groups === undefined) return h('p', null, t.t('loading'));
-        if (groups.length === 0) return h('p', null, t.t('empty'));
-        return groups.map(group => h('div', { key: group.id, className: 'ant-model-group' },
-          h('span', null, group.id),
-          (group.models ?? []).map(item => h('button', {
+        const rows = groups.flatMap(group => (group.models ?? []).map(item => ({ group, item })));
+        if (rows.length === 0) return h('p', null, t.t('empty'));
+        return rows.map(({ group, item }) => {
+          const active = item.id === member.model && group.id === member.provider;
+          return h('button', {
             key: group.id + ':' + item.id,
             type: 'button',
             className: 'ant-model-pick',
             'data-model': item.id,
-            'aria-pressed': item.id === member.model && group.id === member.provider ? 'true' : 'false',
+            'data-provider': group.id,
+            'aria-pressed': active ? 'true' : 'false',
             onClick: () => choose(member, group, item),
-          }, item.label ?? item.id))));
+          },
+            h('span', { className: 'ant-model-name' }, item.label ?? item.id),
+            h('span', { className: 'ant-model-provider' }, group.id),
+            h('span', { className: 'ant-model-check', 'aria-hidden': 'true' }, active ? '✓' : ''));
+        });
       };
       const memberBlock = member => h('div', { key: member.memberId, className: 'ant-member' },
         h('div', { className: 'ant-row', 'data-state': busyIds.has(member.memberId) ? 'running' : 'idle' },
@@ -579,7 +591,7 @@ const CSS = `
       bind('shell.overlay', { id: PANEL_ID, order: 80, label: 'Ant colony' }, ColonyPanel);
       bind('conversation.input.left', {
         id: PANEL_ID, order: 10,
-        inject: sessionId => ({ model, locale, ui: shell, catalog: () => directoryOf(ctx, sessionId) }),
+        inject: sessionId => ({ model, locale, ui: shell, sessionId, catalog: () => directoryOf(ctx, sessionId) }),
       }, ColonySeat);
       return disposers;
     }

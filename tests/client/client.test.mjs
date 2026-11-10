@@ -391,7 +391,7 @@ const SEAT_VIEW = {
 };
 
 /** Mount both halves of the colony: the seat in the composer, the panel in the shell overlay. */
-async function mountColony({ view = SEAT_VIEW, groups = [] } = {}) {
+async function mountColony({ view = SEAT_VIEW, groups = [], sessionId = 'session-1' } = {}) {
   const calls = [];
   const remoteTeam = {
     async list() { return { ok: true, value: { teams: [{ teamId: 'team-1', goal: view.goal, lifecycle: view.lifecycle, cursor: view.cursor }] } }; },
@@ -410,7 +410,7 @@ async function mountColony({ view = SEAT_VIEW, groups = [] } = {}) {
   const cleanup = await plugin.apply(runtime.ctx);
   const seat = runtime.registrations.find(item => item.options.name === 'conversation.input.left');
   const panel = runtime.registrations.find(item => item.options.name === 'shell.overlay');
-  const seatProps = seat.options.inject('session-1');
+  const seatProps = seat.options.inject(sessionId);
   const panelProps = panel.options.inject('session-1');
   const settle = async () => { for (let round = 0; round < 4; round += 1) await new Promise(resolve => setImmediate(resolve)); };
   const draw = () => { react.reset(); return { seat: seat.component(seatProps), panel: panel.component(panelProps) }; };
@@ -451,6 +451,13 @@ test('the seat sits beside the permission chip and folds the whole colony behind
   assert.match(textOf(rows[0]), /idle/);
   assert.match(textOf(rows[1]), /ready to release/);
   assert.equal(findAllByClass(panel, 'ant-panel').length, 1, 'the panel never nests a second panel');
+  await colony.cleanup();
+  await colony.runtime.disposeEffects();
+});
+
+test('another team\'s conversation gets no seat at all', async () => {
+  const colony = await mountColony({ sessionId: 'session-9' });
+  assert.equal(colony.tree.seat, null, 'the seat belongs to the team\'s own sessions');
   await colony.cleanup();
   await colony.runtime.disposeEffects();
 });
