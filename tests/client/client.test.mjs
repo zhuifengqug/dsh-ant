@@ -666,9 +666,13 @@ test('the card can be dragged by its head and resized from the bottom edge', asy
   await colony.runtime.disposeEffects();
 });
 
-test('another team session gets no seat at all', async () => {
+test('a conversation that owns no team still reaches every team', async () => {
   const colony = await mountColony({ views: { 'team-1': FIRST_VIEW, 'team-2': ARCHIVED_VIEW }, sessionId: 'session-99' });
-  assert.equal(colony.tree.seat, null, 'the seat belongs to the team\'s own sessions');
+  const entry = findByClass(colony.tree.seat, 'chatEntry');
+  assert.ok(entry, 'one card reaches every team, so the seat stays put');
+  assert.match(textOf(entry), /玄驹/);
+  const tree = await colony.open();
+  assert.equal(findAllByClass(tree.panel, 'team').length, 2, 'both the live team and the archived one are listed');
   await colony.cleanup();
   await colony.runtime.disposeEffects();
 });

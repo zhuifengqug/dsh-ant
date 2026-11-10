@@ -2970,12 +2970,9 @@ const CUSTOM_CSS = `[data-ant-ui] .planInput,[data-ant-ui] .planTextarea{display
         return () => window.removeEventListener('focus', focus);
       }, [model]);
       const entries = (state.teams ?? []).map(item => toTeam(item, state.views?.[item.teamId]));
-      const mine = entries.filter(team => !team.archived && (sessionId === undefined || team.members.some(member => member.sessionId === sessionId)));
-      const hidden = entries.length > 0 && mine.length === 0;
-      React.useEffect(() => { if (hidden) ui.set(false); }, [hidden, ui]);
-      if (hidden) return null;
-      const busy = mine.filter(team => team.tasks.some(task => task.state === 'running')).length;
-      const label = mine.length === 0 ? t.t('seatLabel') : mine.length === 1 ? mine[0].name : t.t('seatLabel') + ' ' + mine.length;
+      const live = entries.filter(team => !team.archived);
+      const busy = live.filter(team => team.tasks.some(task => task.state === 'running')).length;
+      const label = live.length === 1 ? live[0].name : t.t('seatLabel');
       return h('span', { 'data-ant-ui': 'true', 'data-ant-seat': 'true' },
         h('button', {
           type: 'button',
