@@ -186,8 +186,9 @@ test('client factory is lazy and declares the approved slots', async () => {
   assert.match(source, /window\.__ModuleLoader__\.load/);
   assert.doesNotMatch(source, /host\.call/);
   assert.doesNotMatch(source, /dangerouslySetInnerHTML/);
-  assert.match(source, /key: PANEL_ID/);
   assert.match(source, /id: PANEL_ID/);
+  assert.match(source, /'shell\.overlay'/);
+  assert.match(source, /'conversation\.input\.left'/);
 });
 
 test('client RemoteInfo uses strict named input and the Host implementation wire', async () => {
@@ -222,7 +223,7 @@ test('client RemoteInfo uses strict named input and the Host implementation wire
   await runtime.disposeEffects();
 });
 
-test('client apply mounts the colony panel and its single seat, then disposes in reverse order', async () => {
+test('client apply mounts the panel and its seat, then disposes in reverse order', async () => {
   const calls = [];
   let failList = false;
   const remoteTeam = {
@@ -257,15 +258,15 @@ test('client apply mounts the colony panel and its single seat, then disposes in
   const cleanup = await plugin.apply(runtime.ctx);
   assert.equal(runtime.remote.mounted.package, '@zhuifengqug/dsh-ant');
   assert.deepEqual(runtime.registrations.map(item => [item.options.name, item.options.key ?? item.options.id]), [
-    ['main', 'ant'],
+    ['shell.overlay', 'ant'],
     ['conversation.input.left', 'ant'],
   ]);
   assert.equal(runtime.localeRegistrations, 1);
   assert.equal(runtime.localeSubscriptions, 1);
 
-  const main = runtime.registrations[0];
-  const props = main.options.inject();
-  main.component(props);
+  const seat = runtime.registrations.find(item => item.options.name === 'conversation.input.left');
+  const props = seat.options.inject('session-1');
+  seat.component(props);
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(calls.slice(0, 2).map(item => item[0]), ['list', 'get']);
   assert.equal(props.model.getSnapshot().status, 'ready');
@@ -314,9 +315,9 @@ test('client preserves Remote error envelopes from get and dispatch', async () =
   const runtime = createClientContext(remoteTeam);
   const { plugin } = await loadClient();
   const cleanup = await plugin.apply(runtime.ctx);
-  const main = runtime.registrations[0];
-  const props = main.options.inject();
-  main.component(props);
+  const seat = runtime.registrations.find(item => item.options.name === 'conversation.input.left');
+  const props = seat.options.inject('session-1');
+  seat.component(props);
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(props.model.getSnapshot().status, 'ready');
 
@@ -355,6 +356,7 @@ test('package manifest publishes the Client half and verified Host injects', asy
   assert.equal(manifest.dsh.client.external, undefined);
 });
 
+
 function findAllByClass(node, className, hits = []) {
   if (Array.isArray(node)) { for (const child of node) findAllByClass(child, className, hits); return hits; }
   if (!node || typeof node !== 'object') return hits;
@@ -374,194 +376,6 @@ function textOf(node) {
   return (node.children ?? []).map(textOf).join('');
 }
 
-function renderDeep(node) {
-  if (Array.isArray(node)) return node.map(renderDeep);
-  if (!node || typeof node !== 'object') return node;
-  if (typeof node.type === 'function') return renderDeep(node.type(node.props));
-  return { ...node, children: (node.children ?? []).map(renderDeep) };
-}
-
-function planOf(tree) {
-  const nest = findByClass(tree, 'ant-nest');
-  assert.equal(nest.props['aria-label'], 'Colony section');
-  const nestElement = nest.children.find(child => typeof child.type === 'function');
-  const plan = nestElement.type(nestElement.props);
-  assert.equal(plan.props.className, 'ant-nest-plan');
-  return plan;
-}
-
-async function mountWithView(view) {
-  const calls = [];
-  const remoteTeam = {
-    async list() { return { ok: true, value: { teams: [{ teamId: 'team-1', goal: 'Ship', lifecycle: 'running', cursor: 4 }] } }; },
-    async get(request) { return { ok: true, value: { ...view, teamId: request.teamId, cursor: view.cursor ?? 4 } }; },
-    async dispatch(request) { calls.push(request); return { ok: true, value: { outcome: 'committed', requestId: request.requestId, teamId: request.teamId, lastEventSeq: 9 } }; },
-  };
-  const runtime = createClientContext(remoteTeam);
-  const { plugin } = await loadClient();
-  const cleanup = await plugin.apply(runtime.ctx);
-  const main = runtime.registrations[0];
-  const props = main.options.inject();
-  main.component(props);
-  await new Promise(resolve => setImmediate(resolve));
-  const tree = main.component(props);
-  const plan = planOf(tree);
-  return { main, props, plan, calls, runtime, cleanup, tree };
-}
-
-test('colony section counts every task in exactly one of the five chambers', async () => {
-  const view = {
-    lifecycle: 'running',
-    members: [
-      { memberId: 'member-1', status: 'active', sessionId: 's1' },
-      { memberId: 'member-2', status: 'removed' },
-    ],
-    attempts: [{ attemptId: 'attempt-1', taskId: 'task-3', memberId: 'member-1', state: 'running', generation: 1 }],
-    tasks: [
-      { taskId: 'task-1', state: 'pending' },
-      { taskId: 'task-2', state: 'reviewed' },
-      { taskId: 'task-3', state: 'running' },
-      { taskId: 'task-4', state: 'completed' },
-      { taskId: 'task-5', state: 'anomalous' },
-    ],
-    plan: { dependencies: [{ taskId: 'task-3', blockedByTaskId: 'task-1' }] },
-  };
-  const { props, plan, runtime, cleanup } = await mountWithView(view);
-  const chambers = findAllByClass(plan, 'ant-chamber');
-  assert.deepEqual(chambers.map(chamber => chamber.props['data-stage']), ['nursery', 'gate', 'corridor', 'pantry', 'refuse']);
-  assert.deepEqual(chambers.map(chamber => textOf(chamber.children[0].children[1])), ['1', '1', '1', '1', '1']);
-  assert.equal(props.model.getSnapshot().view.tasks.length, 5);
-  const counts = findByClass(plan, 'ant-ants');
-  assert.ok(counts, 'the corridor chamber carries the resident ant');
-  assert.equal(findAllByClass(plan, 'ant-tunnel').length, 1);
-  await cleanup();
-  await runtime.disposeEffects();
-});
-
-test('the gate releases the pending batch from the keyboard', async () => {
-  const view = {
-    lifecycle: 'running',
-    cursor: 4,
-    members: [{ memberId: 'member-1', status: 'active', sessionId: 's1' }],
-    attempts: [],
-    tasks: [{ taskId: 'task-2', state: 'reviewed' }, { taskId: 'task-6', state: 'reviewed' }],
-    releaseQueue: [{ taskId: 'task-2' }, { taskId: 'task-6' }],
-    plan: { dependencies: [] },
-  };
-  const { props, plan, calls, runtime, cleanup } = await mountWithView(view);
-  const gate = findByClass(plan, 'ant-gate');
-  assert.equal(gate.props.disabled, false);
-  assert.equal(textOf(gate), 'Gatepending release 2');
-  gate.props.onClick();
-  await new Promise(resolve => setImmediate(resolve));
-  assert.equal(calls[0].action, 'batch.release');
-  assert.equal(JSON.stringify(calls[0].payload), JSON.stringify({ batchId: 'batch-5', taskIds: ['task-2', 'task-6'] }));
-
-  const focused = [];
-  const fakeGate = { focus: () => focused.push('gate') };
-  plan.props.onKeyDown({ key: '2', preventDefault() {}, currentTarget: { querySelector: () => fakeGate } });
-  assert.equal(props.model.getSnapshot().selectedStage, 'gate');
-  assert.deepEqual(focused, ['gate']);
-  plan.props.onKeyDown({ key: '5', preventDefault() {}, currentTarget: { querySelector: () => fakeGate } });
-  assert.equal(props.model.getSnapshot().selectedStage, 'refuse');
-  plan.props.onKeyDown({ key: 'Escape', currentTarget: { querySelector: () => fakeGate } });
-  assert.equal(props.model.getSnapshot().selectedStage, undefined);
-  await cleanup();
-  await runtime.disposeEffects();
-});
-
-test('chambers stay distinguishable without accent colour and honour reduced motion', async () => {
-  const { plugin, source } = await loadClient();
-  assert.equal(typeof plugin.apply, 'function');
-  for (const stage of ['nursery', 'gate', 'corridor', 'pantry', 'refuse']) {
-    assert.match(source, new RegExp('\\.ant-chamber\\[data-stage=' + stage + '\\]\\{[^}]*border'));
-  }
-  assert.match(source, /@media\(prefers-reduced-motion:reduce\)/);
-  assert.match(source, /@media\(max-width:1024px\)[^@]*ant-nest-plan/);
-  assert.match(source, /@media\(max-width:768px\)[^@]*ant-nest-plan/);
-  assert.doesNotMatch(source, /ant-orbit/);
-});
-function renderChild(tree, className) {
-  const host = findByClass(tree, className);
-  assert.ok(host, className + ' is rendered');
-  const child = host.children.find(item => typeof item.type === 'function');
-  assert.ok(child, className + ' delegates to a component');
-  return child.type(child.props);
-}
-
-test('the activity stream stays collapsed and counts running, idle and attention', async () => {
-  const view = {
-    lifecycle: 'running',
-    members: [{ memberId: 'member-1', status: 'active', sessionId: 's1' }, { memberId: 'member-2', status: 'active', sessionId: 's2' }],
-    attempts: [{ attemptId: 'attempt-1', taskId: 'task-1', memberId: 'member-1', state: 'running' }],
-    tasks: [{ taskId: 'task-1', state: 'running' }, { taskId: 'task-2', state: 'anomalous' }],
-    interruptions: [{ attemptId: 'attempt-0', taskId: 'task-0', reason: 'socket closed' }],
-    plan: { dependencies: [] },
-  };
-  const { tree, runtime, cleanup } = await mountWithView(view);
-  const stream = findByClass(renderChild(tree, 'ant-main'), 'ant-stream');
-  assert.equal(stream.type, 'details');
-  assert.equal(stream.props.open, undefined);
-  const summary = textOf(stream.children[0]);
-  assert.match(summary, /Running 1/);
-  assert.match(summary, /Idle 1/);
-  assert.match(summary, /Needs attention 2/);
-  assert.equal(findAllByClass(stream, 'ant-note').length, 0, 'the rows list replaces the empty note');
-  const rows = findAllByClass(stream, 'ant-row');
-  assert.equal(rows.length, 4, 'one running, one idle and two attention rows');
-  assert.ok(rows.some(row => row.props['data-kind'] === 'idle'), 'idle members keep their footprint');
-  await cleanup();
-  await runtime.disposeEffects();
-});
-
-test('clicking an ant hands that member to the inspection desk', async () => {
-  const view = {
-    lifecycle: 'running',
-    cursor: 4,
-    members: [{ memberId: 'member-1', name: 'worker-1', status: 'active', sessionId: 's1', model: 'fixture-model' }],
-    attempts: [{ attemptId: 'attempt-1', taskId: 'task-3', memberId: 'member-1', state: 'running', generation: 1 }],
-    tasks: [{ taskId: 'task-3', title: 'Ship the panel', state: 'running' }],
-    plan: { dependencies: [] },
-  };
-  const { main, props, plan, runtime, cleanup } = await mountWithView(view);
-  const ants = findAllByClass(plan, 'ant-ant');
-  assert.equal(ants.length, 1);
-  assert.equal(ants[0].props['aria-label'], 'worker-1');
-  ants[0].props.onClick();
-  assert.equal(props.model.getSnapshot().selectedMemberId, 'member-1');
-
-  const rail = findByClass(renderDeep(main.component(props)), 'ant-inspector ant-rail');
-  assert.match(textOf(rail), /worker-1/);
-  const labels = findAllByClass(rail, 'ant-button').map(textOf);
-  assert.ok(labels.includes('Pause attempt'), 'a running attempt can be paused: ' + labels.join(' | '));
-  assert.ok(labels.includes('Take over'), 'a running attempt can be taken over: ' + labels.join(' | '));
-  assert.ok(labels.includes('Terminate attempt'), 'a running attempt can be terminated: ' + labels.join(' | '));
-  await cleanup();
-  await runtime.disposeEffects();
-});
-
-test('focusing a chamber steps the other chambers back', async () => {
-  const view = {
-    lifecycle: 'running',
-    cursor: 4,
-    members: [],
-    attempts: [],
-    tasks: [{ taskId: 'task-1', state: 'pending' }],
-    plan: { dependencies: [] },
-  };
-  const { main, props, plan, runtime, cleanup } = await mountWithView(view);
-  const nursery = findAllByClass(plan, 'ant-chamber').find(chamber => chamber.props['data-stage'] === 'nursery');
-  nursery.children[0].props.onClick();
-  assert.equal(props.model.getSnapshot().selectedStage, 'nursery');
-  assert.equal(planOf(main.component(props)).props['data-focus'], '');
-
-  plan.props.onKeyDown({ key: 'Escape', currentTarget: { querySelector: () => null } });
-  assert.equal(props.model.getSnapshot().selectedStage, undefined);
-  assert.equal(planOf(main.component(props)).props['data-focus'], undefined);
-  await cleanup();
-  await runtime.disposeEffects();
-});
-
 const SEAT_VIEW = {
   goal: 'Ship the panel',
   lifecycle: 'running',
@@ -570,13 +384,14 @@ const SEAT_VIEW = {
     { memberId: 'member-1', name: '工蚁 1', status: 'active', provider: 'deepseek', model: 'deepseek-v4', sessionId: 'session-1' },
   ],
   attempts: [],
-  tasks: [],
+  tasks: [{ taskId: 'task-a', title: '面板', state: 'reviewed' }],
   plan: { dependencies: [] },
   releaseQueue: [{ taskId: 'task-a', title: '面板' }],
   summary: { unread: { total: 2, toLead: 1, recent: [] } },
 };
 
-async function mountSeat({ view = SEAT_VIEW, groups } = {}) {
+/** Mount both halves of the colony: the seat in the composer, the panel in the shell overlay. */
+async function mountColony({ view = SEAT_VIEW, groups = [] } = {}) {
   const calls = [];
   const remoteTeam = {
     async list() { return { ok: true, value: { teams: [{ teamId: 'team-1', goal: view.goal, lifecycle: view.lifecycle, cursor: view.cursor }] } }; },
@@ -585,89 +400,136 @@ async function mountSeat({ view = SEAT_VIEW, groups } = {}) {
   };
   const react = fakeReact();
   const runtime = createClientContext(remoteTeam);
-  runtime.services.layout = runtime.layout;
   runtime.services.modelDirectories = {
     directoryFor(sessionId) {
       calls.push(['directoryFor', sessionId]);
-      return {
-        async load() { calls.push(['load']); },
-        store: { getSnapshot: () => ({ groups: groups ?? [] }) },
-      };
+      return { async load() { calls.push(['load']); }, store: { getSnapshot: () => ({ groups }) } };
     },
   };
   const { plugin } = await loadClient(react);
   const cleanup = await plugin.apply(runtime.ctx);
   const seat = runtime.registrations.find(item => item.options.name === 'conversation.input.left');
-  const props = seat.options.inject('session-1');
+  const panel = runtime.registrations.find(item => item.options.name === 'shell.overlay');
+  const seatProps = seat.options.inject('session-1');
+  const panelProps = panel.options.inject('session-1');
   const settle = async () => { for (let round = 0; round < 4; round += 1) await new Promise(resolve => setImmediate(resolve)); };
-  let tree;
-  const draw = () => { react.reset(); tree = seat.component(props); return tree; };
+  const draw = () => { react.reset(); return { seat: seat.component(seatProps), panel: panel.component(panelProps) }; };
   draw();
   await settle();
-  draw();
-  return { runtime, cleanup, seat, props, calls, draw, settle, get tree() { return tree; } };
+  let tree = draw();
+  return {
+    runtime, cleanup, calls, seat, panel, seatProps, panelProps, settle,
+    draw: () => { tree = draw(); return tree; },
+    get tree() { return tree; },
+  };
 }
 
-test('the seat sits beside the permission chip and carries the colony behind one click', async () => {
-  const seat = await mountSeat();
-  assert.equal(seat.seat.options.order, 10);
-  assert.equal(typeof seat.props.catalog, 'function');
-  const button = findByClass(seat.tree, 'ant-seat-btn');
+test('the seat sits beside the permission chip and folds the whole colony behind one click', async () => {
+  const colony = await mountColony();
+  assert.deepEqual(colony.runtime.registrations.map(item => [item.options.name, item.options.id, item.options.order]), [
+    ['shell.overlay', 'ant', 80],
+    ['conversation.input.left', 'ant', 10],
+  ]);
+  const button = findByClass(colony.tree.seat, 'ant-seat');
+  assert.equal(button.props['data-ant-seat'], '');
   assert.equal(button.props['aria-expanded'], 'false');
-  const label = textOf(button);
-  assert.match(label, /Ant|蚁群/);
-  assert.match(label, /running/);
-  assert.equal(findByClass(seat.tree, 'ant-pop ant-pop-up'), undefined);
+  assert.equal(button.props['aria-haspopup'], 'dialog');
+  assert.equal(textOf(button).replace(/\d/g, ''), 'Ant', 'the seat reads the same at rest: ' + textOf(button));
+  assert.equal(textOf(findByClass(colony.tree.seat, 'ant-seat-count')), '1', 'the pending batch is the badge');
+  assert.equal(colony.tree.panel, null, 'nothing is docked while the seat is shut');
 
-  findByClass(seat.tree, 'ant-seat-btn').props.onClick();
-  const open = seat.draw();
-  const popover = findByClass(open, 'ant-pop ant-pop-up');
-  assert.ok(popover, 'the popover opens above the seat');
-  assert.equal(popover.props.role, 'dialog');
-  assert.match(textOf(popover), /Ship the panel/);
-  assert.match(textOf(findByClass(open, 'ant-roster')), /工蚁 1/);
-  await seat.cleanup();
+  findByClass(colony.tree.seat, 'ant-seat').props.onClick();
+  const opened = colony.draw();
+  assert.equal(findByClass(opened.seat, 'ant-seat').props['aria-expanded'], 'true');
+  const panel = findByClass(opened.panel, 'ant-panel');
+  assert.ok(panel, 'the panel docks inside the shell overlay');
+  assert.equal(panel.props.role, 'dialog');
+  assert.equal(panel.props['data-ant-panel'], '');
+  assert.match(textOf(findByClass(panel, 'ant-panel-goal')), /Ship the panel/);
+  const rows = findAllByClass(panel, 'ant-row');
+  assert.match(textOf(rows[0]), /工蚁 1/);
+  assert.match(textOf(rows[0]), /idle/);
+  assert.match(textOf(rows[1]), /ready to release/);
+  assert.equal(findAllByClass(panel, 'ant-panel').length, 1, 'the panel never nests a second panel');
+  await colony.cleanup();
+  await colony.runtime.disposeEffects();
 });
 
 test('a member model chip lists the Host catalogue and dispatches the picked pair', async () => {
   const groups = [{ id: 'deepseek', models: [{ id: 'deepseek-v4', label: 'DeepSeek V4' }, { id: 'deepseek-v4-thinking', label: 'DeepSeek V4 Thinking' }] }];
-  const seat = await mountSeat({ groups });
-  findByClass(seat.tree, 'ant-seat-btn').props.onClick();
-  seat.draw();
+  const colony = await mountColony({ groups });
+  findByClass(colony.tree.seat, 'ant-seat').props.onClick();
+  colony.draw();
 
-  findByClass(seat.tree, 'ant-model').props.onClick();
-  seat.draw();
-  await seat.settle();
-  const tree = seat.draw();
-  assert.deepEqual(seat.calls.find(item => item[0] === 'directoryFor'), ['directoryFor', 'session-1']);
-  const picks = findAllByClass(tree, 'ant-model-pick');
+  const chip = findByClass(colony.tree.panel, 'ant-chip');
+  assert.equal(chip.props['data-member'], 'member-1');
+  assert.equal(chip.props['aria-expanded'], 'false');
+  assert.equal(textOf(chip), 'deepseek-v4 ▾');
+  assert.equal(findAllByClass(colony.tree.panel, 'ant-model-pick').length, 0, 'the list stays folded until asked');
+
+  chip.props.onClick();
+  colony.draw();
+  await colony.settle();
+  const tree = colony.draw();
+  assert.deepEqual(colony.calls.find(item => item[0] === 'directoryFor'), ['directoryFor', 'session-1']);
+  const picks = findAllByClass(tree.panel, 'ant-model-pick');
   assert.equal(picks.length, 2);
   assert.equal(picks[0].props['aria-pressed'], 'true');
-  assert.equal(findByClass(tree, 'ant-model').children.join(''), 'deepseek-v4 ▾');
+  assert.equal(picks[1].props['aria-pressed'], 'false');
 
   picks[1].props.onClick();
-  const dispatched = seat.calls.filter(item => item[0] === 'dispatch').map(item => item[1]);
+  const dispatched = colony.calls.filter(item => item[0] === 'dispatch').map(item => item[1]);
   assert.equal(dispatched.length, 1);
   assert.equal(dispatched[0].action, 'member.changeModel');
   assert.equal(dispatched[0].payload.memberId, 'member-1');
   assert.equal(dispatched[0].payload.provider, 'deepseek');
   assert.equal(dispatched[0].payload.model, 'deepseek-v4-thinking');
-  await seat.cleanup();
+  await colony.cleanup();
+  await colony.runtime.disposeEffects();
 });
 
-test('the seat releases the pending batch and opens the colony panel', async () => {
-  const seat = await mountSeat();
-  findByClass(seat.tree, 'ant-seat-btn').props.onClick();
-  const tree = seat.draw();
-  const release = findByClass(findByClass(tree, 'ant-pop-bot'), 'ant-button');
+test('the panel releases the pending batch from the footer', async () => {
+  const colony = await mountColony();
+  findByClass(colony.tree.seat, 'ant-seat').props.onClick();
+  const tree = colony.draw();
+  const release = findByClass(tree.panel, 'ant-primary');
+  assert.equal(release.props.disabled, false);
+  assert.match(textOf(release), /1/);
   release.props.onClick();
-  const dispatched = seat.calls.filter(item => item[0] === 'dispatch').map(item => item[1]);
+  const dispatched = colony.calls.filter(item => item[0] === 'dispatch').map(item => item[1]);
   assert.equal(dispatched[0].action, 'batch.release');
   assert.equal(dispatched[0].payload.batchId, 'batch-8');
-  assert.equal(dispatched[0].payload.taskIds.length, 1);
-  assert.equal(dispatched[0].payload.taskIds[0], 'task-a');
+  assert.deepEqual(dispatched[0].payload.taskIds, ['task-a']);
+  assert.match(textOf(findByClass(tree.panel, 'ant-panel-foot')), /2/);
+  await colony.cleanup();
+  await colony.runtime.disposeEffects();
+});
 
-  findByClass(tree, 'ant-link').props.onClick();
-  assert.deepEqual(seat.runtime.layout.selected, ['ant']);
-  await seat.cleanup();
+test('the close button shuts the panel without leaving the conversation', async () => {
+  const colony = await mountColony();
+  findByClass(colony.tree.seat, 'ant-seat').props.onClick();
+  const opened = colony.draw();
+  findByClass(opened.panel, 'ant-icon').props.onClick();
+  const shut = colony.draw();
+  assert.equal(shut.panel, null);
+  assert.equal(findByClass(shut.seat, 'ant-seat').props['aria-expanded'], 'false');
+  await colony.cleanup();
+  await colony.runtime.disposeEffects();
+});
+
+test('the panel is a docked card, never a page, and uses host tokens only', async () => {
+  const { plugin, source } = await loadClient();
+  assert.equal(typeof plugin.apply, 'function');
+  assert.match(source, /\.ant-seat\{[^}]*height:28px/);
+  assert.match(source, /\.ant-seat\{[^}]*border:1px solid var\(--dsw-alias-border-l2\)/);
+  assert.match(source, /\.ant-panel\{[^}]*position:absolute/);
+  assert.match(source, /\.ant-panel\{[^}]*top:var\(--dsh-frame-overlay-top,74px\)/);
+  assert.match(source, /\.ant-panel\{[^}]*right:16px/);
+  assert.match(source, /@keyframes ant-panel-in/);
+  assert.match(source, /document\.head\.appendChild\(element\)/, 'the sheet is installed once the plugin applies');
+  assert.doesNotMatch(source, /function StyleSheet\(\)/);
+  assert.match(source, /@media \(prefers-reduced-motion: ?reduce\)/);
+  assert.doesNotMatch(source, /ant-nest|ant-chamber|ant-pop|ant-rail/);
+  assert.doesNotMatch(source, /bind\('main'/);
+  assert.doesNotMatch(source, /background:#[0-9a-f]{3,6}/i, 'no hard-coded colour survives the theme switch');
 });
