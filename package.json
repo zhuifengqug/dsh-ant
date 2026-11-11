@@ -1,5 +1,5 @@
 {
-  "name": "@nanmicoder/dsh-agent-teams",
+  "name": "@zhuifengqug/dsh-ant",
   "version": "0.1.29",
   "description": "AgentTeams for DeepSeek Harness: multi-agent team collaboration (captain, members, tasks with dependencies, messaging) driven by natural language, with a tree monitor in the web GUI",
   "type": "module",
