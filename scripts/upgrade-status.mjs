@@ -1,6 +1,11 @@
 /** Read-only release visibility. Registry discovery never adds a host to the tested matrix. */
+import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 import { compareHostVersions, policy, requiredHostPeers, validatePolicy } from './compatibility.mjs'
+
+// The identity the registry must return is this package's own published name.
+// A fork that renames the package must not keep answering to the upstream name.
+export const PLUGIN_NAME = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).name
 
 const exactVersion = value => typeof value === 'string' && /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(?:alpha|beta|rc)\.(0|[1-9]\d*))?$/.test(value) && value.trim() === value
 
@@ -20,7 +25,7 @@ export function inspectUpgradeStatus({ hostTags, pluginManifest }, support = pol
   const supported = validatePolicy(support)
   if (!hostTags || !exactVersion(hostTags.latest)
       || !exactVersion(hostTags.next)) throw new Error('Registry must return exact latest/next host identities')
-  if (pluginManifest?.name !== '@nanmicoder/dsh-agent-teams' || !exactVersion(pluginManifest.version)) throw new Error('Registry plugin identity mismatch')
+  if (pluginManifest?.name !== PLUGIN_NAME || !exactVersion(pluginManifest.version)) throw new Error('Registry plugin identity mismatch')
   const channels = Object.fromEntries(['latest', 'next'].filter(tag => hostTags[tag]).map(tag => [tag, hostTags[tag]]))
   const unverifiedChannels = Object.entries(channels).filter(([, version]) => !supported.includes(version)).map(([channel, version]) => ({ channel, version }))
   const fields = Object.hasOwn(pluginManifest.engines ?? {}, 'dsh')
