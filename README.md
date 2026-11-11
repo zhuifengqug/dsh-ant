@@ -1,277 +1,71 @@
-<p align="right">
-  <strong>English</strong> · <a href="./README_ZH.md">简体中文</a>
-</p>
+# 玄驹
 
-<p align="center">
-  <img src="./assets/readme/hero.svg" width="100%" alt="dsh-agent-teams turns one DeepSeek Harness session into a coordinated multi-agent team">
-</p>
+DeepSeek Harness 的多智能体团队插件。一句话把当前会话变成队长：拆任务、派队员、按依赖自动调度，Web 界面里看得见谁在干什么。
 
-<div align="center">
+包名 `@zhuifengqug/dsh-ant`，宿主侧插件 id 仍是 `agent-teams`。
 
-[![AtomGit](https://atomgit.com/NanmiCoder/dsh-agent-teams/star/new_badge.svg)](https://atomgit.com/NanmiCoder/dsh-agent-teams)
+## 与上游的关系
 
-</div>
+本仓库是 [NanmiCoder/dsh-agent-teams](https://github.com/NanmiCoder/dsh-agent-teams) 的分支（fork），基线 `0.1.29`。上游的功能照单全收，本分支只叠加四件事，全部有测试兜底：
 
-<p align="center">
-  <a href="https://dshfind.com/en/plugins/NanmiCoder/dsh-agent-teams?ref=badge"><img src="https://img.shields.io/badge/recommended%20by-dshfind-FFD700?style=flat-square" alt="Recommended by dshfind"></a>
-  <a href="https://dshfind.com/en/plugins/NanmiCoder/dsh-agent-teams?ref=badge"><img src="https://dshfind.com/api/badge/NanmiCoder/dsh-agent-teams?lang=en" alt="dshfind score"></a>
-  <a href="https://dshfind.com/en/plugins/NanmiCoder/dsh-agent-teams?ref=badge"><img src="https://dshfind.com/api/badge/NanmiCoder/dsh-agent-teams?metric=downloads&amp;lang=en" alt="dshfind downloads"></a>
-</p>
+- **中文语言约束**：团队提示词与全部工具参数描述要求队名、成员名、任务标题与描述、计划摘要一律用当前对话语言书写，工具名、id、路径、代码标识符保留原文。
+- **归档团队永久删除**：归档列表里可以真正删掉一个团队（先精确匹配 id，再绑定归属会话，两击确认），不再只能堆积。
+- **无进展标记**：快照按滑动窗口算出 `noProgress` / `noProgressForMs`，卡住的任务可被观测；只读，不改派发。
+- **验证只重跑失败命令 + 证据绑定**：质量门禁的复核只重跑失败或缺的命令，验收证据打上 attempt 戳，跨代证据在闸门前就被拒。
 
-<p align="center">
-  <a href="https://www.npmjs.com/package/@nanmicoder/dsh-agent-teams"><img src="https://img.shields.io/npm/v/@nanmicoder/dsh-agent-teams?style=flat-square&amp;color=5B4CF0" alt="npm version"></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-0B7285?style=flat-square" alt="MIT license"></a>
-  <a href="./cordis.patch.yml"><img src="https://img.shields.io/badge/DSH-Web%20%2B%20Headless-5B4CF0?style=flat-square" alt="DSH Web and Headless"></a>
-</p>
+路由决策、难度评分卡、成本汇总、routeAudit 这几块上游本来就没有，本分支也不引入。
 
-## One prompt. A working team.
+## 安装
 
-`dsh-agent-teams` turns the current DeepSeek Harness session into a captain that can assemble durable sub-agents, split a goal into dependency-aware tasks, and coordinate work through direct messages.
+本地开发目录安装（`link:` 指向本仓库）：
 
-Ask in natural language. The plugin provides the team protocol, 14 coordination tools, persistent state, an automatic shared-task scheduler, and a live Web UI—without requiring a separate workflow engine.
-
-<p align="center">
-  <img src="./assets/readme/workspace.png" width="100%" alt="AgentTeams native workspace with members, task dependencies, and progress">
-</p>
-
-## Releases
-
-[Latest release](https://github.com/NanmiCoder/dsh-agent-teams/releases/latest) restores member model fallback on Harness `0.2.2-rc.1` and improves task settlement, activity updates, and artifact auditing. The recommended host is Harness `0.2.1-rc.2`. See the [tested matrix](./compatibility.json) and [release notes](./release-notes/v0.1.29.md).
-
-## Why AgentTeams?
-
-| Capability | What it changes |
-| --- | --- |
-| **Captain-led delegation** | The current session creates the team, assigns roles, and consolidates the final result. |
-| **Durable members** | Members are continuable DSH sub-agents that can be woken for focused follow-up turns. |
-| **Dependency-aware tasks** | Tasks move through explicit states and cannot be claimed before their dependencies finish. |
-| **Automatic reuse and safe takeover** | Idle members claim the next ready task; reassignment revokes stale attempts before new work starts, and cold recovery retries stranded open attempts. |
-| **Direct messaging** | Members send durable mailbox messages directly to teammates or the captain—no relay required. |
-| **Live activity panel** | The Web UI combines segmented progress, a collapsible roster, and an interactive task DAG; running tasks show the member's model, and completed archives retain their full member and task history. |
-| **Plan before execution** | Normal `/agent-teams` runs stage an unspawned roster and DAG first. The Web panel uses the host model catalog for member routes. Returning to chat stops the planning turn, asks what should change, and revises the same draft; discarding archives the draft, aborts the turn, and explicitly prevents automatic recreation. Only **Approve & Run** enables scheduling; each member starts with its first ready task. |
-| **Quality gates** | Opt-in quality tasks support requirements → implementation → verification → review → integration contracts, automatic repair/re-review, and explicit resume. Scope control is a completion-time audit, not host write interception. See [docs/quality-gates.md](./docs/quality-gates.md). |
-
-The conversation card and activity panel use Harness's official locale service. They follow live language changes between English and Simplified Chinese—including status labels, dynamic summaries, controls, archive markers, and accessibility text—without a page reload or a separate plugin setting.
-
-## Install and choose versions
-
-**Recommended pair: DeepSeek Harness `0.2.1-rc.2` + AgentTeams `0.1.29`. The host remains an RC.**
-
-| Use case | DeepSeek Harness | AgentTeams plugin |
-| --- | --- | --- |
-| **Recommended** | **`0.2.1-rc.2`** | **`0.1.29`** |
-| Preview host | `0.2.2-rc.1`, `0.2.1-rc.3` | `0.1.29` |
-| Previous recommended RC | `0.2.1-rc.1`, `0.2.0-rc.2`, `0.1.7-rc.2` | `0.1.29` |
-| Legacy RC | `0.1.5-rc.1`, `0.1.5-rc.2`, `0.1.5-rc.3` | `0.1.29` |
-| Retaining an older RC | `0.1.2-rc.1` | `0.1.29` |
-| Developer Alpha testing | `0.1.2-alpha.5` | `0.1.29` |
-| Retaining an older Alpha | `0.1.2-alpha.2` | `0.1.29` |
-| Other installable hosts | At or above `0.1.2-alpha.2` | `0.1.29` |
-
-CI verifies the exact hosts listed above the last row. The installer accepts other hosts at or above the minimum version.
-
-### Desktop app
-
-In the app sidebar, open **Plugins → Add plugin**. You can install directly from GitHub by pasting this repository URL into the plugin input, without a version, tag, or commit suffix:
-
-```text
-https://github.com/NanmiCoder/dsh-agent-teams
+```powershell
+dsh plugin --profile desktop add D:\dsh-workspaces\dev\虫珀\玄驹
 ```
 
-This installs from the default branch and is available immediately after release. The equivalent shorthand is also supported:
+装完在 profile 的 `dsh.profile.bundles` 里出现 `@zhuifengqug/dsh-ant`，重启 DSH Desktop 生效。
 
-```text
-github:NanmiCoder/dsh-agent-teams
+## 用起来
+
+自然语言即可。说「用 AgentTeams 做 X」，队长会：
+
+1. 调用 `agent_teams_create` 提交团队计划（默认待审批）。
+2. 你在 Web 计划面板里确认成员、模型与任务图，明确批准后开跑。
+3. 队长派活、队员认领、依赖满足即调度；你随时可以问 `agent_teams_status`。
+
+宿主侧共 14 个协调工具（`create` / `approve` / `edit_plan` / `add_member` / `remove_member` / `create_task` / `reassign_task` / `claim_task` / `update_task` / `amend_task` / `send_message` / `status` / `resume` / `delete`），队员子集是其中 4 个。
+
+## 界面
+
+- 会话标题栏的团队入口，点开是活动面板：成员、模型、任务依赖、收件箱。
+- 右栏标签与工作区完成卡、收件箱卡。
+- 团队状态存在 `<工作区>/<stateDir>/<团队 id>/` 下（`team.json` + `inbox/*.jsonl`）。
+
+## 文档
+
+- [使用说明](./docs/usage.md)
+- [质量门禁](./docs/quality-gates.md)
+- [验证指南](./docs/verification-guide.md)
+- [渐进披露](./docs/progressive-loading.md)
+- [维护流程](./docs/maintenance-workflow.md)
+- [插件开发](./docs/developing-dsh-plugins.md)
+- [README 写作规范](./docs/readme-writing-guide.md)
+- [贡献指南](./CONTRIBUTING.md)
+
+## 验证
+
+```powershell
+npx pnpm run typecheck
+npx pnpm run build
+npx pnpm run verify
 ```
 
-For npm installation, enter the versioned spec `@nanmicoder/dsh-agent-teams@0.1.29`. Desktop's pnpm 11 defaults to a 24-hour minimum release age: for 24 hours after a release, a bare package name or `@latest` installs the previous version even when the preview shows the newest one, and the installation fails if that version is incompatible with your host. An exact version installs immediately. Changing registry mirrors does not remove this policy. GitHub access is required for the Git route; it may contain newer code than npm.
+`verify` 串起契约、质量门禁、兼容性、客户端与 fork 自有四处改动的全部用例，末段会校验 `lib/` 与源码一致（`git-artifacts`）。
 
-Install it, then choose **Enable now**. If the host asks for a restart, restart the desktop app. Do not disable compatibility checks or the global release-age policy to install the plugin.
+## 兼容性
 
-The desktop app supplies its own Harness core and package manager. Upgrading the global CLI does not upgrade that core, and an ordinary standalone CLI cannot manage its desktop profile. The CLI carrier installed by the desktop app can manage that profile in `0.2.1-rc.2`. Check the embedded core against the compatibility list. Harness `0.2.1-rc.2` is now the exact published target; its RC status is unchanged. The earlier source-only `0.2.0` prediction is no longer a support declaration. See the [release migration evidence](./docs/harness-0.2.1-rc.2/README.md).
+宿主最低版本由 [`compatibility.json`](./compatibility.json) 里最旧的兼容项派生：推荐 `0.2.1-rc.2`，已在 `0.2.2-rc.1`（preview）上验证。当前开发的宿主是 `0.2.2-rc.1`。
 
-### CLI / Web: 1. Install DeepSeek Harness
+## 许可
 
-```sh
-npm install --global @deepseek-ai/dsh
-dsh --version
-```
-
-The command selects the host's npm `latest`; check `dsh --version` against the support matrix after upgrading. Alpha is opt-in: select an exact Alpha version from the table and lock all host dependencies as described in the [maintenance guide](./docs/maintenance-workflow.md).
-
-### CLI / Web: 2. Install the AgentTeams plugin
-
-Install or upgrade from npm with an exact version (currently `0.1.29`):
-
-```sh
-dsh plugin --profile web add --save-exact @nanmicoder/dsh-agent-teams@0.1.29
-```
-
-For a CLI-managed installation, replace `web` with your active CLI profile. **Stop and restart that profile's Harness process, then refresh the browser.** Installing the plugin does not upgrade Harness; the host and plugin have independent `latest` channels.
-
-Alternatively, install or update from the latest GitHub default branch without a tag or commit suffix:
-
-```sh
-dsh plugin --profile web add github:NanmiCoder/dsh-agent-teams
-```
-
-To update, run the command again with the new version, then restart the profile; a bare package name can retain an already installed exact version. For 24 hours after a release, a bare package name or `@latest` installs the previous version. If a registry mirror has not synced the release, append `--registry=https://registry.npmjs.org` to the npm command. GitHub default-branch code may be newer than npm `latest`. The default branch includes the verified server, client, and type build outputs in `lib/`. The repository distributes these outputs so installation does not need a `prepare` hook or build-script approval. Source maintainers must run `pnpm build` and update the committed outputs whenever the source changes. Existing npm releases remain immutable.
-
-For a manually cloned checkout, run `pnpm install --frozen-lockfile` and `pnpm build` after pulling, then restart the corresponding Harness process. Updating Git alone does not update local build output. See the [maintenance guide](./docs/maintenance-workflow.md).
-
-> For `0.1.0-*` / `0.1.1-*` hosts older than `0.1.2-alpha.2`, keep a working pair and follow the [older-version and diagnostic guide](./docs/maintenance-workflow.md).
-
-See the full [compatibility matrix](./compatibility.json), [source installation and Alpha testing guide](./docs/maintenance-workflow.md), and [verification coverage and platform limits](./docs/maintenance-2026-09-06/release/README.md).
-
-Then ask for a team directly:
-
-> Use AgentTeams to review the commits after v0.5.3 from performance, security, and product perspectives. Return one consolidated report.
-
-## View teams in the workspace
-
-Click **View team** in the current chat header or the team card below a reply to open the native **Team collaboration** tab. The entry belongs to its chat, rather than the general workspace start page.
-
-Team and task content starts immediately: wide panes use columns and narrow panes stack them. Select a task to locate its owner; member icons open their conversations. Closing the tab does not stop the team, and its chat can reopen it. Completed teams retain their archives. Older hosts keep the activity panel.
-
-## How it works
-
-1. For a request to use AgentTeams, the captain follows the core protocol already in its system instructions. It continues an existing team and uses `agent_teams_status` when current state needs checking. When no team exists, the goal becomes a staged plan for review.
-2. The captain adds role-specific members backed by continuable sub-agents.
-3. The goal becomes tasks with owners and explicit dependencies.
-4. The shared scheduler uses real `running / idle / ready` state to atomically claim one ready task per idle member and wake it. An interrupted resident attempt stays parked and can resume through a direct message without losing its capability; after a cold process restart, the scheduler retries stranded open work with a fresh attempt.
-5. Members update with the current `attempt_id`; reassignment or captain takeover revokes the old attempt and waits for the old worker to quiesce before a new attempt starts.
-6. The captain presents the combined result, then archives the complete team record.
-
-Team state is stored under `<workspace>/.agent-teams/`; the Web panel reads that disk truth and combines it with live sub-agent activity.
-
-Member creation is zero-interaction by default: a member on the captain's current LLM route snapshots that provider, model, and reasoning effort, while a member on a requested alternative route snapshots the target model's default effort; later continuations restore the resolved snapshot. Only an explicit heterogeneous-team request (for example, “backend on provider A/model X, frontend on provider B/model Y”) supplies a member-specific `provider` + `model`; there is no per-member model or reasoning prompt.
-
-Captain sessions keep the concise core protocol and the original 14 native team tools from their first request. All business tools are directly available; no loading tool or extra activation call is needed. Configured profiles retain their bounded directory in the fixed system prompt. Creating, approving, continuing or ending a team does not rewrite the system prompt or tool schemas. Core rules remain available after history compaction or discarded code-mode tool results. Members receive four team tools, fixed member instructions, and their ordinary coding/research tools. Web approval wakes the captain with a control message; later member reports wake it again. See the [fixed protocol and benchmark contract](./docs/progressive-loading.md).
-
-## Slash command
-
-No “use AgentTeams” phrasing required. The plugin registers the
-closed-namespace `/agent-teams` host command, so the Web GUI slash menu shows
-an `agent-teams` placeholder with an input hint: pick it (or type the
-command), describe the goal, and press Enter.
-
-```
-/agent-teams research the pricing pages of three competitors
-```
-
-The command pipeline claims the line, then preserves that exact input as an
-ordinary user follow-up so it remains visible in the main chat. The gesture
-boundary adds the deterministic activation directive at pre-step, so the
-first model request follows the staged planning protocol without a mandatory helper call. The invocation is also durably
-logged (`command/run` / `command/done`).
-
-Surfaces without command adjudication (for example the headless CLI) get the
-same deterministic activation through a gesture boundary: any genuine user
-message starting with `/agent-teams` activates the protocol for the rest of
-the text. Mid-sentence mentions stay ordinary prose.
-
-Historical panels require saved team state or archives. Sessions from early versions that deleted teams without retaining archives do not yet support reconstructing the full panel from logs.
-
-## Configuration
-
-Defaults work without extra setup. A trusted profile can override member behavior:
-
-```yaml
-- id: agent-teams
-  config:
-    stateDir: .agent-teams
-    memberProvider: spawn
-    memberModel: deepseek-v4
-    memberMaxDepth: 0
-    maxMembers: 8
-    toolPolicies:
-      researcher:
-        allow: [read, glob, grep]
-      implementer:
-        deny: [web_search]
-```
-
-`memberMaxDepth` defaults to `0`: team members cannot create nested subagents. Set `1` to explicitly permit one descendant level; the limit also covers runtime/code-tool calls. Default members report through team messages only, avoiding duplicate native parent reports. Idle roster members make no model requests. Task assignments start distinct turns; coordination joins the nearest model step. Acceptance and consumption are tracked separately. Removal/archive drains the selected branch and its pending input before reporting success.
-
-`toolPolicies` is owner configuration: reusable per-member tool policies keyed by id. A member *selects* one by id — `tool_policy` on `agent_teams_add_member`, a member row of an inline `plan`, or a profile member row. The Captain model can select a declared policy but can never submit raw allow/deny lists or invent one at runtime.
-
-- `deny` hides the named global tools from that member's schemas and rejects their invocation.
-- `allow` keeps only the named global tools. The four coordination tools (`agent_teams_claim_task`, `agent_teams_update_task`, `agent_teams_send_message`, `agent_teams_status`) are always added to an allow list.
-- The captain-only tool list is always denied and cannot be reopened by a policy; a policy may not deny a required coordination tool.
-- Unknown ids, empty policies, and empty lists fail at mount or before a member is persisted.
-- `agent_teams_status` shows the selected policy id per member; the complete resolved filter is kept in `team.json` for audit, and the child's durable descriptor reapplies it after a restart.
-- Teams and members created without a policy keep their previous tool set and record shape. An empty `tool_policy` on `agent_teams_edit_plan` clears a staged member's policy.
-
-This is model tool visibility and invocation policy for global tools, not an OS sandbox or an authorization boundary.
-
-`memberProvider` is the sub-agent runtime backend (`spawn` / `fork`), not an LLM provider. Cross-LLM-provider routing uses the optional `provider` + `model` fields of `agent_teams_add_member`; `memberModel` is only a model default for all members. A member on the captain's current provider/model inherits the captain's reasoning effort, while a changed provider or model automatically uses the target model's default. To request a particular effort, pass the optional `reasoning_effort` field — one of the target model's supported effort ids, or `"default"` to force the model's own default.
-
-`slashCommand: false` disables the deterministic `/agent-teams` activation surfaces (slash command and gesture boundary), leaving the natural-language trigger as the only entry point.
-
-## Boundaries
-
-- One captain leads one active team at a time.
-- Idle members with no open task are automatically reused for ready work. An idle member that still owns an open attempt is parked until messaged or explicitly reassigned; messages that cannot be delivered live remain durable and are retried at a later status boundary.
-- State is file-backed and serialized within one DSH process; concurrent processes editing the same team are not coordinated.
-- The activity panel reports persisted state as-is. Models may occasionally finish work without performing the expected task-state update.
-
-See [docs/usage.md](./docs/usage.md) for the full tool reference, state model, Web UI behavior, configuration, and known limits.
-
-## Plugin development Skill
-
-Community upgrade, audit, benchmark, testing and release skills are vendored with a pinned source revision. See [skills/README.md](./skills/README.md) for local rules and [CONTRIBUTING.md](./CONTRIBUTING.md) for the contribution workflow.
-
-The repository also ships the open Agent Skills package [`dsh-plugin-development`](./skills/dsh-plugin-development/SKILL.md):
-
-```sh
-npx skills add NanmiCoder/dsh-agent-teams --skill dsh-plugin-development
-```
-
-## Documentation
-
-| Guide | Covers |
-| --- | --- |
-| [Usage](./docs/usage.md) | Architecture, UI behavior, tools, configuration, limits, and validation |
-| [Verification](./docs/verification-guide.md) | Offline, composition, real e2e, and GUI verification |
-| [Plugin development](./docs/developing-dsh-plugins.md) | Human-readable guide built from this plugin |
-| [README writing](./docs/readme-writing-guide.md) | Repository documentation conventions |
-
-## Development
-
-```sh
-pnpm install
-pnpm build
-pnpm verify
-```
-
-## Named multi-role profiles
-
-Configure one or more complete team profiles in `cordis.patch.yml`. A profile always supplies the roster (independent provider/model/role/reasoning effort). Set `taskPlanning: captain` when the Captain should derive the DAG from the user's goal; omit it or set `taskPlanning: seed` to keep a fixed template workflow:
-
-```yaml
-profiles:
-  demo-delivery:
-    description: Ship a small feature
-    protocol: Discuss requirements, review, test, then prepare release; do not deploy automatically.
-    members:
-      - name: analyst
-        model: gpt-5.6-sol
-        role: Analyze requirements
-      - name: implementer
-        model: gpt-5.6-terra
-        role: Implement the approved solution
-    tasks:
-      - id: requirements
-        subject: Requirements discussion
-        assignee: analyst
-      - id: implementation
-        subject: Implement solution
-        assignee: implementer
-        dependencies: [requirements]
-```
-
-Use an explicit profile flag: `/agent-teams --profile demo-delivery implement the feature`. The first ordinary token is never treated as an implicit profile. Normal command runs call `agent_teams_create({ profile, approval: "required" })`: the roster and seed/Captain-designed DAG remain staged, no child session is created, and no task is claimed. Edit the plan in the activity panel using the host model catalog, return to chat so the Captain asks what to revise and then atomically updates the same draft, discard it, or click **Approve & Run**. Return/discard actions cancel any planning turn still running; discard also parks model-facing context that forbids silently creating a replacement team. Approval resolves the final provider/model/reasoning choices, commits the roster, and creates each member session only when its first task is ready. A running team is stopped from its own panel header through a confirmation dialog rather than from the composer. Direct tool clients may pass `approval: "automatic"` for the legacy immediate path. Failed review/test tasks do not unlock downstream work; automatic repair/review tasks do not depend on the failed review.
-
-## License
-
-[MIT](./LICENSE)
+MIT，见 [LICENSE](./LICENSE)。上游版权归 NanmiCoder，本分支改动同样以 MIT 发布。
