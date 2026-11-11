@@ -15,7 +15,7 @@ import { memberActivity } from './members.ts'
 import { canDeclareDelivery, describeQualityLoop, verdictAuditNotes } from './quality-gates.ts'
 import { workspaceAuditor } from './workspace-audit-service.ts'
 import {
-  CAPTAIN_KEY, listArchivedTeamIds, readArchivedTeam, readUnreadMailbox, readTeam,
+  CAPTAIN_KEY, listArchivedTeamIds, readArchivedTeam, readMailbox, readUnreadMailbox, readTeam,
   taskDepthsById, taskVisualState,
 } from './state.ts'
 import type { MemberStatus, TeamState, TeamTask } from './types.ts'
@@ -62,6 +62,15 @@ export interface TeamActivityTask {
   readonly verdictStale?: string
   /** Durable last-write stamp; drives the finished-member ordering (issue #192). */
   readonly updatedAt: number
+  /**
+   * Observation-only stall marker (R4): true when a running task has produced
+   * no member output/activity for longer than the configured sliding window.
+   * Never written back to durable state; it never fails, reclaims, redelivers
+   * or reorders a task. Absent means "within window / not applicable".
+   */
+  readonly noProgress?: boolean
+  /** Milliseconds since the last member output/activity, present with the marker. */
+  readonly noProgressForMs?: number
 }
 
 /** One captain-inbox preview row. */
@@ -104,6 +113,13 @@ export interface TeamSnapshotOptions {
    * the model-facing status tool cannot report different delivery verdicts.
    */
   readonly workspacePath?: string
+  /**
+   * Sliding no-progress window in milliseconds (R4). Overrides the per-team
+   * durable value and the built-in default; only used while projecting.
+   */
+  readonly noProgressWindowMs?: number
+  /** Clock injection so snapshot recomputation can be tested deterministically. */
+  readonly now?: number
 }
 
 /** The current task of a member: its first unfinished owned task. */
@@ -121,6 +137,87 @@ export function memberModelRoute(member: { provider?: string; model?: string } |
   const model = member.model?.trim() ?? ''
   if (provider !== '' && model !== '') return `${provider}/${model}`
   return model
+}
+
+/** Default sliding no-progress window (R4), in milliseconds. */
+export const DEFAULT_NO_PROGRESS_WINDOW_MS = 5 * 60 * 1000
+
+/**
+ * Resolve the effective no-progress window: an explicit snapshot option wins,
+ * then the per-team durable override, then the built-in default. Only finite
+ * positive values are accepted, so a malformed config cannot disable detection
+ * or turn every running task into a false stall.
+ */
+export function resolveNoProgressWindowMs(
+  options: { readonly noProgressWindowMs?: number },
+  state: { readonly noProgressWindowMs?: number },
+): number {
+  for (const candidate of [options.noProgressWindowMs, state.noProgressWindowMs]) {
+    if (candidate !== undefined && Number.isFinite(candidate) && candidate > 0) return candidate
+  }
+  return DEFAULT_NO_PROGRESS_WINDOW_MS
+}
+
+/** A minimal timestamped member output used to anchor the sliding window. */
+export interface MemberActivityStamp {
+  readonly from: string
+  readonly ts: number
+}
+
+/**
+ * Last member output/activity time for one task. The anchor is the newest of
+ * the durable task write, the latest captain-inbox report authored by the
+ * assignee, and (when present) the member's own activity timestamp. Reports
+ * from other senders never reset this task's window.
+ */
+export function lastActivityAtOf(
+  task: { readonly updatedAt: number; readonly assignee?: string },
+  reports: readonly MemberActivityStamp[],
+  memberLastActivityAt?: number,
+): number {
+  let latest = Number.isFinite(task.updatedAt) ? task.updatedAt : 0
+  if (memberLastActivityAt !== undefined && Number.isFinite(memberLastActivityAt) && memberLastActivityAt > latest) {
+    latest = memberLastActivityAt
+  }
+  const assignee = task.assignee
+  if (assignee !== undefined && assignee !== '') {
+    for (const report of reports) {
+      if (report.from === assignee && Number.isFinite(report.ts) && report.ts > latest) latest = report.ts
+    }
+  }
+  return latest
+}
+
+/** Read-only result of one sliding-window check. */
+export interface NoProgressObservation {
+  readonly noProgress: boolean
+  readonly noProgressForMs: number
+}
+
+/**
+ * Pure, side-effect-free stall observation. A task is marked only while it is
+ * still running (`claimed` or `in_progress`) and more than `windowMs` has
+ * elapsed since its last member output/activity. No status, timer, reclaim,
+ * redelivery or dispatch ordering is touched here.
+ */
+export function detectNoProgress(input: {
+  readonly status: string
+  readonly lastActivityAt: number
+  readonly now: number
+  readonly windowMs: number
+}): NoProgressObservation {
+  const { status, lastActivityAt, now, windowMs } = input
+  const running = status === 'claimed' || status === 'in_progress'
+  const elapsed = now - lastActivityAt
+  const noProgressForMs = elapsed > 0 ? elapsed : 0
+  const noProgress = running
+    && Number.isFinite(now)
+    && Number.isFinite(lastActivityAt)
+    && Number.isFinite(windowMs)
+    && windowMs > 0
+    && lastActivityAt > 0
+    && elapsed > windowMs
+  return { noProgress, noProgressForMs }
 }
 
 /**
@@ -196,6 +293,28 @@ export async function assembleTeamSnapshot(
       staleById.set(note.taskId, [...staleById.get(note.taskId) ?? [], note.message])
     }
   }
+  // R4: recompute the sliding no-progress window inside the existing snapshot
+  // refresh path. Read-only: durable timestamps and the captain mailbox are
+  // the only inputs, nothing is written back, and no timer is installed.
+  const observeNoProgress = options.historic !== true
+  const now = options.now ?? Date.now()
+  const noProgressWindowMs = resolveNoProgressWindowMs(options, state)
+  const latestReportBySender = new Map<string, number>()
+  if (observeNoProgress) {
+    let captainReports: readonly MemberActivityStamp[] = []
+    try {
+      captainReports = await readMailbox(stateRoot, state.id, CAPTAIN_KEY)
+    } catch (error: unknown) {
+      ctx.logger.warn(`agent-teams: captain mailbox read failed for no-progress detection: ${String(error)}`)
+      captainReports = []
+    }
+    for (const report of captainReports) {
+      if (!Number.isFinite(report.ts)) continue
+      const previous = latestReportBySender.get(report.from)
+      if (previous === undefined || report.ts > previous) latestReportBySender.set(report.from, report.ts)
+    }
+  }
+  const senderActivity: MemberActivityStamp[] = [...latestReportBySender].map(([from, ts]) => ({ from, ts }))
   return {
     workspace,
     teamId: state.id,
@@ -213,22 +332,37 @@ export async function assembleTeamSnapshot(
       delivery: { ok: deliveryCheck.ok, blockers: [...deliveryCheck.blockers], warnings: [...deliveryCheck.warnings] },
     },
     members,
-    tasks: tasks.map((task) => ({
-      id: task.id,
-      subject: task.subject,
-      ...includePlanText ? { description: task.description ?? '' } : {},
-      status: task.status,
-      state: taskVisualState(task.status, task.dependencies, tasks),
-      assignee: task.assignee ?? '',
-      model: memberModelRoute(roster.find((member) => member.name === task.assignee)),
-      dependencies: task.dependencies,
-      depth: depths.get(task.id) ?? 0,
-      ...task.kind === undefined ? {} : { kind: task.kind },
-      ...task.round === undefined ? {} : { round: task.round },
-      ...task.verdict === undefined ? {} : { verdict: task.verdict },
-      ...staleById.get(task.id) === undefined ? {} : { verdictStale: (staleById.get(task.id) as string[]).join('; ') },
-      updatedAt: task.updatedAt,
-    })),
+    tasks: tasks.map((task) => {
+      const observation = observeNoProgress
+        ? detectNoProgress({
+          status: task.status,
+          lastActivityAt: lastActivityAtOf(
+            task,
+            senderActivity,
+            roster.find((member) => member.name === task.assignee)?.lastActivityAt,
+          ),
+          now,
+          windowMs: noProgressWindowMs,
+        })
+        : undefined
+      return {
+        id: task.id,
+        subject: task.subject,
+        ...includePlanText ? { description: task.description ?? '' } : {},
+        status: task.status,
+        state: taskVisualState(task.status, task.dependencies, tasks),
+        assignee: task.assignee ?? '',
+        model: memberModelRoute(roster.find((member) => member.name === task.assignee)),
+        dependencies: task.dependencies,
+        depth: depths.get(task.id) ?? 0,
+        ...task.kind === undefined ? {} : { kind: task.kind },
+        ...task.round === undefined ? {} : { round: task.round },
+        ...task.verdict === undefined ? {} : { verdict: task.verdict },
+        ...staleById.get(task.id) === undefined ? {} : { verdictStale: (staleById.get(task.id) as string[]).join('; ') },
+        updatedAt: task.updatedAt,
+        ...observation?.noProgress === true ? { noProgress: true, noProgressForMs: observation.noProgressForMs } : {},
+      }
+    }),
     messageCount: captainInbox.length
       + members.reduce((count, member) => count + member.unread, 0),
     captainInbox: captainInbox.slice(-5).map((message) => ({
