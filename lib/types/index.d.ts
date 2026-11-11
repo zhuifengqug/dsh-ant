@@ -20,6 +20,7 @@
  */
 import type { Context } from '@deepseek-ai/cordis';
 import z from '@deepseek-ai/schemastery';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { type TeamProfileConfig } from './profiles.ts';
 import { type MemberToolPolicy } from './tool-policies.ts';
 export declare const name = "agent-teams";
@@ -81,4 +82,19 @@ export interface Config {
 export declare const Config: z<Config>;
 /** The model-facing usage policy: when and how to drive AgentTeams. */
 export declare function usageSectionText(toolNames: string, profilesText?: string): string;
+/**
+ * Route handler for `POST /plugins/dsh-agent-teams/archive-delete`.
+ *
+ * Permanent archive deletion is HTTP-only on purpose: it destroys review
+ * history with no backup, so it must stay out of the tool surface a resumed or
+ * stale session can call. The request body is `{ sessionId, teamId }`; a
+ * delete happens only when the archived `team.json` itself records that
+ * session as captain, never by looking up a live captain session. The
+ * registered wrapper in `apply` is the authenticated one; this factory takes
+ * the state roots as a thunk so the route contract can be exercised by a test
+ * with a fixture workspace instead of a Host assembly.
+ * @param listStateRoots - resolves the state root of every registered workspace.
+ * @param onFailure - receives an unexpected deletion failure (for logging).
+ */
+export declare function createArchiveDeleteHandler(listStateRoots: () => readonly string[], onFailure?: (error: unknown) => void): (req: IncomingMessage, res: ServerResponse) => Promise<void>;
 export declare function apply(ctx: Context, config: Config): void;

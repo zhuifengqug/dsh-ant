@@ -1257,6 +1257,59 @@ export async function listArchivedTeamIds(stateRoot: string): Promise<string[]> 
   }
 }
 
+/**
+ * Permanently delete one archived team directory (no backup copy).
+ *
+ * The id is matched against {@link listArchivedTeamIds} before any path is
+ * built, so an id that only prefixes a sibling, contains separators, or tries
+ * to climb out of `archive/` can never address anything else: only a name the
+ * directory listing actually returned reaches `join`. Deleting is idempotent —
+ * an id that is not archived (never was, or already deleted) returns `false`
+ * and touches nothing.
+ * @param stateRoot - resolved absolute state root directory.
+ * @param teamId - the archived team id to delete, matched exactly.
+ * @returns true when an archived directory was removed, false when absent.
+ */
+export async function deleteArchivedTeam(stateRoot: string, teamId: string): Promise<boolean> {
+  const match = (await listArchivedTeamIds(stateRoot)).find((id) => id === teamId)
+  if (match === undefined) return false
+  await rm(join(stateRoot, 'archive', match), { recursive: true, force: true })
+  return true
+}
+
+/**
+ * Delete one archived team only for the session that captained it.
+ *
+ * Ownership is read from the archived `team.json` itself (`captainSessionId`),
+ * never from a live captain session: the archive outlives its session, so a
+ * deleted team is still gated by the id that created it. A missing archive, a
+ * different captain, or an unreadable team.json all answer `false` so the
+ * caller can report one uniform "not found for this session".
+ * @param stateRoot - resolved absolute state root directory.
+ * @param teamId - the archived team id to delete, matched exactly.
+ * @param sessionId - the caller's captain session id.
+ * @returns true only when the session owned the archive and it was removed.
+ */
+export async function deleteArchivedTeamForSession(
+  stateRoot: string,
+  teamId: string,
+  sessionId: string,
+): Promise<boolean> {
+  const match = (await listArchivedTeamIds(stateRoot)).find((id) => id === teamId)
+  if (match === undefined) return false
+  let captainSessionId: string
+  try {
+    const team = await readArchivedTeam(stateRoot, match)
+    if (team === undefined) return false
+    captainSessionId = team.captainSessionId
+  } catch {
+    // A corrupt archive cannot prove ownership; keep it and report not found.
+    return false
+  }
+  if (captainSessionId !== sessionId) return false
+  return deleteArchivedTeam(stateRoot, match)
+}
+
 // ── activity snapshot (server-side, like the Claude Code desktop watcher) ──
 
 /** Visual task state for the activity panel. */

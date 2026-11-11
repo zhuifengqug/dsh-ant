@@ -37,8 +37,9 @@ import { installAgentTeamsGestureBoundary, registerAgentTeamsCommand } from './c
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import { collectArchivedTeamsActivity, collectTeamsActivity } from './snapshot.ts'
-import { findTeamByCaptain } from './state.ts'
+import { deleteArchivedTeamForSession, findTeamByCaptain } from './state.ts'
 import { leadIdentityOfAsync } from './lineage.ts'
 import { formatProfilesForPrompt, type TeamProfileConfig } from './profiles.ts'
 import { parseToolPolicies, type MemberToolPolicy } from './tool-policies.ts'
@@ -192,6 +193,68 @@ Language rule (mandatory): every user-facing string you author for this team —
 Tools: ${toolNames}${profilesText === '' ? '' : `\n\n${profilesText}`}`
 }
 
+/**
+ * Route handler for `POST /plugins/dsh-agent-teams/archive-delete`.
+ *
+ * Permanent archive deletion is HTTP-only on purpose: it destroys review
+ * history with no backup, so it must stay out of the tool surface a resumed or
+ * stale session can call. The request body is `{ sessionId, teamId }`; a
+ * delete happens only when the archived `team.json` itself records that
+ * session as captain, never by looking up a live captain session. The
+ * registered wrapper in `apply` is the authenticated one; this factory takes
+ * the state roots as a thunk so the route contract can be exercised by a test
+ * with a fixture workspace instead of a Host assembly.
+ * @param listStateRoots - resolves the state root of every registered workspace.
+ * @param onFailure - receives an unexpected deletion failure (for logging).
+ */
+export function createArchiveDeleteHandler(
+  listStateRoots: () => readonly string[],
+  onFailure?: (error: unknown) => void,
+): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
+  const writeJson = (res: ServerResponse, status: number, body: unknown): void => {
+    res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' })
+    res.end(JSON.stringify(body))
+  }
+  return async (req, res) => {
+    if (req.method !== 'POST') {
+      res.writeHead(405, { allow: 'POST', 'cache-control': 'no-store' })
+      res.end()
+      return
+    }
+    let payload: Record<string, unknown>
+    try {
+      payload = await readJsonRequest(req)
+    } catch (error: unknown) {
+      writeJson(res, error instanceof RequestBodyError ? error.status : 400, {
+        error: error instanceof Error ? error.message : 'invalid request body',
+      })
+      return
+    }
+    const sessionId = typeof payload['sessionId'] === 'string' ? payload['sessionId'].trim() : ''
+    const teamId = typeof payload['teamId'] === 'string' ? payload['teamId'].trim() : ''
+    if (sessionId === '' || teamId === '') {
+      writeJson(res, 400, { error: 'sessionId and teamId are required' })
+      return
+    }
+    try {
+      for (const stateRoot of listStateRoots()) {
+        // Exact id match + archived-captain check happen inside the state
+        // layer, before any path is built from the id.
+        if (await deleteArchivedTeamForSession(stateRoot, teamId, sessionId)) {
+          writeJson(res, 200, { ok: true, teamId })
+          return
+        }
+      }
+      writeJson(res, 404, { error: 'archived team not found for this session' })
+    } catch (error: unknown) {
+      // Nothing was deleted (the archive is still on disk), so the caller can
+      // retry; report the failure instead of implying success.
+      onFailure?.(error)
+      writeJson(res, 500, { error: 'failed to delete the archived team' })
+    }
+  }
+}
+
 export function apply(ctx: Context, config: Config): void {
   const resolved: ToolsConfig = {
     stateDir: config.stateDir ?? '.agent-teams',
@@ -333,6 +396,19 @@ export function apply(ctx: Context, config: Config): void {
         }
       },
     }), 'agent-teams: halt route')
+
+    // Permanent archive deletion: destructive with no backup, so it is a route
+    // rather than a tool and it authorizes from the archived team.json. The
+    // handler matches the id against the archive listing before building any
+    // path and answers 404 uniformly when the archive is not this session's.
+    ctx.effect(() => webServer.register({
+      kind: 'exact',
+      path: '/plugins/dsh-agent-teams/archive-delete',
+      handler: createArchiveDeleteHandler(
+        () => workspaceRegistry.list().map((workspace) => join(workspace.path, resolved.stateDir)),
+        (error) => ctx.logger.warn(`agent-teams: archive delete failed: ${String(error)}`),
+      ),
+    }), 'agent-teams: archive delete route')
 
     ctx.effect(() => webServer.register({
       kind: 'exact',

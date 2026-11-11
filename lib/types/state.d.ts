@@ -246,6 +246,34 @@ export declare function readArchivedTeam(stateRoot: string, teamId: string): Pro
  * @returns the archived team ids, empty when the archive does not exist.
  */
 export declare function listArchivedTeamIds(stateRoot: string): Promise<string[]>;
+/**
+ * Permanently delete one archived team directory (no backup copy).
+ *
+ * The id is matched against {@link listArchivedTeamIds} before any path is
+ * built, so an id that only prefixes a sibling, contains separators, or tries
+ * to climb out of `archive/` can never address anything else: only a name the
+ * directory listing actually returned reaches `join`. Deleting is idempotent —
+ * an id that is not archived (never was, or already deleted) returns `false`
+ * and touches nothing.
+ * @param stateRoot - resolved absolute state root directory.
+ * @param teamId - the archived team id to delete, matched exactly.
+ * @returns true when an archived directory was removed, false when absent.
+ */
+export declare function deleteArchivedTeam(stateRoot: string, teamId: string): Promise<boolean>;
+/**
+ * Delete one archived team only for the session that captained it.
+ *
+ * Ownership is read from the archived `team.json` itself (`captainSessionId`),
+ * never from a live captain session: the archive outlives its session, so a
+ * deleted team is still gated by the id that created it. A missing archive, a
+ * different captain, or an unreadable team.json all answer `false` so the
+ * caller can report one uniform "not found for this session".
+ * @param stateRoot - resolved absolute state root directory.
+ * @param teamId - the archived team id to delete, matched exactly.
+ * @param sessionId - the caller's captain session id.
+ * @returns true only when the session owned the archive and it was removed.
+ */
+export declare function deleteArchivedTeamForSession(stateRoot: string, teamId: string, sessionId: string): Promise<boolean>;
 /** Visual task state for the activity panel. */
 export type VisualTaskState = 'blocked' | 'open' | 'claimed' | 'running' | 'completed' | 'failed' | 'cancelled';
 /**
