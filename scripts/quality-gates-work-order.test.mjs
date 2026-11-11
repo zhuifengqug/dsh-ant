@@ -270,8 +270,8 @@ test('#174: traversal never follows a symlink out of the workspace or into a cyc
   const outside = mkdtempSync(join(tmpdir(), 'issue174-outside-'))
   try {
     writeFileSync(join(outside, 'host-secret.txt'), 'not part of this project\n')
-    symlinkSync(outside, join(root, 'lib', 'escape'))
-    symlinkSync(join(root, 'lib'), join(root, 'lib', 'loop'))
+    symlinkSync(outside, join(root, 'lib', 'escape'), process.platform === 'win32' ? 'junction' : 'dir')
+    symlinkSync(join(root, 'lib'), join(root, 'lib', 'loop'), process.platform === 'win32' ? 'junction' : 'dir')
     const paths = artifacts.expandScopePaths(root, ['lib/'])
     assert.ok(!paths.some((path) => path.includes('[host-secret]') || path.endsWith('host-secret.txt')), `escaped the workspace: ${JSON.stringify(paths)}`)
     assert.ok(!paths.some((path) => path.includes('escape')), `followed a symlink out of the workspace: ${JSON.stringify(paths)}`)
