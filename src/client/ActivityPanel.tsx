@@ -51,12 +51,17 @@ import {
   ACTIVITY_HALT_URL,
   getActivityMonitorTargetsSnapshot,
   getActivitySnapshotsSnapshot,
+  IDLE_ARCHIVE_DELETE,
+  nextArchiveDeleteState,
+  pruneArchivedTeamLocally,
+  requestArchivedTeamDeletion,
   startActivityPolling,
   subscribeActivityMonitorTargets,
   subscribeActivitySnapshots,
   type ActivityMember,
   type ActivityTask,
   type ActivityTeam,
+  type ArchiveDeleteState,
 } from './activity-monitor.ts'
 import { ACTION_ART, LEAD_ART, memberArtUrl } from './artwork.ts'
 import { OPEN_PANEL_EVENT } from './AgentTeamsCard.tsx'
@@ -822,6 +827,116 @@ export function TeamSection({ team, modelDirectory, onContinuePlanning, onDiscar
   )
 }
 
+/** What the archive delete control shows for one confirmation state. */
+export interface ArchiveDeleteView {
+  /** Text on the delete button. */
+  readonly text: string
+  /** Accessible name of the delete button. */
+  readonly ariaLabel: string
+  /** Whether the cancel button is offered next to it. */
+  readonly showCancel: boolean
+}
+
+/** Map one confirmation state to the labels the archive delete control shows. */
+export function archiveDeleteView(state: ArchiveDeleteState, teamName: string, t: AgentTeamsTranslate): ArchiveDeleteView {
+  if (state.step === 'deleting') return { text: t('archive.deleteBusy'), ariaLabel: t('archive.deleteBusy'), showCancel: false }
+  if (state.step === 'confirming') return { text: t('archive.deleteConfirm'), ariaLabel: t('archive.deleteConfirm'), showCancel: true }
+  return { text: t('archive.delete'), ariaLabel: t('archive.deleteAria', { team: teamName }), showCancel: false }
+}
+
+/**
+ * The permanent delete entry of one archived team.
+ *
+ * The first press only asks for a second one; Escape, a lost focus or the
+ * cancel button take the request back. The second press asks the host to
+ * delete the archive and drops the row from the shared snapshot.
+ */
+export function ArchiveDeleteButton({ team, t }: {
+  readonly team: ActivityTeam
+  readonly t: AgentTeamsTranslate
+}) {
+  const [state, setState] = useState<ArchiveDeleteState>(IDLE_ARCHIVE_DELETE)
+  // Escape leaves the confirmation from anywhere in the panel.
+  useEffect(() => {
+    if (state.step !== 'confirming') return
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape') return
+      event.stopPropagation()
+      setState(IDLE_ARCHIVE_DELETE)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => { window.removeEventListener('keydown', onKeyDown) }
+  }, [state.step])
+  const press = async (): Promise<void> => {
+    const next = nextArchiveDeleteState(state, { type: 'press' })
+    setState(next)
+    if (next.step !== 'deleting') return
+    const outcome = await requestArchivedTeamDeletion(team)
+    if (!outcome.ok) {
+      setState(nextArchiveDeleteState(state, { type: 'failure', error: outcome.error }))
+      return
+    }
+    // The host archive is gone; drop the row so the panel stops offering it.
+    pruneArchivedTeamLocally(team.teamId, team.captainSessionId)
+    setState(IDLE_ARCHIVE_DELETE)
+  }
+  const view = archiveDeleteView(state, team.name, t)
+  return (
+    <span
+      className={css.archiveDeleteRow}
+      data-archive-delete-row
+      onBlur={(event) => {
+        // A focus that leaves the control cancels the pending request.
+        if (event.currentTarget.contains(event.relatedTarget as Node | null)) return
+        setState(IDLE_ARCHIVE_DELETE)
+      }}
+    >
+      <button
+        type="button"
+        className={css.archiveDelete}
+        data-archive-delete
+        data-state={state.step}
+        aria-label={view.ariaLabel}
+        title={view.ariaLabel}
+        disabled={state.step === 'deleting'}
+        onClick={() => { void press() }}
+      >
+        {view.text}
+      </button>
+      {view.showCancel && (
+        <button
+          type="button"
+          className={css.archiveDeleteCancel}
+          data-archive-delete-cancel
+          onClick={() => { setState(IDLE_ARCHIVE_DELETE) }}
+        >
+          {t('archive.deleteCancel')}
+        </button>
+      )}
+      {state.error !== '' && (
+        <span className={css.archiveDeleteError} role="alert">{t('archive.deleteFailed', { message: state.error })}</span>
+      )}
+    </span>
+  )
+}
+
+/** One archived team: the archive label plus the permanent delete entry. */
+export function ArchivedTeamRow({ team, onNavigate, t }: {
+  readonly team: ActivityTeam
+  readonly onNavigate: (parentId: SessionId, childId: SessionId) => void
+  readonly t: AgentTeamsTranslate
+}) {
+  return (
+    <div data-team-id={team.teamId} data-historic className={css.archivedWrap}>
+      <div className={css.archiveHead}>
+        <span className={css.archiveLabel}>{t(team.phase === 'staged' ? 'archive.discardedLabel' : 'archive.label')}</span>
+        <ArchiveDeleteButton team={team} t={t} />
+      </div>
+      <TeamSection team={team} onNavigate={onNavigate} t={t} historic />
+    </div>
+  )
+}
+
 /** Legacy conversation cards may outlive their host archive. Project their
  * durable roster through the same rebuilt panel instead of a second UI. */
 export function historicCardTeam(data: AgentTeamsCardData, owner: string): ActivityTeam {
@@ -1341,10 +1456,12 @@ export function ActivityPanel({ sessionsList, modelDirectories, openMember, t, c
                     />
                   ))}
                   {visibleArchived.map((team) => (
-                    <div key={`${team.captainSessionId}:${team.teamId}`} data-team-id={team.teamId} data-historic className={css.archivedWrap}>
-                      <span className={css.archiveLabel}>{t(team.phase === 'staged' ? 'archive.discardedLabel' : 'archive.label')}</span>
-                      <TeamSection team={team} onNavigate={navigateToSession} t={t} historic />
-                    </div>
+                    <ArchivedTeamRow
+                      key={`${team.captainSessionId}:${team.teamId}`}
+                      team={team}
+                      onNavigate={navigateToSession}
+                      t={t}
+                    />
                   ))}
                   {visibleHistoric.map(({ data: team, owner }) => {
                     const teamKey = `${owner}:${team.teamId}`

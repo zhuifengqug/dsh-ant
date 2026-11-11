@@ -39,3 +39,19 @@
 @keyframes breathe { to { opacity: .45; } }
 @container team-workspace (min-width: 720px) { .content { padding: 24px 24px 32px; } .heading { margin-bottom: 24px; } }
 @media (prefers-reduced-motion: reduce) { .skeleton i { animation: none; } .root button { transition: none; } }
+
+/* Archive bar: the permanent delete entry of the selected archived team. */
+.archiveBar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 8px 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 12px;
+  background: var(--dsw-alias-bg-module-platform);
+}
+.archiveBarLabel { color: var(--dsw-alias-label-secondary); font-size: 12px; }

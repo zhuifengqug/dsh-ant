@@ -21,7 +21,7 @@ import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots';
 import type { SessionId } from '@deepseek-ai/dsh-session/types';
 import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store';
 import type { SessionListState } from '@deepseek-ai/dsh-api-session-controller/client';
-import { type ActivityTeam } from './activity-monitor.ts';
+import { type ActivityTeam, type ArchiveDeleteState } from './activity-monitor.ts';
 import type { AgentTeamsCardData } from './agent-teams-card-definition.ts';
 import type { AgentTeamsTranslate } from './locales.ts';
 export declare function TeamSection({ team, modelDirectory, onContinuePlanning, onDiscarded, onNavigate, t, historic, workspace }: {
@@ -34,6 +34,34 @@ export declare function TeamSection({ team, modelDirectory, onContinuePlanning, 
     readonly t: AgentTeamsTranslate;
     readonly historic?: boolean;
     readonly workspace?: boolean;
+}): import("react").JSX.Element;
+/** What the archive delete control shows for one confirmation state. */
+export interface ArchiveDeleteView {
+    /** Text on the delete button. */
+    readonly text: string;
+    /** Accessible name of the delete button. */
+    readonly ariaLabel: string;
+    /** Whether the cancel button is offered next to it. */
+    readonly showCancel: boolean;
+}
+/** Map one confirmation state to the labels the archive delete control shows. */
+export declare function archiveDeleteView(state: ArchiveDeleteState, teamName: string, t: AgentTeamsTranslate): ArchiveDeleteView;
+/**
+ * The permanent delete entry of one archived team.
+ *
+ * The first press only asks for a second one; Escape, a lost focus or the
+ * cancel button take the request back. The second press asks the host to
+ * delete the archive and drops the row from the shared snapshot.
+ */
+export declare function ArchiveDeleteButton({ team, t }: {
+    readonly team: ActivityTeam;
+    readonly t: AgentTeamsTranslate;
+}): import("react").JSX.Element;
+/** One archived team: the archive label plus the permanent delete entry. */
+export declare function ArchivedTeamRow({ team, onNavigate, t }: {
+    readonly team: ActivityTeam;
+    readonly onNavigate: (parentId: SessionId, childId: SessionId) => void;
+    readonly t: AgentTeamsTranslate;
 }): import("react").JSX.Element;
 /** Legacy conversation cards may outlive their host archive. Project their
  * durable roster through the same rebuilt panel instead of a second UI. */

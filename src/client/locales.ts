@@ -223,6 +223,12 @@ export const zh = {
   'assignment.empty': '暂无任务',
   'archive.label': '已结束 · 历史归档',
   'archive.discardedLabel': '计划已放弃 · 历史归档',
+  'archive.delete': '永久删除',
+  'archive.deleteConfirm': '再点一次，永久删除',
+  'archive.deleteCancel': '取消',
+  'archive.deleteBusy': '正在删除…',
+  'archive.deleteFailed': '删除失败：{message}',
+  'archive.deleteAria': '永久删除已归档团队「{team}」',
 } satisfies Record<string, string>
 
 /** AgentTeams namespace key union. */
@@ -448,6 +454,12 @@ export const en = {
   'assignment.empty': 'No tasks',
   'archive.label': 'Ended · Archived history',
   'archive.discardedLabel': 'Plan discarded · Archived history',
+  'archive.delete': 'Delete permanently',
+  'archive.deleteConfirm': 'Click again to delete permanently',
+  'archive.deleteCancel': 'Cancel',
+  'archive.deleteBusy': 'Deleting…',
+  'archive.deleteFailed': 'Delete failed: {message}',
+  'archive.deleteAria': 'Permanently delete the archived team "{team}"',
 } satisfies Record<AgentTeamsLocaleKey, string>
 
 /** Translation function consumed by pure view helpers. */

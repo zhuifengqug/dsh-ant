@@ -2,11 +2,11 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ISidebarRight } from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
-import { ActivityPanel, TeamSection, historicCardTeam, type ActivityPanelProps } from './ActivityPanel.tsx'
+import { ActivityPanel, ArchiveDeleteButton, TeamSection, historicCardTeam, type ActivityPanelProps } from './ActivityPanel.tsx'
 import { OPEN_PANEL_EVENT } from './AgentTeamsCard.tsx'
 import type { AgentTeamsCardData } from './agent-teams-card-definition.ts'
 import { currentSessionId } from './session-navigation.ts'
-import { getActivityMonitorTargetsSnapshot, getActivitySnapshotsSnapshot, getPublishedActivityRows, startActivityPolling, subscribeActivityMonitorTargets, subscribeActivitySnapshots, updateActivitySnapshots } from './activity-monitor.ts'
+import { getActivityMonitorTargetsSnapshot, getActivitySnapshotsSnapshot, getPublishedActivityRows, isArchivedTeamRecord, startActivityPolling, subscribeActivityMonitorTargets, subscribeActivitySnapshots, updateActivitySnapshots } from './activity-monitor.ts'
 import { createTeamDiscovery, type WorkspaceActivityState } from './workspace-state.ts'
 import { LEAD_ART } from './artwork.ts'
 import css from './WorkspaceActivity.module.css'
@@ -86,8 +86,9 @@ export type WorkspaceActivityProps = PropsRuntime<'sidebar.right.pane.tab'> & Pr
 
 export function WorkspaceActivity({ sessionId, useTabInfo, t, state, modelDirectories, openMember }: WorkspaceActivityProps) {
   const { tab } = useTabInfo()
-  const snapshots = useSyncExternalStore(subscribeActivitySnapshots, getActivitySnapshotsSnapshot)
-  const local = useSyncExternalStore(state.subscribe, state.getSnapshot)
+  // The server snapshot keeps the panel renderable outside the browser shell.
+  const snapshots = useSyncExternalStore(subscribeActivitySnapshots, getActivitySnapshotsSnapshot, getActivitySnapshotsSnapshot)
+  const local = useSyncExternalStore(state.subscribe, state.getSnapshot, state.getSnapshot)
   const [retry, setRetry] = useState(0)
   const live = snapshots.teams.filter(team => team.captainSessionId === sessionId)
   const archived = snapshots.archivedTeams.filter(team => team.captainSessionId === sessionId && !live.some(item => item.teamId === team.teamId))
@@ -97,6 +98,8 @@ export function WorkspaceActivity({ sessionId, useTabInfo, t, state, modelDirect
   const records = [...live, ...archived, ...historic]
   const selected = records.find(team => team.teamId === local.selected.get(sessionId)) ?? records[0]
   const history = selected !== undefined && !live.includes(selected)
+  // Only a real archive record owns the permanent delete entry; a legacy card never does.
+  const selectedArchive = selected !== undefined && isArchivedTeamRecord(selected, archived) ? selected : undefined
   const status = local.statuses.get(sessionId) ?? 'loading'
   // Explicit reconnect is bounded and cleaned up; ordinary polling is owned by the monitor.
   useEffect(() => {
@@ -113,6 +116,12 @@ export function WorkspaceActivity({ sessionId, useTabInfo, t, state, modelDirect
   return (
     <div className={css.root} data-agent-teams-workspace data-session-id={sessionId}>
       <div className={css.content}>
+        {selectedArchive !== undefined && (
+          <div className={css.archiveBar} data-archive-bar>
+            <span className={css.archiveBarLabel}>{t('archive.label')}</span>
+            <ArchiveDeleteButton key={selectedArchive.teamId} team={selectedArchive} t={t} />
+          </div>
+        )}
         <header className={css.heading}>
           <img src={LEAD_ART} alt="" aria-hidden />
           <h2>AgentTeams</h2>

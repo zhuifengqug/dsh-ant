@@ -229,6 +229,8 @@ export const ACTIVITY_PROBE_MS = 5000
 /** Host route serving live and archived team snapshots. */
 export const ACTIVITY_STATE_URL = '/plugins/dsh-agent-teams/state'
 export const ACTIVITY_HALT_URL = '/plugins/dsh-agent-teams/halt'
+/** Host route that deletes one archived team for good; the host keeps no backup. */
+export const ARCHIVE_DELETE_URL = '/plugins/dsh-agent-teams/archive-delete'
 
 interface ActivityFetchResponse {
   readonly ok: boolean
@@ -434,4 +436,121 @@ export function startActivityPolling(
       cancel(timer)
     },
   }
+}
+
+/** Outcome of one archive-delete request. */
+export interface ArchiveDeleteOutcome {
+  readonly ok: boolean
+  readonly teamId: string
+  readonly error: string
+}
+
+/** Fetch used by the archive-delete request; injectable for tests. */
+export type ArchiveDeleteFetch = (url: string, init: RequestInit) => Promise<Response>
+
+/**
+ * Ask the host to delete one archived team for good.
+ *
+ * The host answers with an empty 200 body, a `{ error }` body for a rejected
+ * request, or a transport failure; every non-success becomes a message the
+ * panel can show instead of an exception.
+ */
+export async function requestArchivedTeamDeletion(
+  team: { readonly captainSessionId: string; readonly teamId: string },
+  runtime: { readonly fetchImpl?: ArchiveDeleteFetch } = {},
+): Promise<ArchiveDeleteOutcome> {
+  const sessionId = team.captainSessionId.trim()
+  const teamId = team.teamId.trim()
+  if (sessionId === '' || teamId === '') {
+    return { ok: false, teamId, error: 'sessionId and teamId are required' }
+  }
+  const fetchImpl: ArchiveDeleteFetch = runtime.fetchImpl ?? ((url, init) => fetch(url, init))
+  try {
+    const response = await fetchImpl(ARCHIVE_DELETE_URL, {
+      method: 'POST',
+      cache: 'no-store',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ sessionId, teamId }),
+    })
+    if (!response.ok) {
+      let message = ''
+      try {
+        const body = await response.json() as { error?: unknown }
+        if (typeof body.error === 'string' && body.error.trim() !== '') message = body.error
+      } catch {}
+      return { ok: false, teamId, error: message === '' ? 'archive delete failed (' + response.status + ')' : message }
+    }
+    return { ok: true, teamId, error: '' }
+  } catch (error: unknown) {
+    return { ok: false, teamId, error: error instanceof Error ? error.message : String(error) }
+  }
+}
+
+/**
+ * Drop one deleted archive row from the shared snapshot.
+ *
+ * The scope cache would republish the row on the next poll, so it is pruned
+ * together with the published rows; the panel then stops offering the entry.
+ */
+export function pruneArchivedTeamLocally(teamId: string, sessionId?: string): boolean {
+  const id = teamId.trim()
+  if (id === '') return false
+  const owner = sessionId?.trim()
+  const matches = (team: ActivityTeam): boolean => team.teamId === id
+    && (owner === undefined || owner === '' || team.captainSessionId === owner)
+  const current = activitySnapshots.archivedTeams
+  const kept = current.filter(team => !matches(team))
+  if (kept.length === current.length) return false
+  for (const [scope, rows] of scopedSnapshots.archivedTeams) {
+    const next = rows.filter(team => !matches(team))
+    if (next.length !== rows.length) scopedSnapshots.archivedTeams.set(scope, next)
+  }
+  activitySnapshots = { ...activitySnapshots, archivedTeams: kept }
+  for (const listener of snapshotListeners) listener()
+  return true
+}
+
+/** One step of the two-press archive deletion. */
+export type ArchiveDeleteStep = 'idle' | 'confirming' | 'deleting'
+
+/** State of the archive delete control. */
+export interface ArchiveDeleteState {
+  readonly step: ArchiveDeleteStep
+  readonly error: string
+}
+
+/** The neutral state of the archive delete control. */
+export const IDLE_ARCHIVE_DELETE: ArchiveDeleteState = { step: 'idle', error: '' }
+
+/** Events that move the two-press archive deletion forward or back. */
+export type ArchiveDeleteEvent =
+  | { readonly type: 'press' }
+  | { readonly type: 'cancel' }
+  | { readonly type: 'failure'; readonly error: string }
+
+/**
+ * Advance the two-press confirmation of a permanent archive deletion.
+ *
+ * The first press asks for a second one; only the second press reaches the
+ * host. Cancelling (Escape, blur, the cancel button) and a failed request
+ * both return the control to its idle shape.
+ */
+export function nextArchiveDeleteState(state: ArchiveDeleteState, event: ArchiveDeleteEvent): ArchiveDeleteState {
+  if (event.type === 'press') {
+    if (state.step === 'idle') return { step: 'confirming', error: '' }
+    if (state.step === 'confirming') return { step: 'deleting', error: '' }
+    return state
+  }
+  if (event.type === 'cancel') return IDLE_ARCHIVE_DELETE
+  return { step: 'idle', error: event.error }
+}
+
+/**
+ * Whether one row is a real archive record.
+ *
+ * Only rows the host still keeps in its archive own the permanent delete
+ * entry; a legacy conversation card is a projection and never offers it.
+ */
+export function isArchivedTeamRecord(team: ActivityTeam, archived: readonly ActivityTeam[]): boolean {
+  return archived.some(row => row.teamId === team.teamId && row.captainSessionId === team.captainSessionId)
 }

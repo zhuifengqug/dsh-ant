@@ -1,7 +1,39 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import {createWorkspaceState,createTeamDiscovery} from '../lib/client/workspace-state.js'
-import {getActivitySnapshotsSnapshot, getPublishedActivityRows, startActivityPolling, updateActivitySnapshots} from '../lib/client/activity-monitor.js'
+import { registerHooks } from 'node:module'
+import React from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { createWorkspaceState, createTeamDiscovery } from '../lib/client/workspace-state.js'
+import { ARCHIVE_DELETE_URL, IDLE_ARCHIVE_DELETE, getActivitySnapshotsSnapshot, getPublishedActivityRows, nextArchiveDeleteState, pruneArchivedTeamLocally, requestArchivedTeamDeletion, startActivityPolling, updateActivitySnapshots } from '../lib/client/activity-monitor.js'
+import { en, zh } from '../lib/client/locales.js'
+
+// Render the production components; only unrelated host UI and CSS imports are stubbed.
+const hook = registerHooks({ resolve(specifier, context, next) {
+  let source
+  if (specifier.endsWith('.module.css')) source = 'export default new Proxy({}, {get: (_, key) => key})'
+  if (context.parentURL?.endsWith('/client/ActivityPanel.js') || context.parentURL?.endsWith('/client/WorkspaceActivity.js')) {
+    if (specifier === '@deepseek-ai/dsh-client-ui-primitives') source = 'export const Modal = () => null'
+    if (specifier === './AgentTeamsCard.js') source = 'export const OPEN_PANEL_EVENT = "test-open"'
+    if (specifier === './StagingPlanEditor.js') source = 'export const StagingPlanEditor = () => null'
+  }
+  return source === undefined ? next(specifier, context) : { url: 'data:text/javascript,' + encodeURIComponent(source), shortCircuit: true }
+} })
+const { ArchivedTeamRow, archiveDeleteView } = await import('../lib/client/ActivityPanel.js')
+const { WorkspaceActivity } = await import('../lib/client/WorkspaceActivity.js')
+hook.deregister()
+
+function renderWorkspace(dict, legacy = false) {
+  const state = createWorkspaceState()
+  if (legacy) state.remember('captain', { teamId: 'legacy-team', teamName: 'Legacy team', captainSessionId: 'captain', members: [] })
+  return renderToStaticMarkup(React.createElement(WorkspaceActivity, {
+    sessionId: 'captain',
+    useTabInfo: () => ({ tab: { visible: true, actions: { close() {} } } }),
+    t: translate(dict),
+    state,
+    modelDirectories: { directoryFor: () => undefined },
+    openMember() {},
+  }))
+}
 
 test('restored, closed, updated and newly created teams have distinct discovery semantics',()=>{
  const discover=createTeamDiscovery()
@@ -342,5 +374,107 @@ test('scoped live and archived rows retain only the eight most recently publishe
     for (const rows of [shown.teams, shown.archivedTeams]) {
       assert.deepEqual(rows.map(({ captainSessionId }) => captainSessionId), [2, 3, 4, 5, 6, 7, 0, 8].map(index => `captain-${index}`))
     }
+  } finally { updateActivitySnapshots(initial) }
+})
+
+// ---- archive deletion: host contract, local prune, two-press confirmation ----
+
+const translate = (dict) => (key, values = {}) => dict[key].replace(/\{(\w+)\}/g, (_, name) => String(values[name]))
+const archivedTeam = { workspace: '', teamId: 'archived-team', name: 'Archived team', captainSessionId: 'captain', phase: 'running', members: [], tasks: [], messageCount: 0, captainInbox: [] }
+
+test('an archive delete request carries the owning session and the team to the host route', async () => {
+  const calls = []
+  const fetchImpl = async (url, init) => {
+    calls.push({ url, method: init.method, body: JSON.parse(init.body) })
+    return Response.json({ ok: true, teamId: 'team' })
+  }
+  const outcome = await requestArchivedTeamDeletion({ captainSessionId: 'captain', teamId: 'team' }, { fetchImpl })
+  assert.deepEqual(calls, [{ url: '/plugins/dsh-agent-teams/archive-delete', method: 'POST', body: { sessionId: 'captain', teamId: 'team' } }])
+  assert.equal(ARCHIVE_DELETE_URL, '/plugins/dsh-agent-teams/archive-delete')
+  assert.equal(outcome.ok, true)
+  assert.equal(outcome.teamId, 'team')
+  assert.equal(outcome.error, '')
+})
+
+test('a rejected archive delete keeps the host message and never calls out without both ids', async () => {
+  const rejected = await requestArchivedTeamDeletion({ captainSessionId: 'captain', teamId: 'team' }, {
+    fetchImpl: async () => Response.json({ error: 'archived team not found for this session' }, { status: 404 }),
+  })
+  assert.equal(rejected.ok, false)
+  assert.equal(rejected.error, 'archived team not found for this session')
+  const broken = await requestArchivedTeamDeletion({ captainSessionId: 'captain', teamId: 'team' }, {
+    fetchImpl: async () => { throw new Error('offline') },
+  })
+  assert.equal(broken.ok, false)
+  assert.equal(broken.error, 'offline')
+  const empty = await requestArchivedTeamDeletion({ captainSessionId: '', teamId: 'team' }, {
+    fetchImpl: async () => { throw new Error('the host must not be called') },
+  })
+  assert.equal(empty.ok, false)
+  assert.equal(empty.error, 'sessionId and teamId are required')
+})
+
+test('a deleted archive leaves the shared snapshot', () => {
+  const initial = getActivitySnapshotsSnapshot()
+  try {
+    updateActivitySnapshots({ teams: [], archivedTeams: [
+      { captainSessionId: 'captain', teamId: 'gone' },
+      { captainSessionId: 'captain', teamId: 'kept' },
+    ] })
+    assert.equal(pruneArchivedTeamLocally('gone', 'captain'), true)
+    assert.deepEqual(getActivitySnapshotsSnapshot().archivedTeams.map(row => row.teamId), ['kept'])
+    assert.equal(pruneArchivedTeamLocally('missing', 'captain'), false)
+  } finally { updateActivitySnapshots(initial) }
+})
+
+test('the two-press confirmation asks twice before it deletes and can be taken back', () => {
+  const first = nextArchiveDeleteState(IDLE_ARCHIVE_DELETE, { type: 'press' })
+  assert.equal(first.step, 'confirming')
+  const second = nextArchiveDeleteState(first, { type: 'press' })
+  assert.equal(second.step, 'deleting')
+  assert.equal(nextArchiveDeleteState(second, { type: 'press' }).step, 'deleting')
+  assert.deepEqual(nextArchiveDeleteState(second, { type: 'cancel' }), { step: 'idle', error: '' })
+  assert.deepEqual(nextArchiveDeleteState(second, { type: 'failure', error: 'boom' }), { step: 'idle', error: 'boom' })
+})
+
+test('the delete control asks for a second press and offers a way back', () => {
+  const t = translate(zh)
+  const idle = archiveDeleteView(IDLE_ARCHIVE_DELETE, 'Team', t)
+  assert.equal(idle.text, zh['archive.delete'])
+  assert.equal(idle.showCancel, false)
+  assert.ok(idle.ariaLabel.includes('Team'))
+  const confirming = archiveDeleteView({ step: 'confirming', error: '' }, 'Team', t)
+  assert.equal(confirming.text, zh['archive.deleteConfirm'])
+  assert.equal(confirming.showCancel, true)
+  const deleting = archiveDeleteView({ step: 'deleting', error: '' }, 'Team', t)
+  assert.equal(deleting.text, zh['archive.deleteBusy'])
+  assert.equal(deleting.showCancel, false)
+})
+
+test('an archived team row owns the permanent delete entry', () => {
+  const html = renderToStaticMarkup(React.createElement(ArchivedTeamRow, { team: archivedTeam, onNavigate() {}, t: translate(zh) }))
+  assert.match(html, /data-archive-delete-row/)
+  assert.match(html, /data-archive-delete/)
+  assert.ok(html.includes(zh['archive.label']))
+  assert.ok(html.includes(zh['archive.delete']))
+  const ariaLabel = zh['archive.deleteAria'].replace('{team}', 'Archived team')
+  assert.ok(html.includes('aria-label="' + ariaLabel + '"'))
+  const english = renderToStaticMarkup(React.createElement(ArchivedTeamRow, { team: archivedTeam, onNavigate() {}, t: translate(en) }))
+  assert.match(english, /data-archive-delete/)
+  assert.ok(english.includes(en['archive.label']))
+})
+
+test('the workspace offers the permanent delete entry only for a real archive', () => {
+  const initial = getActivitySnapshotsSnapshot()
+  try {
+    updateActivitySnapshots({ teams: [], archivedTeams: [archivedTeam] })
+    const archived = renderWorkspace(zh)
+    assert.match(archived, /data-archive-bar/)
+    assert.match(archived, /data-archive-delete/)
+    assert.ok(archived.includes(zh['archive.label']))
+    updateActivitySnapshots({ teams: [], archivedTeams: [] })
+    const legacy = renderWorkspace(zh, true)
+    assert.doesNotMatch(legacy, /data-archive-bar/)
+    assert.doesNotMatch(legacy, /data-archive-delete/)
   } finally { updateActivitySnapshots(initial) }
 })
