@@ -44,6 +44,12 @@ export interface QualityCompletionUpdate {
     changedPaths?: string[];
     acceptanceResults?: AcceptanceResult[];
     commandsRun?: CommandResult[];
+    /**
+     * attempt_id carried by the current update. Pure rule checks on historical
+     * fixtures omit it; a value that differs from the task's current attemptId
+     * is cross-attempt evidence and is rejected before completion.
+     */
+    attemptId?: string;
 }
 export interface QualityCompletionResult {
     ok: boolean;
@@ -172,6 +178,32 @@ export declare function classifyChangedPath(path: string, inScope?: readonly str
 export declare function collectChangedPaths(gitStatusText: string): string[];
 export declare function inScopeOverlap(left: readonly string[] | undefined, right: readonly string[] | undefined): string[];
 export declare function validateCreateTask(team: TeamState, input: CreateTaskInput): ValidateCreateTaskResult;
+/**
+ * commandsRun is an append-in-order observation log, not a verdict set. The
+ * last observation of each command is the one that counts: re-running a failed
+ * command and appending a passed row clears the earlier failure, while rows
+ * that already passed stay in the log and their results are carried forward
+ * (they must not be re-run). A verification re-run executes only the commands
+ * whose latest observation is failed or missing.
+ */
+export declare function latestCommandStatus(commands: readonly CommandResult[] | undefined): 'passed' | 'failed' | undefined;
+/**
+ * The verify commands a re-run must execute: those whose latest observation
+ * is failed or absent. Commands already passed are reused (carried forward)
+ * and deliberately excluded. Duplicates in the contract are collapsed while
+ * preserving contract order, so the actionable list is minimal and stable.
+ */
+export declare function pendingVerifyCommands(required: readonly string[] | undefined, observed: readonly CommandResult[] | undefined): string[];
+export declare function evidenceAttemptStamp(task: TeamTask): string | undefined;
+export declare function storedEvidenceTrusted(task: TeamTask): boolean;
+/** Bind the results just written on this task to its current attempt. */
+export declare function stampEvidenceAttempt(task: TeamTask): void;
+/**
+ * Actionable rejection for structured completion evidence that is not bound
+ * to the task's current attempt. Tools call this before the completion gate;
+ * returning undefined means the submission is acceptable.
+ */
+export declare function crossAttemptEvidenceError(task: TeamTask, suppliedAttemptId: string | undefined, hasStructuredEvidence: boolean): string | undefined;
 export declare function evaluateQualityCompletion(task: TeamTask, update: QualityCompletionUpdate): QualityCompletionResult;
 /**
  * Derive the repair round's inScope from the findings that caused it.

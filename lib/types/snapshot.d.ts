@@ -49,6 +49,15 @@ export interface TeamActivityTask {
     readonly verdictStale?: string;
     /** Durable last-write stamp; drives the finished-member ordering (issue #192). */
     readonly updatedAt: number;
+    /**
+     * Observation-only stall marker (R4): true when a running task has produced
+     * no member output/activity for longer than the configured sliding window.
+     * Never written back to durable state; it never fails, reclaims, redelivers
+     * or reorders a task. Absent means "within window / not applicable".
+     */
+    readonly noProgress?: boolean;
+    /** Milliseconds since the last member output/activity, present with the marker. */
+    readonly noProgressForMs?: number;
 }
 /** One captain-inbox preview row. */
 export interface TeamActivityMessage {
@@ -92,12 +101,64 @@ export interface TeamSnapshotOptions {
      * the model-facing status tool cannot report different delivery verdicts.
      */
     readonly workspacePath?: string;
+    /**
+     * Sliding no-progress window in milliseconds (R4). Overrides the per-team
+     * durable value and the built-in default; only used while projecting.
+     */
+    readonly noProgressWindowMs?: number;
+    /** Clock injection so snapshot recomputation can be tested deterministically. */
+    readonly now?: number;
 }
 /** Compact `provider/model` route for the activity panel, or just the model. */
 export declare function memberModelRoute(member: {
     provider?: string;
     model?: string;
 } | undefined): string;
+/** Default sliding no-progress window (R4), in milliseconds. */
+export declare const DEFAULT_NO_PROGRESS_WINDOW_MS: number;
+/**
+ * Resolve the effective no-progress window: an explicit snapshot option wins,
+ * then the per-team durable override, then the built-in default. Only finite
+ * positive values are accepted, so a malformed config cannot disable detection
+ * or turn every running task into a false stall.
+ */
+export declare function resolveNoProgressWindowMs(options: {
+    readonly noProgressWindowMs?: number;
+}, state: {
+    readonly noProgressWindowMs?: number;
+}): number;
+/** A minimal timestamped member output used to anchor the sliding window. */
+export interface MemberActivityStamp {
+    readonly from: string;
+    readonly ts: number;
+}
+/**
+ * Last member output/activity time for one task. The anchor is the newest of
+ * the durable task write, the latest captain-inbox report authored by the
+ * assignee, and (when present) the member's own activity timestamp. Reports
+ * from other senders never reset this task's window.
+ */
+export declare function lastActivityAtOf(task: {
+    readonly updatedAt: number;
+    readonly assignee?: string;
+}, reports: readonly MemberActivityStamp[], memberLastActivityAt?: number): number;
+/** Read-only result of one sliding-window check. */
+export interface NoProgressObservation {
+    readonly noProgress: boolean;
+    readonly noProgressForMs: number;
+}
+/**
+ * Pure, side-effect-free stall observation. A task is marked only while it is
+ * still running (`claimed` or `in_progress`) and more than `windowMs` has
+ * elapsed since its last member output/activity. No status, timer, reclaim,
+ * redelivery or dispatch ordering is touched here.
+ */
+export declare function detectNoProgress(input: {
+    readonly status: string;
+    readonly lastActivityAt: number;
+    readonly now: number;
+    readonly windowMs: number;
+}): NoProgressObservation;
 /**
  * Assemble one team snapshot from its durable files plus live activity.
  * @param ctx - the plugin context (injects `subagents`, used for activity).

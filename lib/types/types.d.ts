@@ -267,6 +267,12 @@ export interface TeamMember {
      * member. Cleared by the next successful start.
      */
     spawnError?: string;
+    /**
+     * Optional timestamp (ms) of the member's most recent observed activity.
+     * Read-only input for the R4 no-progress window; the snapshot never writes
+     * it. A future host/runtime may populate it from live agent edges.
+     */
+    lastActivityAt?: number;
 }
 /** One mailbox message. */
 export interface TeamMessage {
@@ -352,4 +358,10 @@ export interface TeamState {
     reviewPolicy?: ReviewPolicy;
     /** Set when an automatic review/repair loop hits its configured ceiling. */
     escalated?: boolean;
+    /**
+     * Per-team override of the R4 sliding no-progress window, in milliseconds.
+     * Observation-only: it changes when the panel marks a running task as
+     * stalled; it never fails, reclaims, redelivers or reorders a task.
+     */
+    noProgressWindowMs?: number;
 }
