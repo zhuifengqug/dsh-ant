@@ -158,7 +158,19 @@ test('doctor runs through an installed bin symlink and reports success or failur
   mkdirSync(host)
   writeFileSync(join(host, 'package.json'), JSON.stringify({ name: '@deepseek-ai/dsh', version: policy.recommendedHost }))
   const bin = join(root, 'dsh-agent-teams-doctor')
-  symlinkSync(fileURLToPath(new URL('./doctor.mjs', import.meta.url)), bin, 'file')
+  try {
+    symlinkSync(fileURLToPath(new URL('./doctor.mjs', import.meta.url)), bin, 'file')
+  } catch (error) {
+    // Windows needs SeCreateSymbolicLinkPrivilege for file symlinks (developer
+    // mode). The property under test is argv[1] versus import.meta.url on the
+    // installed bin; without the privilege to build that bin there is nothing
+    // to assert, so this is a platform skip rather than a passing guess.
+    if (process.platform === 'win32' && (error.code === 'EPERM' || error.code === 'EACCES')) {
+      t.skip('Windows requires SeCreateSymbolicLinkPrivilege to create a file symlink')
+      return
+    }
+    throw error
+  }
   // Unix executes the installed shebang directly. Windows does not implement
   // shebangs: invoke Node with the same symlink path, retaining the argv[1]
   // versus import.meta.url regression without relying on a command shell.
