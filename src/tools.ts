@@ -657,6 +657,13 @@ export function stagedPlanFeedbackContext(teamName: string): string {
 }
 
 /**
+ * Language requirement appended to each model-authored, user-facing field.
+ * The captain protocol states the rule once; repeating it on the parameter
+ * that carries the text keeps it visible at the moment of the call.
+ */
+const USER_LANGUAGE_NOTE = ' Write it in the user\'s conversation language (简体中文 when the user writes Chinese); keep tool names, provider/model names, file paths, commands, code identifiers, enum values and JSON keys verbatim.'
+
+/**
  * Register every `agent_teams_*` tool into the shared tools registry.
  * @param ctx - the plugin context (injects `tools`).
  * @param config - resolved tool config.
@@ -945,21 +952,21 @@ export function registerAgentTeamsTools(ctx: Context, config: ToolsConfig): Agen
     name: 'agent_teams_create',
     description: 'Create a team. Use approval=required for a two-phase plan: members and tasks remain unspawned/unclaimed until the user reviews the Web plan and explicitly approves it. Optional profiles expand their configured roster; seed profiles also expand template tasks, while captain profiles leave the graph for the Captain to design. approval=automatic preserves the legacy immediate-execution path.',
     parameters: {
-      name: { type: 'string', required: true, description: 'Name for the new team (used as its stable id).' },
-      description: { type: 'string', description: 'Team purpose / the goal the team will work on.' },
+      name: { type: 'string', required: true, description: 'Name for the new team (used as its stable id). Write it in the user\'s conversation language (简体中文 when the user writes Chinese); the key derives from this name as written, so never substitute an English translation or an internal code.' },
+      description: { type: 'string', description: `Team purpose / the goal the team will work on.${USER_LANGUAGE_NOTE}` },
       profile: { type: 'string', description: 'Optional configured profile name.' },
       plan: {
         type: 'object', additionalProperties: false,
-        description: 'Optional complete ordinary-work roster and DAG in one atomic call, instead of separate add_member/create_task rounds. Mutually exclusive with profile. For quality gates use create_task with the explicit quality contract.',
+        description: 'Optional complete ordinary-work roster and DAG in one atomic call, instead of separate add_member/create_task rounds. Mutually exclusive with profile. For quality gates use create_task with the explicit quality contract. Member names/roles and task subjects/descriptions follow the same language rule as their standalone parameters.',
         properties: {
           members: { type: 'array', required: true, items: { type: 'object', additionalProperties: false, properties: {
-            name: { type: 'string', required: true }, role: { type: 'string' },
+            name: { type: 'string', required: true, description: 'Unique member name inside the team. Write it in the user\'s conversation language (简体中文 when the user writes Chinese).' }, role: { type: 'string', description: `Role of the member (e.g. researcher, engineer, reviewer).${USER_LANGUAGE_NOTE}` },
             provider: { type: 'string' }, model: { type: 'string' }, reasoning_effort: { type: 'string' },
             tool_policy: { type: 'string', description: 'Optional owner-declared tool-policy id for this member.' },
           } } },
           tasks: { type: 'array', required: true, items: { type: 'object', additionalProperties: false, properties: {
             id: { type: 'string', required: true, description: 'Local reference used by dependencies in this plan; the result maps it to a durable task id.' },
-            subject: { type: 'string', required: true }, description: { type: 'string' }, assignee: { type: 'string' },
+            subject: { type: 'string', required: true, description: `Required non-empty task title.${USER_LANGUAGE_NOTE}` }, description: { type: 'string', description: `What needs to be done, in detail.${USER_LANGUAGE_NOTE}` }, assignee: { type: 'string' },
             dependencies: { type: 'array', items: { type: 'string' } },
           } } },
         },
@@ -1172,11 +1179,11 @@ export function registerAgentTeamsTools(ctx: Context, config: ToolsConfig): Agen
             },
             member_name: { type: 'string', description: 'Member name for update_member or remove_member.' },
             task_id: { type: 'string', description: 'Task id for update_task or remove_task.' },
-            subject: { type: 'string', description: 'Required for add_task; optional replacement for update_task.' },
-            description: { type: 'string', description: 'Optional task description.' },
+            subject: { type: 'string', description: `Required for add_task; optional replacement for update_task.${USER_LANGUAGE_NOTE}` },
+            description: { type: 'string', description: `Optional task description.${USER_LANGUAGE_NOTE}` },
             assignee: { type: 'string', description: 'Optional task assignee; an empty string moves it to the shared pool.' },
             dependencies: { type: 'array', items: { type: 'string' }, description: 'Complete replacement dependency list for a task.' },
-            role: { type: 'string', description: 'Optional member role.' },
+            role: { type: 'string', description: `Optional member role.${USER_LANGUAGE_NOTE}` },
             provider: { type: 'string', description: 'Optional member provider; defaults to the current staged route.' },
             model: { type: 'string', description: 'Optional member model; defaults to the current staged route.' },
             reasoning_effort: { type: 'string', description: 'Optional member reasoning effort.' },
@@ -1313,8 +1320,8 @@ export function registerAgentTeamsTools(ctx: Context, config: ToolsConfig): Agen
     name: 'agent_teams_add_member',
     description: 'Add a member to the team roster. Planning and idle roster rows do not call a model. After approval, the member session starts with its first ready task or explicit message and remains durable for later work.',
     parameters: {
-      name: { type: 'string', required: true, description: 'Unique member name inside the team.' },
-      role: { type: 'string', description: 'Role of the member (e.g. researcher, engineer, reviewer).' },
+      name: { type: 'string', required: true, description: 'Unique member name inside the team. Write it in the user\'s conversation language (简体中文 when the user writes Chinese).' },
+      role: { type: 'string', description: `Role of the member (e.g. researcher, engineer, reviewer).${USER_LANGUAGE_NOTE}` },
       provider: { type: 'string', description: 'Optional LLM provider route. Use only when the user explicitly requests a different provider; requires model. Omit to use the configured member route (memberLlmProvider/memberModel) or the captain\'s current route.' },
       model: { type: 'string', description: 'Optional model override (used verbatim, including any "/" in the id). Omit for the configured memberModel default (paired with memberLlmProvider when set) or the captain\'s current model.' },
       reasoning_effort: { type: 'string', description: 'Optional reasoning effort override: one of the target model\'s supported effort ids, or "default" to force its default. When omitted, the captain\'s effort is inherited only for the same provider/model; a changed route uses the target default.' },
@@ -1476,8 +1483,8 @@ export function registerAgentTeamsTools(ctx: Context, config: ToolsConfig): Agen
     name: 'agent_teams_create_task',
     description: 'Create a task in your team\'s task list. Use kind=work (default) for research, repository audits and general tasks. kind=review is only a quality gate for an existing implementation/repair task via reviewedTaskId. Every call must include a non-empty subject, including verification and review tasks. Tasks can depend on other tasks (dependencies): a task is only claimable once every dependency is completed. Optionally assign it to a member, who still claims it before working.',
     parameters: {
-      subject: { type: 'string', required: true, description: 'Required non-empty title for this task. Never omit it, including for verification or review tasks.' },
-      description: { type: 'string', description: 'What needs to be done, in detail.' },
+      subject: { type: 'string', required: true, description: `Required non-empty title for this task. Never omit it, including for verification or review tasks.${USER_LANGUAGE_NOTE}` },
+      description: { type: 'string', description: `What needs to be done, in detail.${USER_LANGUAGE_NOTE}` },
       dependencies: {
         type: 'array',
         items: { type: 'string' },
@@ -1490,10 +1497,10 @@ export function registerAgentTeamsTools(ctx: Context, config: ToolsConfig): Agen
         description: 'Explicit task kind. Omission means work with no quality gates, even if the subject says implementation/review. Quality kinds require a contract. An implementation may be planned before requirements passes when its dependency chain includes that requirements task.',
       },
       round: { type: 'number', description: '1-based review / requirements / repair round.' },
-      objective: { type: 'string', description: 'Required non-empty objective for quality kinds.' },
+      objective: { type: 'string', description: `Required non-empty objective for quality kinds.${USER_LANGUAGE_NOTE}` },
       inScope: { type: 'array', items: { type: 'string' }, description: 'Workspace-relative POSIX paths this task may change.' },
       outOfScope: { type: 'array', items: { type: 'string' }, description: 'Workspace-relative POSIX paths this task must not change.' },
-      acceptance: { type: 'array', items: { type: 'string' }, description: 'Acceptance criteria. Required for quality kinds.' },
+      acceptance: { type: 'array', items: { type: 'string' }, description: `Acceptance criteria. Required for quality kinds. Each item follows the same language rule.${USER_LANGUAGE_NOTE}` },
       verify: { type: 'array', items: { type: 'string' }, description: 'Verification commands. Required for implementation/repair.' },
       deliverables: { type: 'array', items: { type: 'string' }, description: 'Expected deliverable paths or names.' },
       nonGoals: { type: 'array', items: { type: 'string' }, description: 'Explicit non-goals.' },
@@ -1879,8 +1886,8 @@ export function registerAgentTeamsTools(ctx: Context, config: ToolsConfig): Agen
         enum: ['in_progress', 'completed', 'failed', 'cancelled'],
         description: 'New status (in_progress, completed, failed, cancelled).',
       },
-      output: { type: 'string', description: 'Original result summary; immutable after completion/failure.' },
-      evidence_note: { type: 'string', description: 'Append-only supplementary observation on a terminal task. Does not reopen work or change the original result.' },
+      output: { type: 'string', description: `Original result summary; immutable after completion/failure.${USER_LANGUAGE_NOTE}` },
+      evidence_note: { type: 'string', description: `Append-only supplementary observation on a terminal task. Does not reopen work or change the original result.${USER_LANGUAGE_NOTE}` },
       verdict: {
         type: 'string',
         enum: ['pass', 'needs_revision', 'reject'],
