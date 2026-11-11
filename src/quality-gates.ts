@@ -87,6 +87,12 @@ export interface QualityCompletionUpdate {
   changedPaths?: string[]
   acceptanceResults?: AcceptanceResult[]
   commandsRun?: CommandResult[]
+  /**
+   * attempt_id carried by the current update. Pure rule checks on historical
+   * fixtures omit it; a value that differs from the task's current attemptId
+   * is cross-attempt evidence and is rejected before completion.
+   */
+  attemptId?: string
 }
 
 export interface QualityCompletionResult {
@@ -543,6 +549,83 @@ function verifyCovered(required: readonly string[] | undefined, results: readonl
   return results.length === (required ?? []).length && results.every((item) => item.status === 'passed')
 }
 
+/**
+ * commandsRun is an append-in-order observation log, not a verdict set. The
+ * last observation of each command is the one that counts: re-running a failed
+ * command and appending a passed row clears the earlier failure, while rows
+ * that already passed stay in the log and their results are carried forward
+ * (they must not be re-run). A verification re-run executes only the commands
+ * whose latest observation is failed or missing.
+ */
+export function latestCommandStatus(
+  commands: readonly CommandResult[] | undefined,
+): 'passed' | 'failed' | undefined {
+  if (commands === undefined || commands.length === 0) return undefined
+  const latest = new Map<string, CommandResult>()
+  for (const item of commands) latest.set(item.command, item)
+  return [...latest.values()].some((item) => item.status === 'failed') ? 'failed' : 'passed'
+}
+
+/**
+ * The verify commands a re-run must execute: those whose latest observation
+ * is failed or absent. Commands already passed are reused (carried forward)
+ * and deliberately excluded. Duplicates in the contract are collapsed while
+ * preserving contract order, so the actionable list is minimal and stable.
+ */
+export function pendingVerifyCommands(
+  required: readonly string[] | undefined,
+  observed: readonly CommandResult[] | undefined,
+): string[] {
+  const latest = new Map<string, CommandResult>()
+  for (const item of observed ?? []) latest.set(item.command, item)
+  return [...new Set(required ?? [])].filter((command) => latest.get(command)?.status !== 'passed')
+}
+
+/**
+ * Runtime-only evidence stamp. TeamTask's declared shape is left unchanged:
+ * coercion and validation preserve unknown keys and writeTeam serializes
+ * them verbatim, so the stamp survives a restart without a schema migration.
+ * clearAttemptResult clears the six result fields but not this stamp, which
+ * is what makes evidence from a superseded attempt detectable. A task with
+ * no stamp is a legacy record and its stored evidence stays trusted.
+ */
+type EvidenceStampedTask = TeamTask & { evidenceAttemptId?: string }
+
+export function evidenceAttemptStamp(task: TeamTask): string | undefined {
+  const stamped = task as EvidenceStampedTask
+  return typeof stamped.evidenceAttemptId === 'string' ? stamped.evidenceAttemptId : undefined
+}
+
+export function storedEvidenceTrusted(task: TeamTask): boolean {
+  const stamp = evidenceAttemptStamp(task)
+  if (stamp === undefined) return true
+  return task.attemptId === stamp
+}
+
+/** Bind the results just written on this task to its current attempt. */
+export function stampEvidenceAttempt(task: TeamTask): void {
+  const stamped = task as EvidenceStampedTask
+  if (task.attemptId === undefined) delete stamped.evidenceAttemptId
+  else stamped.evidenceAttemptId = task.attemptId
+}
+
+/**
+ * Actionable rejection for structured completion evidence that is not bound
+ * to the task's current attempt. Tools call this before the completion gate;
+ * returning undefined means the submission is acceptable.
+ */
+export function crossAttemptEvidenceError(
+  task: TeamTask,
+  suppliedAttemptId: string | undefined,
+  hasStructuredEvidence: boolean,
+): string | undefined {
+  if (!hasStructuredEvidence) return undefined
+  if (task.attemptId === undefined) return undefined
+  if (suppliedAttemptId === task.attemptId) return undefined
+  const got = suppliedAttemptId === undefined ? 'no attempt_id' : `"${suppliedAttemptId}"`
+  return `completion evidence for task ${task.id} is not bound to the current attempt (got ${got}, expected "${task.attemptId}"). Cross-attempt evidence is rejected: Re-run only the failed or missing verify commands in this attempt and re-submit acceptanceResults/commandsRun/verdict/findings with attempt_id="${task.attemptId}". Evidence recorded by a previous attempt cannot complete the current task.`
+}
+
 export function evaluateQualityCompletion(
   task: TeamTask,
   update: QualityCompletionUpdate,
@@ -557,10 +640,22 @@ export function evaluateQualityCompletion(
   const kind = taskKindOf(task)
   if (kind === 'work') return { ok: true }
 
+  // An update that names a different attempt cannot close the current one.
+  // Pure rule checks on historical fixtures omit attemptId.
+  if (update.attemptId !== undefined && task.attemptId !== undefined && update.attemptId !== task.attemptId) {
+    return {
+      ok: false,
+      error: `task ${task.id} is on attempt_id="${task.attemptId}" but this update carries attempt_id="${update.attemptId}"; cross-attempt evidence is rejected. Re-run only the failed or missing verify commands in this attempt and re-submit acceptanceResults/commandsRun/verdict/findings with the current attempt_id="${task.attemptId}".`,
+    }
+  }
+
   const verdict = update.verdict ?? task.verdict
   const findings = update.findings ?? task.findings
   if (kind === 'review' || kind === 'requirements') {
     if (nextStatus === 'completed') {
+      if (update.verdict === undefined && !storedEvidenceTrusted(task)) {
+        return { ok: false, error: `${kind} cannot complete on a verdict recorded by a previous attempt; re-submit verdict=pass and findings in this update with attempt_id="${task.attemptId ?? ''}"` }
+      }
       if (verdict === undefined) return { ok: false, error: `${kind} cannot complete without verdict=pass` }
       if (verdict !== 'pass') return { ok: false, error: `${kind} with verdict=${verdict} cannot complete` }
       if (openHighFindings(findings).length > 0) {
@@ -577,18 +672,28 @@ export function evaluateQualityCompletion(
 
   if (kind === 'implementation' || kind === 'repair' || kind === 'verification' || kind === 'integration') {
     const commands = update.commandsRun ?? task.commandsRun
-    if (commands?.some((item) => item.status === 'failed') === true) {
+    if (latestCommandStatus(commands) === 'failed') {
       if (nextStatus === 'completed') {
         return { ok: false, error: 'verify failure must fail the task', requiredStatus: 'failed' }
       }
     }
     if (nextStatus !== 'completed') return { ok: true }
+    if ((update.acceptanceResults === undefined || update.commandsRun === undefined) && !storedEvidenceTrusted(task)) {
+      return {
+        ok: false,
+        error: `${kind} cannot complete on evidence recorded by a previous attempt; re-run only the failed or missing verify commands in this attempt and re-submit acceptanceResults and commandsRun with attempt_id="${task.attemptId ?? ''}"`,
+      }
+    }
     const acceptanceResults = update.acceptanceResults ?? task.acceptanceResults
     if (acceptanceResults === undefined || !acceptanceCovered(task.acceptance, acceptanceResults)) {
       return { ok: false, error: `${kind} completion requires passed acceptanceResults for every acceptance item` }
     }
     if (commands === undefined || !verifyCovered(task.verify, commands)) {
-      return { ok: false, error: `${kind} completion requires a passed commandsRun entry for every verify command` }
+      const pending = pendingVerifyCommands(task.verify, commands)
+      const detail = pending.length > 0
+        ? ` Re-run only these failed or missing verify commands and append their fresh results: ${pending.map((command) => `"${command}"`).join(', ')}. Commands whose latest observation passed are carried forward and must not be re-run.`
+        : ''
+      return { ok: false, error: `${kind} completion requires a passed commandsRun entry for every verify command.${detail}` }
     }
     if (kind === 'implementation' || kind === 'repair') {
       const changed = update.changedPaths ?? task.changedPaths

@@ -57,7 +57,7 @@ import {
   normalizeBlankOptionalTaskFields,
   taskKindOf,
 } from './state.ts'
-import { appendTaskEvidence } from './quality-gates.ts'
+import { appendTaskEvidence, crossAttemptEvidenceError, stampEvidenceAttempt } from './quality-gates.ts'
 import {
   artifactDrift,
   bindReviewToRevision,
@@ -1877,7 +1877,7 @@ export function registerAgentTeamsTools(ctx: Context, config: ToolsConfig): Agen
 
   ctx.tools.register(defineTool({
     name: 'agent_teams_update_task',
-    description: 'Update a task status/output. Members must supply the current attempt_id returned by claim_task; stale attempts are rejected after takeover/reassignment. Terminal results are immutable, but owners and the captain can append acceptanceResults/commandsRun/evidence_note as attributed supplemental evidence, without reclaiming or changing the verdict. A captain must use reassign_task(assignee="captain") before updating active member-owned work.',
+    description: 'Update a task status/output. Members must supply the current attempt_id returned by claim_task; stale attempts are rejected after takeover/reassignment. Terminal results are immutable, but owners and the captain can append acceptanceResults/commandsRun/evidence_note as attributed supplemental evidence, without reclaiming or changing the verdict. A captain must use reassign_task(assignee="captain") before updating active member-owned work. On a verification re-run, execute only the commands whose latest result is failed or missing: append their fresh results and reuse the results that already passed, because the latest observation per command decides. Completion evidence (verdict, findings, changedPaths, acceptanceResults, commandsRun) must carry the current attempt_id; evidence recorded by a previous attempt is rejected.',
     parameters: {
       task_id: { type: 'string', required: true, description: 'The task id to update.' },
       attempt_id: { type: 'string', description: 'Members must explicitly include the current attempt_id from their assignment/claim in EVERY update, including failed reviews with findings. If omitted, retry with the same current id; omission does not revoke the attempt.' },
@@ -1940,7 +1940,7 @@ export function registerAgentTeamsTools(ctx: Context, config: ToolsConfig): Agen
             evidence: { type: 'string' },
           },
         },
-        description: 'Verification evidence in contract order: {command, status:"passed"|"failed", exitCode?, evidence?}. Supply one item per verify command.',
+        description: 'Verification evidence in contract order: {command, status:"passed"|"failed", exitCode?, evidence?}. Supply one item per verify command; on a re-run append fresh results only for failed or missing commands and keep the already-passed rows, because the latest observation per command decides.',
       },
     },
     output: {
@@ -2012,6 +2012,13 @@ export function registerAgentTeamsTools(ctx: Context, config: ToolsConfig): Agen
         const findings = parseFindings(args.findings)
         const acceptanceResults = parseAcceptanceResults(args.acceptanceResults)
         const commandsRun = parseCommandResults(args.commandsRun)
+        // Completion evidence belongs to the current attempt. Member
+        // capability is checked above; this also covers captains and any
+        // caller that submits structured evidence without an attempt id.
+        const hasStructuredEvidence = args.verdict !== undefined || findings !== undefined
+          || input.changedPaths !== undefined || acceptanceResults !== undefined || commandsRun !== undefined
+        const evidenceError = crossAttemptEvidenceError(task, args.attempt_id, hasStructuredEvidence)
+        if (evidenceError !== undefined) throw new Error(evidenceError)
         const gate = evaluateQualityCompletion(task, {
           status: args.status,
           output: args.output,
@@ -2020,6 +2027,7 @@ export function registerAgentTeamsTools(ctx: Context, config: ToolsConfig): Agen
           changedPaths: input.changedPaths,
           acceptanceResults,
           commandsRun,
+          attemptId: args.attempt_id,
         })
         if (!gate.ok) throw new Error(gate.error ?? 'update_task rejected by quality gates')
         if (args.status !== undefined) {
@@ -2033,6 +2041,11 @@ export function registerAgentTeamsTools(ctx: Context, config: ToolsConfig): Agen
         if (input.changedPaths !== undefined) task.changedPaths = input.changedPaths
         if (acceptanceResults !== undefined) task.acceptanceResults = acceptanceResults
         if (commandsRun !== undefined) task.commandsRun = commandsRun
+        // Bind the results just written to the attempt that produced them.
+        // The stamp is a runtime key preserved by team.json coercion, and
+        // clearAttemptResult leaves it behind, so a superseded attempt is
+        // detectable instead of silently reusing another attempt's evidence.
+        if (hasStructuredEvidence) stampEvidenceAttempt(task)
         // A passing gate is evidence about a revision: record which one, so a
         // later edit cannot leave the team advertising an unreviewed revision.
         bindClosingVerdict(workspace, fresh, task)
