@@ -6,7 +6,7 @@ DeepSeek Harness 的多智能体团队插件。一句话把当前会话变成队
 
 ## 与上游的关系
 
-本仓库是 [NanmiCoder/dsh-agent-teams](https://github.com/NanmiCoder/dsh-agent-teams) 的分支（fork），基线 `0.1.29`。上游的功能照单全收，本分支只叠加四件事，全部有测试兜底：
+本仓库是 [NanmiCoder/dsh-agent-teams](https://github.com/NanmiCoder/dsh-agent-teams) 的分支（fork），基线为上游 [0.1.30](./release-notes/v0.1.30.md)（该版适配 Harness `0.2.2-rc.2` 的子代理树契约）。上游的功能照单全收，本分支只叠加四件事，全部有测试兜底：
 
 - **中文语言约束**：团队提示词与全部工具参数描述要求队名、成员名、任务标题与描述、计划摘要一律用当前对话语言书写，工具名、id、路径、代码标识符保留原文。
 - **归档团队永久删除**：归档列表里可以真正删掉一个团队（先精确匹配 id，再绑定归属会话，两击确认），不再只能堆积。
@@ -16,6 +16,12 @@ DeepSeek Harness 的多智能体团队插件。一句话把当前会话变成队
 路由决策、难度评分卡、成本汇总、routeAudit 这几块上游本来就没有，本分支也不引入。
 
 ## 安装
+
+从 npm 安装（桌面端「插件 → 添加插件」里填版本号即可）：
+
+```powershell
+dsh plugin --profile desktop add @zhuifengqug/dsh-ant@0.2.0
+```
 
 本地开发目录安装（`link:` 指向本仓库）：
 
@@ -60,11 +66,11 @@ npx pnpm run build
 npx pnpm run verify
 ```
 
-`verify` 串起契约、质量门禁、兼容性、客户端与 fork 自有四处改动的全部用例，末段会校验 `lib/` 与源码一致（`git-artifacts`）。
+`verify` 串起契约、质量门禁、兼容性、客户端与 fork 自有四处改动的全部用例，末段会校验 `lib/` 与源码一致（`git-artifacts`）。只想跑本分支那四件事，用 `npx pnpm run verify:fork`；只跑宿主契约兼容，用 `npx pnpm run verify:harness-contract`。
 
 ## 兼容性
 
-宿主最低版本由 [`compatibility.json`](./compatibility.json) 里最旧的兼容项派生：推荐 `0.2.1-rc.2`，已在 `0.2.2-rc.1`（preview）上验证。当前开发的宿主是 `0.2.2-rc.1`。
+宿主最低版本由 [`compatibility.json`](./compatibility.json) 里最旧的兼容项派生，推荐宿主仍是 `0.2.1-rc.2`；`0.2.2-rc.1` 与 `0.2.2-rc.2` 属 preview 通道，上游已在该两版上跑过真实宿主矩阵（证据见 [docs/harness-0.2.2-rc.2](./docs/harness-0.2.2-rc.2/README.md)）。本分支当前的开发宿主是 `0.2.2-rc.3`：其子代理运行时仍保留 `rootOf` / `prompt` / `startActivation` / `manager.resident` / `deliverToMember` 这套树契约，与 rc.2 一致。
 
 ## 许可
 
