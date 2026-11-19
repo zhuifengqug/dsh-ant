@@ -24,10 +24,11 @@
 
 | 当前候选宿主 | 定位 | 安装与支持边界 |
 | --- | --- | --- |
-| `0.2.2-rc.2` | preview | 适配具名子代理树；在 Ubuntu 和 Windows 验证精确 CLI 分包、安装和运行场景 |
+| `0.2.2-rc.5` | recommended | 当前推荐宿主；桌面版实测通过，`snapshotEvents` 分批扫描已在 256 条窗口验证 |
+| `0.2.2-rc.2` | legacy | 上一推荐 RC；适配具名子代理树，Ubuntu 与 Windows 全场景验证过 |
 | `0.2.2-rc.1` | preview | 在 Ubuntu 和 Windows 验证精确 CLI 分包、安装和运行场景 |
 | `0.2.1-rc.3` | preview | 已发布 npm 精确目标；先进入矩阵，推荐宿主与开发基线仍为 rc.2 |
-| `0.2.1-rc.2` | recommended | 已发布 npm 精确目标；RC 不是 GA |
+| `0.2.1-rc.2` | legacy | 当前开发基线（devDependency）；RC 不是 GA |
 | `0.2.1-rc.1` | legacy | 保留上一推荐 RC |
 | `0.2.0-rc.2` / `0.1.7-rc.2` | legacy | 保留此前推荐版本 |
 | `0.1.5-rc.3` / `0.1.5-rc.2` / `0.1.5-rc.1` | legacy | 保留旧 RC；每个精确版本独立验证完整依赖闭包 |

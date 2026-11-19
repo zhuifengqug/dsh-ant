@@ -70,7 +70,7 @@ npx pnpm run verify
 
 ## 兼容性
 
-宿主最低版本由 [`compatibility.json`](./compatibility.json) 里最旧的兼容项派生，推荐宿主仍是 `0.2.1-rc.2`；`0.2.2-rc.1` 与 `0.2.2-rc.2` 属 preview 通道，上游已在该两版上跑过真实宿主矩阵（证据见 [docs/harness-0.2.2-rc.2](./docs/harness-0.2.2-rc.2/README.md)）。本分支当前的开发宿主是 `0.2.2-rc.3`：其子代理运行时仍保留 `rootOf` / `prompt` / `startActivation` / `manager.resident` / `deliverToMember` 这套树契约，与 rc.2 一致。
+宿主最低版本由 [`compatibility.json`](./compatibility.json) 里最旧的兼容项派生，推荐宿主是 `0.2.2-rc.5`；`0.2.2-rc.2` / `0.2.2-rc.1` / `0.2.1-rc.3` 属 preview 通道，其中 rc.2 与 rc.1 的宿主矩阵证据见 [docs/harness-0.2.2-rc.2](./docs/harness-0.2.2-rc.2/README.md)。开发基线仍是 `0.2.1-rc.2`：子代理树的 `rootOf` / `prompt` / `startActivation` / `manager.resident` / `deliverToMember` 契约在 rc.5 上未变，rc.5 新增的 `session.snapshotEvents` 已用于 `findOwnSessionEvent` 的 256 条分批读取。
 
 ## 许可
 
