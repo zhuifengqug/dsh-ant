@@ -8,6 +8,8 @@ function manifest(path) {
   return JSON.parse(readFileSync(path, 'utf8'))
 }
 
+const PLUGIN_NAME = manifest(new URL('../package.json', import.meta.url)).name
+
 function locatePackage(name, from) {
   let directory = resolve(from)
   for (;;) {
@@ -51,8 +53,8 @@ export function inspectInstallation(hostRoot, profileRoot, support = policy) {
   walk(hostPath)
   let plugin
   if (profileRoot) {
-    const path = locatePackage('@nanmicoder/dsh-agent-teams', resolve(profileRoot))
-    if (!path) missing.push('@nanmicoder/dsh-agent-teams (profile)')
+    const path = locatePackage(PLUGIN_NAME, resolve(profileRoot))
+    if (!path) missing.push(`${PLUGIN_NAME} (profile)`)
     else {
       const pkg = manifest(path)
       plugin = { version: pkg.version, path: dirname(path) }
