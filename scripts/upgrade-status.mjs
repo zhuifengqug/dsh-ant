@@ -6,6 +6,8 @@ import { compareHostVersions, policy, requiredHostPeers, validatePolicy } from '
 // The identity the registry must return is this package's own published name.
 // A fork that renames the package must not keep answering to the upstream name.
 export const PLUGIN_NAME = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).name
+// npm scoped paths escape the separator only; the '@' stays literal.
+const REGISTRY_PACKAGE = PLUGIN_NAME.replace('/', '%2F')
 
 const exactVersion = value => typeof value === 'string' && /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(?:alpha|beta|rc)\.(0|[1-9]\d*))?$/.test(value) && value.trim() === value
 
@@ -58,7 +60,7 @@ export async function fetchUpgradeStatus(fetcher = fetch, support = policy) {
   }
   const [hostTags, pluginManifest] = await Promise.all([
     read('-/package/@deepseek-ai%2Fdsh/dist-tags'),
-    read('@nanmicoder%2Fdsh-agent-teams/latest'),
+    read(`${REGISTRY_PACKAGE}/latest`),
   ])
   return inspectUpgradeStatus({ hostTags, pluginManifest }, support)
 }
