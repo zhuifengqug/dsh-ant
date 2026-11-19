@@ -6,7 +6,7 @@ DeepSeek Harness 的多智能体团队插件。一句话把当前会话变成队
 
 ## 与上游的关系
 
-本仓库是 [NanmiCoder/dsh-agent-teams](https://github.com/NanmiCoder/dsh-agent-teams) 的分支（fork），基线为上游 [0.1.30](./release-notes/v0.1.30.md)（该版适配 Harness `0.2.2-rc.2` 的子代理树契约）。上游的功能照单全收，本分支只叠加四件事，全部有测试兜底：
+本仓库是 [NanmiCoder/dsh-agent-teams](https://github.com/NanmiCoder/dsh-agent-teams) 的分支（fork），基线为上游 [0.1.30](./release-notes/v0.1.30.md)（该版适配 Harness `0.2.2-rc.2` 的子代理树契约），并增量吸收上游 `0.1.31` 里与本分支不冲突的五处修复（空 subject 拒收、status 去重、parked attempt 只通知一次、保留 attempt、长会话分批扫描）；发版见 [0.2.1](./release-notes/v0.2.1.md)。上游的功能照单全收，本分支只叠加四件事，全部有测试兜底：
 
 - **中文语言约束**：团队提示词与全部工具参数描述要求队名、成员名、任务标题与描述、计划摘要一律用当前对话语言书写，工具名、id、路径、代码标识符保留原文。
 - **归档团队永久删除**：归档列表里可以真正删掉一个团队（先精确匹配 id，再绑定归属会话，两击确认），不再只能堆积。
@@ -20,7 +20,7 @@ DeepSeek Harness 的多智能体团队插件。一句话把当前会话变成队
 从 npm 安装（桌面端「插件 → 添加插件」里填版本号即可）：
 
 ```powershell
-dsh plugin --profile desktop add @zhuifengqug/dsh-ant@0.2.0
+dsh plugin --profile desktop add @zhuifengqug/dsh-ant@0.2.1
 ```
 
 本地开发目录安装（`link:` 指向本仓库）：
